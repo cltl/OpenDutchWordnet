@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>odwn.synset.Synset</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        Package&nbsp;odwn ::
+        <a href="odwn.synset-module.html">Module&nbsp;synset</a> ::
+        Class&nbsp;Synset
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="odwn.synset.Synset-class.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<!-- ==================== CLASS DESCRIPTION ==================== -->
+<h1 class="epydoc">Class Synset</h1><p class="nomargin-top"><span class="codelink"><a href="odwn.synset-pysrc.html#Synset">source&nbsp;code</a></span></p>
+<pre class="literalblock">
+
+class for XML element Synset
+
+example of Synset element:
+&lt;Synset id=&quot;eng-30-00324560-v&quot; ili=&quot;i23355&quot;&gt;
+&lt;Definition gloss=&quot;cook with dry heat, usually in an oven&quot; language=&quot;en&quot; provenance=&quot;pwn&quot;/&gt;
+&lt;SynsetRelations&gt;
+    &lt;SynsetRelation provenance=&quot;pwn&quot; relType=&quot;has_hyperonym&quot; target=&quot;eng-30-00322847-v&quot;/&gt;
+    &lt;SynsetRelation provenance=&quot;pwn&quot; relType=&quot;has_hyponym&quot; target=&quot;eng-30-00325085-v&quot;/&gt;
+&lt;/SynsetRelations&gt;
+&lt;/Synset&gt;
+
+</pre>
+
+<!-- ==================== INSTANCE METHODS ==================== -->
+<a name="section-InstanceMethods"></a>
+<table class="summary" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Instance Methods</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-InstanceMethods"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="__init__"></a><span class="summary-sig-name">__init__</span>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">synset_el</span>,
+        <span class="summary-sig-arg">reltypes</span>,
+        <span class="summary-sig-arg">syn_ids</span>)</span></td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.__init__">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">str</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="odwn.synset.Synset-class.html#get_id" class="summary-sig-name">get_id</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      return synset identifier by returning attribute &quot;id&quot;</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_id">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">str</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="odwn.synset.Synset-class.html#get_ili" class="summary-sig-name">get_ili</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      return gwg ili by returning value of attribute &quot;ili&quot;</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_ili">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">generator</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="odwn.synset.Synset-class.html#get_glosses" class="summary-sig-name">get_glosses</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      get gloss of synset by returning value of attribute &quot;gloss&quot;
+      of child &quot;Definition&quot;</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_glosses">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">generator</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="odwn.synset.Synset-class.html#get_all_relations" class="summary-sig-name">get_all_relations</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      return list of instances of class Relation</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_all_relations">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">str</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="odwn.synset.Synset-class.html#get_pos" class="summary-sig-name">get_pos</a>(<span class="summary-sig-arg">self</span>)</span><br />
+      return pos (last charachter of ili)</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_pos">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">list</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="odwn.synset.Synset-class.html#get_relations" class="summary-sig-name">get_relations</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">reltype</span>)</span><br />
+      return list of instance of class Relations that match the relation 
+      type</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_relations">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">&nbsp;</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a name="remove_me"></a><span class="summary-sig-name">remove_me</span>(<span class="summary-sig-arg">self</span>)</span><br />
+      remove synset element</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.remove_me">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+<tr>
+    <td width="15%" align="right" valign="top" class="summary">
+      <span class="summary-type">tuple</span>
+    </td><td class="summary">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td><span class="summary-sig"><a href="odwn.synset.Synset-class.html#add_relation" class="summary-sig-name">add_relation</a>(<span class="summary-sig-arg">self</span>,
+        <span class="summary-sig-arg">reltype</span>,
+        <span class="summary-sig-arg">target</span>)</span><br />
+      add a SynsetRelation &lt;SynsetRelation provenance=&quot;pwn&quot; 
+      relType=&quot;has_hyponym&quot; 
+      target=&quot;eng-30-00325085-v&quot;/&gt;</td>
+          <td align="right" valign="top">
+            <span class="codelink"><a href="odwn.synset-pysrc.html#Synset.add_relation">source&nbsp;code</a></span>
+            
+          </td>
+        </tr>
+      </table>
+      
+    </td>
+  </tr>
+</table>
+<!-- ==================== METHOD DETAILS ==================== -->
+<a name="section-MethodDetails"></a>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr bgcolor="#70b0f0" class="table-header">
+  <td colspan="2" class="table-header">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr valign="top">
+        <td align="left"><span class="table-header">Method Details</span></td>
+        <td align="right" valign="top"
+         ><span class="options">[<a href="#section-MethodDetails"
+         class="privatelink" onclick="toggle_private();"
+         >hide private</a>]</span></td>
+      </tr>
+    </table>
+  </td>
+</tr>
+</table>
+<a name="get_id"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_id</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_id">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>return synset identifier by returning attribute &quot;id&quot;</p>
+  <dl class="fields">
+    <dt>Returns: str</dt>
+        <dd>synset identifier</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="get_ili"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_ili</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_ili">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>return gwg ili by returning value of attribute &quot;ili&quot;</p>
+  <dl class="fields">
+    <dt>Returns: str</dt>
+        <dd>global wordnet grid ili</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="get_glosses"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_glosses</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_glosses">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>get gloss of synset by returning value of attribute &quot;gloss&quot; 
+  of child &quot;Definition&quot;</p>
+  <dl class="fields">
+    <dt>Returns: generator</dt>
+        <dd>generator of synset definitions</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="get_all_relations"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_all_relations</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_all_relations">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>return list of instances of class Relation</p>
+  <dl class="fields">
+    <dt>Returns: generator</dt>
+        <dd>generator of instances of class Relation</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="get_pos"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_pos</span>(<span class="sig-arg">self</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_pos">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>return pos (last charachter of ili)</p>
+  <dl class="fields">
+    <dt>Returns: str</dt>
+        <dd>pos</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="get_relations"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">get_relations</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">reltype</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="odwn.synset-pysrc.html#Synset.get_relations">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>return list of instance of class Relations that match the relation 
+  type</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>reltype</code></strong> (str)</li>
+    </ul></dd>
+    <dt>Returns: list</dt>
+        <dd>list of instances of class Relation</dd>
+  </dl>
+</td></tr></table>
+</div>
+<a name="add_relation"></a>
+<div>
+<table class="details" border="1" cellpadding="3"
+       cellspacing="0" width="100%" bgcolor="white">
+<tr><td>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr valign="top"><td>
+  <h3 class="epydoc"><span class="sig"><span class="sig-name">add_relation</span>(<span class="sig-arg">self</span>,
+        <span class="sig-arg">reltype</span>,
+        <span class="sig-arg">target</span>)</span>
+  </h3>
+  </td><td align="right" valign="top"
+    ><span class="codelink"><a href="odwn.synset-pysrc.html#Synset.add_relation">source&nbsp;code</a></span>&nbsp;
+    </td>
+  </tr></table>
+  
+  <p>add a SynsetRelation &lt;SynsetRelation provenance=&quot;pwn&quot; 
+  relType=&quot;has_hyponym&quot; 
+  target=&quot;eng-30-00325085-v&quot;/&gt;</p>
+  <dl class="fields">
+    <dt>Parameters:</dt>
+    <dd><ul class="nomargin-top">
+        <li><strong class="pname"><code>reltype</code></strong> (str) - type of relation</li>
+        <li><strong class="pname"><code>target</code></strong> (str) - target synset</li>
+    </ul></dd>
+    <dt>Returns: tuple</dt>
+        <dd>(succes, message)</dd>
+  </dl>
+</td></tr></table>
+</div>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Sep  1 14:45:58 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

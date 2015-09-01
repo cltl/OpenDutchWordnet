@@ -1,0 +1,1281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- schema for odwn and orbn including wordNet grid references -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <xs:element name="LexicalResource">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="GlobalInformation"/>
+        <xs:element ref="Lexicon"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="GlobalInformation">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.GlobalInformation"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.GlobalInformation">
+    <xs:attribute name="label" use="required"/>
+  </xs:attributeGroup>
+  <xs:element name="Lexicon">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="LexicalEntry"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="Synset"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.Lexicon"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Lexicon">
+    <xs:attribute name="label" use="required" type="xs:NMTOKEN"/>
+    <xs:attribute name="language" use="required" type="xs:NMTOKEN"/>
+    <xs:attribute name="languageCoding" use="required"/>
+    <xs:attribute name="owner" use="required" type="xs:NMTOKEN"/>
+  </xs:attributeGroup>
+  <xs:element name="LexicalEntry">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:choice>
+          <xs:sequence>
+            <xs:element ref="Lemma"/>
+            <xs:element ref="WordForms"/>
+          </xs:sequence>
+          <xs:element ref="MultiwordExpression"/>
+        </xs:choice>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="RelatedForms"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="Morphology"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="MorphoSyntax"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="SyntacticBehaviour"/>
+        <xs:element ref="Sense"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.LexicalEntry"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.LexicalEntry">
+    <xs:attribute name="id" use="required"/>
+    <xs:attribute name="partOfSpeech">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="adverb"/>
+          <xs:enumeration value="adjective"/>
+          <xs:enumeration value="noun"/>
+          <xs:enumeration value="verb"/>
+          <xs:enumeration value="other"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="formType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="contraction"/>
+          <xs:enumeration value="acronym"/>
+          <xs:enumeration value="abbreviation"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:element name="Lemma">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.Lemma"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Lemma">
+    <xs:attribute name="writtenForm" use="required"/>
+    <xs:attribute name="mode">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="infinitive"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="MultiwordExpression">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.MultiwordExpression"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.MultiwordExpression">
+    <xs:attribute name="writtenForm" use="required"/>
+    <xs:attribute name="expressionType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="idiom"/>
+          <xs:enumeration value="proverb"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="WordForms">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="WordForm"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="WordForm">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.WordForm"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.WordForm">
+    <xs:attribute name="article"/>
+    <xs:attribute name="grammaticalNumber">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="plural"/>
+          <xs:enumeration value="singular"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="comparison">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="comparative"/>
+          <xs:enumeration value="superlative"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="tense">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="pastTense"/>
+          <xs:enumeration value="pastParticiple"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="writtenForm" use="required"/>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="RelatedForms">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="RelatedForm"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="RelatedForm">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.RelatedForm"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.RelatedForm">
+    <xs:attribute name="writtenForm" use="required"/>
+    <xs:attribute name="variantType" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="formVariant"/>
+          <xs:enumeration value="spellingVariant"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Morphology">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.Morphology"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Morphology">
+    <xs:attribute name="morphoType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="compderiv"/>
+          <xs:enumeration value="derivation"/>
+          <xs:enumeration value="compound"/>
+          <xs:enumeration value="zero-derivation"/>
+          <xs:enumeration value="x-compound"/>
+          <xs:enumeration value="wordgroup"/>
+          <xs:enumeration value="phrasal"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="comparisonType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="regular"/>
+          <xs:enumeration value="irregular"/>
+          <xs:enumeration value="mixed"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="declinable">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="yes"/>
+          <xs:enumeration value="no"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="separability">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="separable"/>
+          <xs:enumeration value="inseparable"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="MorphoSyntax">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="auxiliaries"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.MorphoSyntax"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.MorphoSyntax">
+    <xs:attribute name="pronominalAndGrammaticalGender">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="f"/>
+          <xs:enumeration value="m"/>
+          <xs:enumeration value="n"/>
+          <xs:enumeration value="fn"/>
+          <xs:enumeration value="m_f"/>
+          <xs:enumeration value="mfn"/>
+          <xs:enumeration value="mn"/>
+          <xs:enumeration value="mf"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="adverbialUsage">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="yes"/>
+          <xs:enumeration value="no"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="position">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="attributive"/>
+          <xs:enumeration value="predicative"/>
+          <xs:enumeration value="attrpred"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="reflexivity">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="optionalReflexive"/>
+          <xs:enumeration value="reflexive"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="auxiliaries">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.auxiliaries"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.auxiliaries">
+    <xs:attribute name="auxiliary">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="hebben"/>
+          <xs:enumeration value="zijn"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="SyntacticBehaviour">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="Complementation"/>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="SyntacticSubcategorisationFrame"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.SyntacticBehaviour"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.SyntacticBehaviour">
+    <xs:attribute name="valency">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="mono"/>
+          <xs:enumeration value="di"/>
+          <xs:enumeration value="tri"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="transitivity">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="transitive"/>
+          <xs:enumeration value="intransitive"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Complementation">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.Complementation"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Complementation">
+    <xs:attribute name="complement">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="datclause"/>
+          <xs:enumeration value="ofclause"/>
+          <xs:enumeration value="dancomp"/>
+          <xs:enumeration value="whclause"/>
+          <xs:enumeration value="oblobj"/>
+          <xs:enumeration value="quant"/>
+          <xs:enumeration value="oblprep"/>
+          <xs:enumeration value="factive"/>
+          <xs:enumeration value="fixprep"/>
+          <xs:enumeration value="omtoinf"/>
+          <xs:enumeration value="prep"/>
+          <xs:enumeration value="psmodnoun"/>
+          <xs:enumeration value="toinf"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="preposition">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="wegens"/>
+          <xs:enumeration value="te"/>
+          <xs:enumeration value="zonder"/>
+          <xs:enumeration value="achter"/>
+          <xs:enumeration value="ter...van"/>
+          <xs:enumeration value="met...van"/>
+          <xs:enumeration value="in...van"/>
+          <xs:enumeration value="met...tot"/>
+          <xs:enumeration value="op...bij"/>
+          <xs:enumeration value="per"/>
+          <xs:enumeration value="aangaande"/>
+          <xs:enumeration value="langs"/>
+          <xs:enumeration value="inzake"/>
+          <xs:enumeration value="boven"/>
+          <xs:enumeration value="door"/>
+          <xs:enumeration value="binnen"/>
+          <xs:enumeration value="via"/>
+          <xs:enumeration value="ten...van"/>
+          <xs:enumeration value="uit"/>
+          <xs:enumeration value="omtrent"/>
+          <xs:enumeration value="om"/>
+          <xs:enumeration value="aan"/>
+          <xs:enumeration value="als"/>
+          <xs:enumeration value="bij"/>
+          <xs:enumeration value="in"/>
+          <xs:enumeration value="jegens"/>
+          <xs:enumeration value="met"/>
+          <xs:enumeration value="naar"/>
+          <xs:enumeration value="onder"/>
+          <xs:enumeration value="onder...van"/>
+          <xs:enumeration value="op"/>
+          <xs:enumeration value="over"/>
+          <xs:enumeration value="rond"/>
+          <xs:enumeration value="tegen"/>
+          <xs:enumeration value="tegenover"/>
+          <xs:enumeration value="tot"/>
+          <xs:enumeration value="tussen"/>
+          <xs:enumeration value="van"/>
+          <xs:enumeration value="voor"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:element name="SyntacticSubcategorisationFrame">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="syntacticArgument"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="syntacticArgument">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.syntacticArgument"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.syntacticArgument">
+    <xs:attribute name="constituent">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="nil"/>
+          <xs:enumeration value="np"/>
+          <xs:enumeration value="pp"/>
+          <xs:enumeration value="subclause"/>
+          <xs:enumeration value="ap"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="function">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="nil"/>
+          <xs:enumeration value="specifyingComplement"/>
+          <xs:enumeration value="objectComplement"/>
+          <xs:enumeration value="directObject"/>
+          <xs:enumeration value="indirectObject"/>
+          <xs:enumeration value="prepositionalObject"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="preposition"/>
+    <xs:attribute name="complementizer">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="dat"/>
+          <xs:enumeration value="omte"/>
+          <xs:enumeration value="te"/>
+          <xs:enumeration value="WH"/>
+          <xs:enumeration value="hoe"/>
+          <xs:enumeration value="of"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Sense">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="Sentiment"/>
+        <xs:element ref="Pragmatics"/>
+        <xs:choice>
+          <xs:element ref="Semantics-verb"/>
+          <xs:element ref="Semantics-noun"/>
+          <xs:element ref="Semantics-adjective"/>
+        </xs:choice>
+        <xs:element ref="SenseExamples"/>
+        <xs:element ref="SenseRelations"/>
+      </xs:choice>
+      <xs:attributeGroup ref="attlist.Sense"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Sense">
+    <xs:attribute name="id" use="required"/>
+    <xs:attribute name="senseId"/>
+    <xs:attribute name="provenance"/>
+    <xs:attribute name="synset" type="xs:NMTOKEN"/>
+    <xs:attribute name="definition" use="required"/>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Sentiment">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.Sentiment"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Sentiment">
+    <xs:attribute name="polarity" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="negative"/>
+          <xs:enumeration value="positive"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="externalReference" use="required" type="xs:NMTOKEN"/>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Pragmatics">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="Domains"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.Pragmatics"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="Domains">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.Domains"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Domains">
+    <xs:attribute name="domain">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="accoustics"/>
+          <xs:enumeration value="administration"/>
+          <xs:enumeration value="aeronautics"/>
+          <xs:enumeration value="agriculture"/>
+          <xs:enumeration value="alimentation"/>
+          <xs:enumeration value="anatomy"/>
+          <xs:enumeration value="anthropology"/>
+          <xs:enumeration value="archeology"/>
+          <xs:enumeration value="architecture"/>
+          <xs:enumeration value="art"/>
+          <xs:enumeration value="artisanship"/>
+          <xs:enumeration value="astrology"/>
+          <xs:enumeration value="astronomy"/>
+          <xs:enumeration value="astronautics"/>
+          <xs:enumeration value="astronomie"/>
+          <xs:enumeration value="biochemistry"/>
+          <xs:enumeration value="biology"/>
+          <xs:enumeration value="botany"/>
+          <xs:enumeration value="building_industry"/>
+          <xs:enumeration value="chemistry"/>
+          <xs:enumeration value="cinema"/>
+          <xs:enumeration value="commerce"/>
+          <xs:enumeration value="computer_science"/>
+          <xs:enumeration value="cycling"/>
+          <xs:enumeration value="dance"/>
+          <xs:enumeration value="diplomacy"/>
+          <xs:enumeration value="doctrines"/>
+          <xs:enumeration value="ecology"/>
+          <xs:enumeration value="economy"/>
+          <xs:enumeration value="electronics_electricity"/>
+          <xs:enumeration value="empty"/>
+          <xs:enumeration value="engineering"/>
+          <xs:enumeration value="fashion"/>
+          <xs:enumeration value="fishing"/>
+          <xs:enumeration value="folklore"/>
+          <xs:enumeration value="gastronomy"/>
+          <xs:enumeration value="geography"/>
+          <xs:enumeration value="geology"/>
+          <xs:enumeration value="golf"/>
+          <xs:enumeration value="herladry"/>
+          <xs:enumeration value="history"/>
+          <xs:enumeration value="housekeeping"/>
+          <xs:enumeration value="hunting"/>
+          <xs:enumeration value="hydraulics"/>
+          <xs:enumeration value="industry"/>
+          <xs:enumeration value="insurance"/>
+          <xs:enumeration value="law"/>
+          <xs:enumeration value="linguistics"/>
+          <xs:enumeration value="literature"/>
+          <xs:enumeration value="mathematics"/>
+          <xs:enumeration value="media"/>
+          <xs:enumeration value="medicine"/>
+          <xs:enumeration value="merchant_navy"/>
+          <xs:enumeration value="meteorology"/>
+          <xs:enumeration value="metrology"/>
+          <xs:enumeration value="military"/>
+          <xs:enumeration value="money"/>
+          <xs:enumeration value="music"/>
+          <xs:enumeration value="mythology"/>
+          <xs:enumeration value="pedagogy"/>
+          <xs:enumeration value="pharmacy"/>
+          <xs:enumeration value="philosophy"/>
+          <xs:enumeration value="photography"/>
+          <xs:enumeration value="physics"/>
+          <xs:enumeration value="play"/>
+          <xs:enumeration value="politics"/>
+          <xs:enumeration value="psychology"/>
+          <xs:enumeration value="publishing"/>
+          <xs:enumeration value="railway"/>
+          <xs:enumeration value="religion"/>
+          <xs:enumeration value="school"/>
+          <xs:enumeration value="science"/>
+          <xs:enumeration value="sculpture"/>
+          <xs:enumeration value="sexuality"/>
+          <xs:enumeration value="soccer"/>
+          <xs:enumeration value="sociology"/>
+          <xs:enumeration value="sport"/>
+          <xs:enumeration value="state"/>
+          <xs:enumeration value="swimming"/>
+          <xs:enumeration value="telecommunication"/>
+          <xs:enumeration value="tennis"/>
+          <xs:enumeration value="theatre"/>
+          <xs:enumeration value="theology"/>
+          <xs:enumeration value="transport"/>
+          <xs:enumeration value="zoology"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="attlist.Pragmatics">
+    <xs:attribute name="chronology">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="neologism"/>
+          <xs:enumeration value="oldfashioned"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="connotation">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="euphemistic"/>
+          <xs:enumeration value="jocular"/>
+          <xs:enumeration value="offensive"/>
+          <xs:enumeration value="pejorative"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="geography">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="belg"/>
+          <xs:enumeration value="ind"/>
+          <xs:enumeration value="dialect"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="register">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="formal"/>
+          <xs:enumeration value="informal"/>
+          <xs:enumeration value="slang"/>
+          <xs:enumeration value="vulgar"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Semantics-noun">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="semanticShifts-noun"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.Semantics-noun"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Semantics-noun">
+    <xs:attribute name="countability">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="count"/>
+          <xs:enumeration value="coll"/>
+          <xs:enumeration value="mass"/>
+          <xs:enumeration value="plurtant"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="reference">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="common"/>
+          <xs:enumeration value="proper"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="semanticType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="substance"/>
+          <xs:enumeration value="abstract"/>
+          <xs:enumeration value="animate"/>
+          <xs:enumeration value="artefact"/>
+          <xs:enumeration value="concrete"/>
+          <xs:enumeration value="concrother"/>
+          <xs:enumeration value="dynamic"/>
+          <xs:enumeration value="human"/>
+          <xs:enumeration value="institute"/>
+          <xs:enumeration value="measure"/>
+          <xs:enumeration value="nondynamic"/>
+          <xs:enumeration value="nonhuman"/>
+          <xs:enumeration value="place"/>
+          <xs:enumeration value="time"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="semanticSubType"/>
+  </xs:attributeGroup>
+  <xs:element name="semanticShifts-noun">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.semanticShifts-noun"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.semanticShifts-noun">
+    <xs:attribute name="semanticType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="animate"/>
+          <xs:enumeration value="abstract"/>
+          <xs:enumeration value="artefact"/>
+          <xs:enumeration value="concrete"/>
+          <xs:enumeration value="concrother"/>
+          <xs:enumeration value="dynamic"/>
+          <xs:enumeration value="human"/>
+          <xs:enumeration value="institute"/>
+          <xs:enumeration value="measure"/>
+          <xs:enumeration value="nondynamic"/>
+          <xs:enumeration value="nonhuman"/>
+          <xs:enumeration value="place"/>
+          <xs:enumeration value="substance"/>
+          <xs:enumeration value="time"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Semantics-adjective">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="semanticShifts-adjective"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.Semantics-adjective"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Semantics-adjective">
+    <xs:attribute name="semanticType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="substance"/>
+          <xs:enumeration value="place"/>
+          <xs:enumeration value="temp"/>
+          <xs:enumeration value="stuff"/>
+          <xs:enumeration value="colour"/>
+          <xs:enumeration value="phyper"/>
+          <xs:enumeration value="emomen"/>
+          <xs:enumeration value="abstract"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <xs:element name="semanticShifts-adjective">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.semanticShifts-adjective"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.semanticShifts-adjective">
+    <xs:attribute name="semanticType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="place"/>
+          <xs:enumeration value="temp"/>
+          <xs:enumeration value="stuff"/>
+          <xs:enumeration value="colour"/>
+          <xs:enumeration value="phyper"/>
+          <xs:enumeration value="emomen"/>
+          <xs:enumeration value="abstract"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Semantics-verb">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="semanticTypes"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="semanticTypes">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.semanticTypes"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.semanticTypes">
+    <xs:attribute name="semanticType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="action"/>
+          <xs:enumeration value="process"/>
+          <xs:enumeration value="state"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="semanticFeatureSet">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="stcognt1"/>
+          <xs:enumeration value="stcognt2"/>
+          <xs:enumeration value="stcognt3"/>
+          <xs:enumeration value="state1"/>
+          <xs:enumeration value="state2"/>
+          <xs:enumeration value="state3"/>
+          <xs:enumeration value="process1"/>
+          <xs:enumeration value="process2"/>
+          <xs:enumeration value="process3"/>
+          <xs:enumeration value="prmvmt1"/>
+          <xs:enumeration value="prmvmt2"/>
+          <xs:enumeration value="prmvmt3"/>
+          <xs:enumeration value="possess2"/>
+          <xs:enumeration value="possess3"/>
+          <xs:enumeration value="prcognt1"/>
+          <xs:enumeration value="prcognt2"/>
+          <xs:enumeration value="prcognt3"/>
+          <xs:enumeration value="location1"/>
+          <xs:enumeration value="location2"/>
+          <xs:enumeration value="mvmt1"/>
+          <xs:enumeration value="mvmt2"/>
+          <xs:enumeration value="mvmt3"/>
+          <xs:enumeration value="echprod2"/>
+          <xs:enumeration value="echprod3"/>
+          <xs:enumeration value="action1"/>
+          <xs:enumeration value="action2"/>
+          <xs:enumeration value="action3"/>
+          <xs:enumeration value="cognt1"/>
+          <xs:enumeration value="cognt2"/>
+          <xs:enumeration value="cognt3"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="SenseExamples">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="SenseExample"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!---->
+  <xs:element name="SenseExample">
+    <xs:complexType>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element ref="canonicalForm"/>
+        <xs:element ref="Pragmatics"/>
+        <xs:element ref="Semantics_ex"/>
+        <xs:element ref="Syntax_ex"/>
+        <xs:element ref="textualForm"/>
+      </xs:choice>
+      <xs:attributeGroup ref="attlist.SenseExample"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.SenseExample">
+    <xs:attribute name="id" use="required" type="xs:NMTOKEN"/>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="canonicalForm">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.canonicalForm"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.canonicalForm">
+    <xs:attribute name="phraseType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="sentence"/>
+          <xs:enumeration value="np"/>
+          <xs:enumeration value="vp"/>
+          <xs:enumeration value="ap"/>
+          <xs:enumeration value="pp"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="canonicalform"/>
+    <xs:attribute name="expressionType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="freeCombination"/>
+          <xs:enumeration value="slogan"/>
+          <xs:enumeration value="properName"/>
+          <xs:enumeration value="term"/>
+          <xs:enumeration value="lexicalCollocation"/>
+          <xs:enumeration value="grammaticalCollocation"/>
+          <xs:enumeration value="pragmaticFormula"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!-- enumeration -->
+  <!---->
+  <xs:element name="Semantics_ex">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="lex-collocator"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.Semantics_ex"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Semantics_ex">
+    <xs:attribute name="gracol-complem"/>
+    <xs:attribute name="gracol-gramword">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="expletive"/>
+          <xs:enumeration value="object"/>
+          <xs:enumeration value="material"/>
+          <xs:enumeration value="subject-matter"/>
+          <xs:enumeration value="condition"/>
+          <xs:enumeration value="relation"/>
+          <xs:enumeration value="source"/>
+          <xs:enumeration value="cause"/>
+          <xs:enumeration value="circumstance"/>
+          <xs:enumeration value="direction"/>
+          <xs:enumeration value="goal"/>
+          <xs:enumeration value="location"/>
+          <xs:enumeration value="manner"/>
+          <xs:enumeration value="means"/>
+          <xs:enumeration value="measure"/>
+          <xs:enumeration value="modality"/>
+          <xs:enumeration value="origin"/>
+          <xs:enumeration value="place"/>
+          <xs:enumeration value="purpose"/>
+          <xs:enumeration value="reason"/>
+          <xs:enumeration value="restriction"/>
+          <xs:enumeration value="result"/>
+          <xs:enumeration value="time"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="definition"/>
+    <xs:attribute name="lexcol-speccollocator">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="appear"/>
+          <xs:enumeration value="attend"/>
+          <xs:enumeration value="caretake"/>
+          <xs:enumeration value="consult"/>
+          <xs:enumeration value="consume"/>
+          <xs:enumeration value="container"/>
+          <xs:enumeration value="create"/>
+          <xs:enumeration value="engage"/>
+          <xs:enumeration value="evoke"/>
+          <xs:enumeration value="give"/>
+          <xs:enumeration value="hold"/>
+          <xs:enumeration value="install"/>
+          <xs:enumeration value="introduce"/>
+          <xs:enumeration value="keep"/>
+          <xs:enumeration value="lose"/>
+          <xs:enumeration value="own"/>
+          <xs:enumeration value="portion"/>
+          <xs:enumeration value="practise"/>
+          <xs:enumeration value="prepare"/>
+          <xs:enumeration value="putoff"/>
+          <xs:enumeration value="receive"/>
+          <xs:enumeration value="refuse"/>
+          <xs:enumeration value="reign"/>
+          <xs:enumeration value="remove"/>
+          <xs:enumeration value="solve"/>
+          <xs:enumeration value="suffer"/>
+          <xs:enumeration value="take"/>
+          <xs:enumeration value="takeplace"/>
+          <xs:enumeration value="turnon"/>
+          <xs:enumeration value="use"/>
+          <xs:enumeration value="violate"/>
+          <xs:enumeration value="wear"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="lex-collocator">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.lex-collocator"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.lex-collocator">
+    <xs:attribute name="collocator">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="action"/>
+          <xs:enumeration value="antibonus"/>
+          <xs:enumeration value="anticause"/>
+          <xs:enumeration value="antiexist"/>
+          <xs:enumeration value="antifunct"/>
+          <xs:enumeration value="antimagnus"/>
+          <xs:enumeration value="antimanif"/>
+          <xs:enumeration value="antintense"/>
+          <xs:enumeration value="antioper1"/>
+          <xs:enumeration value="antioper2"/>
+          <xs:enumeration value="antipossess"/>
+          <xs:enumeration value="antireal"/>
+          <xs:enumeration value="antiverus"/>
+          <xs:enumeration value="bonus"/>
+          <xs:enumeration value="cause"/>
+          <xs:enumeration value="causenotre"/>
+          <xs:enumeration value="cont"/>
+          <xs:enumeration value="decrease"/>
+          <xs:enumeration value="degrade"/>
+          <xs:enumeration value="dimin"/>
+          <xs:enumeration value="enum"/>
+          <xs:enumeration value="excess"/>
+          <xs:enumeration value="exist"/>
+          <xs:enumeration value="fin"/>
+          <xs:enumeration value="funct"/>
+          <xs:enumeration value="incept"/>
+          <xs:enumeration value="intens"/>
+          <xs:enumeration value="liqui"/>
+          <xs:enumeration value="magnus"/>
+          <xs:enumeration value="malus"/>
+          <xs:enumeration value="manif"/>
+          <xs:enumeration value="measure"/>
+          <xs:enumeration value="minusexist"/>
+          <xs:enumeration value="modif"/>
+          <xs:enumeration value="mult"/>
+          <xs:enumeration value="oper"/>
+          <xs:enumeration value="oper1"/>
+          <xs:enumeration value="oper2"/>
+          <xs:enumeration value="process"/>
+          <xs:enumeration value="support"/>
+          <xs:enumeration value="place"/>
+          <xs:enumeration value="plusexist"/>
+          <xs:enumeration value="possess"/>
+          <xs:enumeration value="qualifier"/>
+          <xs:enumeration value="quantifier"/>
+          <xs:enumeration value="real"/>
+          <xs:enumeration value="sing"/>
+          <xs:enumeration value="son"/>
+          <xs:enumeration value="state"/>
+          <xs:enumeration value="type"/>
+          <xs:enumeration value="upgrade"/>
+          <xs:enumeration value="verus"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Syntax_ex">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="combiWord"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="combiWord">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.combiWord"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.combiWord">
+    <xs:attribute name="partOfSpeech">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="adjective"/>
+          <xs:enumeration value="adverb"/>
+          <xs:enumeration value="article"/>
+          <xs:enumeration value="conjunction"/>
+          <xs:enumeration value="noun"/>
+          <xs:enumeration value="numeral"/>
+          <xs:enumeration value="preposition"/>
+          <xs:enumeration value="pronoun"/>
+          <xs:enumeration value="verb"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="lemma"/>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="textualForm">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.textualForm"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.textualForm">
+    <xs:attribute name="textualform"/>
+    <xs:attribute name="phraseType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="sentence"/>
+          <xs:enumeration value="np"/>
+          <xs:enumeration value="vp"/>
+          <xs:enumeration value="ap"/>
+          <xs:enumeration value="pp"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="SenseRelations">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="SenseGroup"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="SenseGroup">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.SenseGroup"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.SenseGroup">
+    <xs:attribute name="relationType" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="co-annotation"/>
+          <xs:enumeration value="co-hyponyms"/>
+          <xs:enumeration value="co-synonyms"/>
+          <xs:enumeration value="co-relations"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="targetSenseId" use="required" type="xs:NMTOKEN"/>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Synset">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="Definitions"/>
+        <xs:element minOccurs="0" ref="SynsetRelations"/>
+        <xs:element minOccurs="0" ref="MonolingualExternalRefs"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.Synset"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Synset">
+    <xs:attribute name="baseConcept"/>
+    <xs:attribute name="id" use="required" type="xs:ID"/>
+    <xs:attribute name="ili"/>
+  </xs:attributeGroup>
+  <xs:element name="Definitions">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="Definition"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!---->
+  <xs:element name="Definition">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.Definition"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Definition">
+    <xs:attribute name="gloss" use="required"/>
+    <xs:attribute name="language"/>
+    <xs:attribute name="provenance"/>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="MonolingualExternalRefs">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="MonolingualExternalRef"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!---->
+  <xs:element name="MonolingualExternalRef">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="Meta"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.MonolingualExternalRef"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.MonolingualExternalRef">
+    <xs:attribute name="externalReference" use="required"/>
+    <xs:attribute name="externalSystem" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="SUMO"/>
+          <xs:enumeration value="pwn-20"/>
+          <xs:enumeration value="pwn-30"/>
+          <xs:enumeration value="wordnet_domain"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="relType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="EQ_BE_IN_STATE"/>
+          <xs:enumeration value="EQ_CAUSES"/>
+          <xs:enumeration value="EQ_CO_ROLE"/>
+          <xs:enumeration value="EQ_HAS_HOLONYM"/>
+          <xs:enumeration value="EQ_HAS_HYPERONYM"/>
+          <xs:enumeration value="EQ_HAS_HYPONYM"/>
+          <xs:enumeration value="EQ_HAS_MERONYM"/>
+          <xs:enumeration value="EQ_HAS_SUBEVENT"/>
+          <xs:enumeration value="EQ_INVOLVED"/>
+          <xs:enumeration value="EQ_IS_CAUSED_BY"/>
+          <xs:enumeration value="EQ_IS_STATE_OF"/>
+          <xs:enumeration value="EQ_IS_SUBEVENT_OF"/>
+          <xs:enumeration value="EQ_NEAR_SYNONYM"/>
+          <xs:enumeration value="EQ_ROLE"/>
+          <xs:enumeration value="EQ_SYNONYM"/>
+          <xs:enumeration value="EQ_UNSPECIFIED"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="Meta">
+    <xs:complexType>
+      <xs:attributeGroup ref="attlist.Meta"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.Meta">
+    <xs:attribute name="author"/>
+    <xs:attribute name="confidence" use="required" type="xs:NMTOKEN"/>
+    <xs:attribute name="date" type="xs:NMTOKEN"/>
+    <xs:attribute name="source" use="required"/>
+    <xs:attribute name="status">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="yes"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+  </xs:attributeGroup>
+  <!---->
+  <xs:element name="SynsetRelations">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" maxOccurs="unbounded" ref="SynsetRelation"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <!---->
+  <xs:element name="SynsetRelation">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element minOccurs="0" ref="Meta"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="attlist.SynsetRelation"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:attributeGroup name="attlist.SynsetRelation">
+    <xs:attribute name="relType">
+      <xs:simpleType>
+        <xs:restriction base="xs:token">
+          <xs:enumeration value="instance"/>
+          <xs:enumeration value="xpos_near_synonym"/>
+          <xs:enumeration value="has_xpos_hyponym"/>
+          <xs:enumeration value="role_source_direction"/>
+          <xs:enumeration value="be_in_state"/>
+          <xs:enumeration value="causes"/>
+          <xs:enumeration value="co_agent_instrument"/>
+          <xs:enumeration value="co_agent_patient"/>
+          <xs:enumeration value="co_agent_result"/>
+          <xs:enumeration value="co_instrument_agent"/>
+          <xs:enumeration value="co_instrument_patient"/>
+          <xs:enumeration value="co_instrument_result"/>
+          <xs:enumeration value="co_patient_agent"/>
+          <xs:enumeration value="co_patient_instrument"/>
+          <xs:enumeration value="co_patient_result"/>
+          <xs:enumeration value="co_result_agent"/>
+          <xs:enumeration value="co_result_instrument"/>
+          <xs:enumeration value="co_result_patient"/>
+          <xs:enumeration value="co_role"/>
+          <xs:enumeration value="fuzzynym"/>
+          <xs:enumeration value="has_holo_location"/>
+          <xs:enumeration value="has_holo_madeof"/>
+          <xs:enumeration value="has_holo_member"/>
+          <xs:enumeration value="has_holo_part"/>
+          <xs:enumeration value="has_holo_portion"/>
+          <xs:enumeration value="has_holonym"/>
+          <xs:enumeration value="has_hyperonym"/>
+          <xs:enumeration value="has_hyponym"/>
+          <xs:enumeration value="has_mero_location"/>
+          <xs:enumeration value="has_mero_madeof"/>
+          <xs:enumeration value="has_mero_member"/>
+          <xs:enumeration value="has_mero_part"/>
+          <xs:enumeration value="has_mero_portion"/>
+          <xs:enumeration value="has_meronym"/>
+          <xs:enumeration value="has_subevent"/>
+          <xs:enumeration value="has_xpos_hyperonym"/>
+          <xs:enumeration value="in_manner"/>
+          <xs:enumeration value="involved"/>
+          <xs:enumeration value="involved_agent"/>
+          <xs:enumeration value="involved_direction"/>
+          <xs:enumeration value="involved_instrument"/>
+          <xs:enumeration value="involved_location"/>
+          <xs:enumeration value="involved_patient"/>
+          <xs:enumeration value="involved_result"/>
+          <xs:enumeration value="involved_source_direction"/>
+          <xs:enumeration value="involved_target_direction"/>
+          <xs:enumeration value="is_caused_by"/>
+          <xs:enumeration value="is_subevent_of"/>
+          <xs:enumeration value="manner_of"/>
+          <xs:enumeration value="near_antonym"/>
+          <xs:enumeration value="near_synonym"/>
+          <xs:enumeration value="role"/>
+          <xs:enumeration value="role_agent"/>
+          <xs:enumeration value="role_direction"/>
+          <xs:enumeration value="role_instrument"/>
+          <xs:enumeration value="role_location"/>
+          <xs:enumeration value="role_patient"/>
+          <xs:enumeration value="role_result"/>
+          <xs:enumeration value="role_target_direction"/>
+          <xs:enumeration value="state_of"/>
+          <xs:enumeration value="xpos_fuzzynym"/>
+          <xs:enumeration value="xpos_near_antonym"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="target" use="required"/>
+    <xs:attribute name="provenance"/>
+  </xs:attributeGroup>
+</xs:schema>

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="ascii"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <title>odwn.clean</title>
+  <link rel="stylesheet" href="epydoc.css" type="text/css" />
+  <script type="text/javascript" src="epydoc.js"></script>
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="#204080"
+      alink="#204080">
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table width="100%" cellpadding="0" cellspacing="0">
+  <tr valign="top">
+    <td width="100%">
+      <span class="breadcrumbs">
+        Package&nbsp;odwn ::
+        Module&nbsp;clean
+      </span>
+    </td>
+    <td>
+      <table cellpadding="0" cellspacing="0">
+        <!-- hide/show private -->
+        <tr><td align="right"><span class="options">[<a href="javascript:void(0);" class="privatelink"
+    onclick="toggle_private();">hide&nbsp;private</a>]</span></td></tr>
+        <tr><td align="right"><span class="options"
+            >[<a href="frames.html" target="_top">frames</a
+            >]&nbsp;|&nbsp;<a href="odwn.clean-pysrc.html"
+            target="_top">no&nbsp;frames</a>]</span></td></tr>
+      </table>
+    </td>
+  </tr>
+</table>
+<h1 class="epydoc">Source Code for <a href="odwn.clean-module.html">Module odwn.clean</a></h1>
+<pre class="py-src">
+<a name="L1"></a><tt class="py-lineno"> 1</tt>  <tt class="py-line"> </tt>
+<a name="L2"></a><tt class="py-lineno"> 2</tt>  <tt class="py-line"> </tt>
+<a name="L3"></a><tt class="py-lineno"> 3</tt>  <tt class="py-line"> </tt>
+<a name="Clean"></a><div id="Clean-def"><a name="L4"></a><tt class="py-lineno"> 4</tt> <a class="py-toggle" href="#" id="Clean-toggle" onclick="return toggle('Clean');">-</a><tt class="py-line"><tt class="py-keyword">class</tt> <a class="py-def-name" href="odwn.clean.Clean-class.html">Clean</a><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Clean-collapsed" style="display:none;" pad="++" indent="++++"></div><div id="Clean-expanded"><a name="L5"></a><tt class="py-lineno"> 5</tt>  <tt class="py-line">    <tt class="py-docstring">'''</tt> </tt>
+<a name="L6"></a><tt class="py-lineno"> 6</tt>  <tt class="py-line"><tt class="py-docstring">    method to clean resource</tt> </tt>
+<a name="L7"></a><tt class="py-lineno"> 7</tt>  <tt class="py-line"><tt class="py-docstring">    '''</tt> </tt>
+<a name="Clean.__init__"></a><div id="Clean.__init__-def"><a name="L8"></a><tt class="py-lineno"> 8</tt> <a class="py-toggle" href="#" id="Clean.__init__-toggle" onclick="return toggle('Clean.__init__');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="odwn.clean.Clean-class.html#__init__">__init__</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Clean.__init__-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Clean.__init__-expanded"><a name="L9"></a><tt class="py-lineno"> 9</tt>  <tt class="py-line">        <tt class="py-keyword">pass</tt> </tt>
+</div><a name="L10"></a><tt class="py-lineno">10</tt>  <tt class="py-line">     </tt>
+<a name="Clean.clean_impossible_relations"></a><div id="Clean.clean_impossible_relations-def"><a name="L11"></a><tt class="py-lineno">11</tt> <a class="py-toggle" href="#" id="Clean.clean_impossible_relations-toggle" onclick="return toggle('Clean.clean_impossible_relations');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="odwn.clean.Clean-class.html#clean_impossible_relations">clean_impossible_relations</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Clean.clean_impossible_relations-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Clean.clean_impossible_relations-expanded"><a name="L12"></a><tt class="py-lineno">12</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L13"></a><tt class="py-lineno">13</tt>  <tt class="py-line"><tt class="py-docstring">        all relations in </tt> </tt>
+<a name="L14"></a><tt class="py-lineno">14</tt>  <tt class="py-line"><tt class="py-docstring">        self.stats['impossible_rels'] are removed</tt> </tt>
+<a name="L15"></a><tt class="py-lineno">15</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L16"></a><tt class="py-lineno">16</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-0" class="py-name" targets="Method odwn.wn_grid_parser.Wn_grid_parser.get_stats()=odwn.wn_grid_parser.Wn_grid_parser-class.html#get_stats"><a title="odwn.wn_grid_parser.Wn_grid_parser.get_stats" class="py-name" href="#" onclick="return doclink('link-0', 'get_stats', 'link-0');">get_stats</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L17"></a><tt class="py-lineno">17</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">rel_el</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-1" class="py-name" targets="Module odwn.stats=odwn.stats-module.html"><a title="odwn.stats" class="py-name" href="#" onclick="return doclink('link-1', 'stats', 'link-1');">stats</a></tt><tt class="py-op">[</tt><tt class="py-string">'impossible_rels'</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L18"></a><tt class="py-lineno">18</tt>  <tt class="py-line">            <tt class="py-name">rel_el</tt><tt class="py-op">.</tt><tt id="link-2" class="py-name" targets="Method odwn.le.Le.remove_me()=odwn.le.Le-class.html#remove_me,Method odwn.relation.Relation.remove_me()=odwn.relation.Relation-class.html#remove_me,Method odwn.synset.Synset.remove_me()=odwn.synset.Synset-class.html#remove_me"><a title="odwn.le.Le.remove_me
+odwn.relation.Relation.remove_me
+odwn.synset.Synset.remove_me" class="py-name" href="#" onclick="return doclink('link-2', 'remove_me', 'link-2');">remove_me</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L19"></a><tt class="py-lineno">19</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt> </tt>
+<a name="L20"></a><tt class="py-lineno">20</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-string">"number of impossible relations removed:"</tt><tt class="py-op">)</tt> </tt>
+<a name="L21"></a><tt class="py-lineno">21</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-3" class="py-name"><a title="odwn.stats" class="py-name" href="#" onclick="return doclink('link-3', 'stats', 'link-1');">stats</a></tt><tt class="py-op">[</tt><tt class="py-string">'impossible_rels'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L22"></a><tt class="py-lineno">22</tt>  <tt class="py-line">     </tt>
+<a name="Clean.clean_bidirectional_relations"></a><div id="Clean.clean_bidirectional_relations-def"><a name="L23"></a><tt class="py-lineno">23</tt> <a class="py-toggle" href="#" id="Clean.clean_bidirectional_relations-toggle" onclick="return toggle('Clean.clean_bidirectional_relations');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="odwn.clean.Clean-class.html#clean_bidirectional_relations">clean_bidirectional_relations</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Clean.clean_bidirectional_relations-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Clean.clean_bidirectional_relations-expanded"><a name="L24"></a><tt class="py-lineno">24</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L25"></a><tt class="py-lineno">25</tt>  <tt class="py-line"><tt class="py-docstring">        all proposed relations in self.stats['bidirectional_relations']</tt> </tt>
+<a name="L26"></a><tt class="py-lineno">26</tt>  <tt class="py-line"><tt class="py-docstring">        are added</tt> </tt>
+<a name="L27"></a><tt class="py-lineno">27</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L28"></a><tt class="py-lineno">28</tt>  <tt class="py-line">        <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-4" class="py-name"><a title="odwn.wn_grid_parser.Wn_grid_parser.get_stats" class="py-name" href="#" onclick="return doclink('link-4', 'get_stats', 'link-0');">get_stats</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L29"></a><tt class="py-lineno">29</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">source</tt><tt class="py-op">,</tt><tt class="py-name">target</tt><tt class="py-op">,</tt><tt class="py-name">reltype</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-5" class="py-name"><a title="odwn.stats" class="py-name" href="#" onclick="return doclink('link-5', 'stats', 'link-1');">stats</a></tt><tt class="py-op">[</tt><tt class="py-string">'bidirectional_relations'</tt><tt class="py-op">]</tt><tt class="py-op">:</tt> </tt>
+<a name="L30"></a><tt class="py-lineno">30</tt>  <tt class="py-line">            <tt class="py-name">sy_obj</tt> <tt class="py-op">=</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-6" class="py-name" targets="Method odwn.synsets.Synsets.synsets_find_synset()=odwn.synsets.Synsets-class.html#synsets_find_synset"><a title="odwn.synsets.Synsets.synsets_find_synset" class="py-name" href="#" onclick="return doclink('link-6', 'synsets_find_synset', 'link-6');">synsets_find_synset</a></tt><tt class="py-op">(</tt><tt class="py-name">source</tt><tt class="py-op">)</tt> </tt>
+<a name="L31"></a><tt class="py-lineno">31</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">sy_obj</tt> <tt class="py-keyword">is</tt> <tt class="py-keyword">not</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L32"></a><tt class="py-lineno">32</tt>  <tt class="py-line">                <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-string">'adding %s %s %s'</tt> <tt class="py-op">%</tt> <tt class="py-op">(</tt><tt class="py-name">source</tt><tt class="py-op">,</tt><tt class="py-name">reltype</tt><tt class="py-op">,</tt><tt class="py-name">target</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+<a name="L33"></a><tt class="py-lineno">33</tt>  <tt class="py-line">                <tt class="py-name">sy_obj</tt><tt class="py-op">.</tt><tt id="link-7" class="py-name" targets="Method odwn.synset.Synset.add_relation()=odwn.synset.Synset-class.html#add_relation"><a title="odwn.synset.Synset.add_relation" class="py-name" href="#" onclick="return doclink('link-7', 'add_relation', 'link-7');">add_relation</a></tt><tt class="py-op">(</tt><tt class="py-name">reltype</tt><tt class="py-op">,</tt><tt class="py-name">target</tt><tt class="py-op">)</tt> </tt>
+<a name="L34"></a><tt class="py-lineno">34</tt>  <tt class="py-line">             </tt>
+<a name="L35"></a><tt class="py-lineno">35</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt> </tt>
+<a name="L36"></a><tt class="py-lineno">36</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-string">"number of bidirectional links fixed"</tt><tt class="py-op">)</tt> </tt>
+<a name="L37"></a><tt class="py-lineno">37</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-name">len</tt><tt class="py-op">(</tt><tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-8" class="py-name"><a title="odwn.stats" class="py-name" href="#" onclick="return doclink('link-8', 'stats', 'link-1');">stats</a></tt><tt class="py-op">[</tt><tt class="py-string">'bidirectional_relations'</tt><tt class="py-op">]</tt><tt class="py-op">)</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L38"></a><tt class="py-lineno">38</tt>  <tt class="py-line">         </tt>
+<a name="L39"></a><tt class="py-lineno">39</tt>  <tt class="py-line">     </tt>
+<a name="Clean.clean_provenance_to_all_les"></a><div id="Clean.clean_provenance_to_all_les-def"><a name="L40"></a><tt class="py-lineno">40</tt> <a class="py-toggle" href="#" id="Clean.clean_provenance_to_all_les-toggle" onclick="return toggle('Clean.clean_provenance_to_all_les');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="odwn.clean.Clean-class.html#clean_provenance_to_all_les">clean_provenance_to_all_les</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Clean.clean_provenance_to_all_les-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Clean.clean_provenance_to_all_les-expanded"><a name="L41"></a><tt class="py-lineno">41</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L42"></a><tt class="py-lineno">42</tt>  <tt class="py-line"><tt class="py-docstring">        some LexicalEntry elements do not have a provenance tag.</tt> </tt>
+<a name="L43"></a><tt class="py-lineno">43</tt>  <tt class="py-line"><tt class="py-docstring">        this method adds the "cdb2.2_Auto" tag as provenance</tt> </tt>
+<a name="L44"></a><tt class="py-lineno">44</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L45"></a><tt class="py-lineno">45</tt>  <tt class="py-line">        <tt class="py-name">default</tt> <tt class="py-op">=</tt> <tt class="py-string">"cdb2.2_Auto"</tt> </tt>
+<a name="L46"></a><tt class="py-lineno">46</tt>  <tt class="py-line">        <tt class="py-name">added</tt>   <tt class="py-op">=</tt> <tt class="py-number">0</tt>  </tt>
+<a name="L47"></a><tt class="py-lineno">47</tt>  <tt class="py-line">        <tt class="py-keyword">for</tt> <tt class="py-name">le_obj</tt> <tt class="py-keyword">in</tt> <tt class="py-name">self</tt><tt class="py-op">.</tt><tt id="link-9" class="py-name" targets="Method odwn.les.Les.les_get_generator()=odwn.les.Les-class.html#les_get_generator"><a title="odwn.les.Les.les_get_generator" class="py-name" href="#" onclick="return doclink('link-9', 'les_get_generator', 'link-9');">les_get_generator</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+<a name="L48"></a><tt class="py-lineno">48</tt>  <tt class="py-line">             </tt>
+<a name="L49"></a><tt class="py-lineno">49</tt>  <tt class="py-line">            <tt class="py-name">provenance_tag</tt> <tt class="py-op">=</tt> <tt class="py-name">le_obj</tt><tt class="py-op">.</tt><tt id="link-10" class="py-name" targets="Method odwn.le.Le.get_provenance()=odwn.le.Le-class.html#get_provenance,Method odwn.relation.Relation.get_provenance()=odwn.relation.Relation-class.html#get_provenance"><a title="odwn.le.Le.get_provenance
+odwn.relation.Relation.get_provenance" class="py-name" href="#" onclick="return doclink('link-10', 'get_provenance', 'link-10');">get_provenance</a></tt><tt class="py-op">(</tt><tt class="py-op">)</tt> </tt>
+<a name="L50"></a><tt class="py-lineno">50</tt>  <tt class="py-line">             </tt>
+<a name="L51"></a><tt class="py-lineno">51</tt>  <tt class="py-line">            <tt class="py-keyword">if</tt> <tt class="py-name">provenance_tag</tt> <tt class="py-keyword">is</tt> <tt class="py-name">None</tt><tt class="py-op">:</tt> </tt>
+<a name="L52"></a><tt class="py-lineno">52</tt>  <tt class="py-line">                <tt class="py-name">added</tt> <tt class="py-op">+=</tt> <tt class="py-number">1</tt> </tt>
+<a name="L53"></a><tt class="py-lineno">53</tt>  <tt class="py-line">                <tt class="py-name">le_obj</tt><tt class="py-op">.</tt><tt class="py-name">sense_el</tt><tt class="py-op">.</tt><tt class="py-name">attrib</tt><tt class="py-op">[</tt><tt class="py-string">"provenance"</tt><tt class="py-op">]</tt> <tt class="py-op">=</tt> <tt class="py-name">default</tt> </tt>
+<a name="L54"></a><tt class="py-lineno">54</tt>  <tt class="py-line">         </tt>
+<a name="L55"></a><tt class="py-lineno">55</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-string">"number of Lexical Entries that receiced a default tag:"</tt><tt class="py-op">)</tt> </tt>
+<a name="L56"></a><tt class="py-lineno">56</tt>  <tt class="py-line">        <tt class="py-keyword">print</tt><tt class="py-op">(</tt><tt class="py-name">added</tt><tt class="py-op">)</tt> </tt>
+</div><a name="L57"></a><tt class="py-lineno">57</tt>  <tt class="py-line">                 </tt>
+<a name="Clean.clean_remove_synsets_without_relations"></a><div id="Clean.clean_remove_synsets_without_relations-def"><a name="L58"></a><tt class="py-lineno">58</tt> <a class="py-toggle" href="#" id="Clean.clean_remove_synsets_without_relations-toggle" onclick="return toggle('Clean.clean_remove_synsets_without_relations');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="odwn.clean.Clean-class.html#clean_remove_synsets_without_relations">clean_remove_synsets_without_relations</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">,</tt><tt class="py-param">list_of_synsets</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Clean.clean_remove_synsets_without_relations-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Clean.clean_remove_synsets_without_relations-expanded"><a name="L59"></a><tt class="py-lineno">59</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L60"></a><tt class="py-lineno">60</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L61"></a><tt class="py-lineno">61</tt>  <tt class="py-line">        <tt class="py-keyword">pass</tt>  </tt>
+</div><a name="L62"></a><tt class="py-lineno">62</tt>  <tt class="py-line">     </tt>
+<a name="Clean.clean_synsets_without_synonyms"></a><div id="Clean.clean_synsets_without_synonyms-def"><a name="L63"></a><tt class="py-lineno">63</tt> <a class="py-toggle" href="#" id="Clean.clean_synsets_without_synonyms-toggle" onclick="return toggle('Clean.clean_synsets_without_synonyms');">-</a><tt class="py-line">    <tt class="py-keyword">def</tt> <a class="py-def-name" href="odwn.clean.Clean-class.html#clean_synsets_without_synonyms">clean_synsets_without_synonyms</a><tt class="py-op">(</tt><tt class="py-param">self</tt><tt class="py-op">)</tt><tt class="py-op">:</tt> </tt>
+</div><div id="Clean.clean_synsets_without_synonyms-collapsed" style="display:none;" pad="++" indent="++++++++"></div><div id="Clean.clean_synsets_without_synonyms-expanded"><a name="L64"></a><tt class="py-lineno">64</tt>  <tt class="py-line">        <tt class="py-docstring">'''</tt> </tt>
+<a name="L65"></a><tt class="py-lineno">65</tt>  <tt class="py-line"><tt class="py-docstring">        '''</tt> </tt>
+<a name="L66"></a><tt class="py-lineno">66</tt>  <tt class="py-line">        <tt class="py-keyword">pass</tt> </tt>
+</div></div><a name="L67"></a><tt class="py-lineno">67</tt>  <tt class="py-line"> </tt><script type="text/javascript">
+<!--
+expandto(location.href);
+// -->
+</script>
+</pre>
+<br />
+<!-- ==================== NAVIGATION BAR ==================== -->
+<table class="navbar" border="0" width="100%" cellpadding="0"
+       bgcolor="#a0c0ff" cellspacing="0">
+  <tr valign="middle">
+
+  <!-- Tree link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="module-tree.html">Trees</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Index link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
+
+  <!-- Help link -->
+      <th>&nbsp;&nbsp;&nbsp;<a
+        href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
+
+      <th class="navbar" width="100%"></th>
+  </tr>
+</table>
+<table border="0" cellpadding="0" cellspacing="0" width="100%%">
+  <tr>
+    <td align="left" class="footer">
+    Generated by Epydoc 3.0.1 on Tue Sep  1 14:45:58 2015
+    </td>
+    <td align="right" class="footer">
+      <a target="mainFrame" href="http://epydoc.sourceforge.net"
+        >http://epydoc.sourceforge.net</a>
+    </td>
+  </tr>
+</table>
+
+<script type="text/javascript">
+  <!--
+  // Private objects are initially displayed (because if
+  // javascript is turned off then we want them to be
+  // visible); but by default, we want to hide them.  So hide
+  // them unless we have a cookie that says to show them.
+  checkCookie();
+  // -->
+</script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!--  dtd for odwn and orbn including wordNet grid references -->
+<!ELEMENT LexicalResource (GlobalInformation,Lexicon)>   
+<!ELEMENT GlobalInformation EMPTY>
+<!ATTLIST    GlobalInformation label CDATA #REQUIRED>
+<!ELEMENT Lexicon (LexicalEntry+, Synset*)>
+<!ATTLIST    Lexicon label NMTOKEN  #REQUIRED >
+<!ATTLIST    Lexicon language NMTOKEN #REQUIRED >
+<!ATTLIST Lexicon languageCoding CDATA #REQUIRED >
+<!ATTLIST Lexicon owner NMTOKEN #REQUIRED >
+<!ELEMENT LexicalEntry (((Lemma, WordForms) | MultiwordExpression),  RelatedForms*, Morphology*, MorphoSyntax*, SyntacticBehaviour*, Sense ) >
+<!ATTLIST LexicalEntry id CDATA #REQUIRED >    <!-- id consists of lemma-partOfSpeech-sense sequence number-->
+<!ATTLIST LexicalEntry partOfSpeech (adverb | adjective | noun | verb | other ) #IMPLIED >
+<!ATTLIST LexicalEntry formType ( contraction | acronym | abbreviation) #IMPLIED>
+<!ELEMENT Lemma EMPTY >
+<!ATTLIST Lemma writtenForm CDATA #REQUIRED >
+<!ATTLIST Lemma mode (infinitive) #IMPLIED > <!-- verb -->
+<!--  -->
+<!ELEMENT MultiwordExpression EMPTY >
+<!ATTLIST MultiwordExpression writtenForm CDATA #REQUIRED >
+<!ATTLIST MultiwordExpression expressionType (idiom | proverb) #IMPLIED > 
+<!--  -->
+<!ELEMENT WordForms ( WordForm* ) >
+<!ELEMENT WordForm EMPTY >
+<!ATTLIST WordForm article CDATA #IMPLIED >
+<!ATTLIST WordForm grammaticalNumber ( plural | singular ) #IMPLIED >  <!-- noun -->
+<!ATTLIST WordForm comparison ( comparative | superlative ) #IMPLIED > <!-- adjective -->
+<!ATTLIST WordForm tense ( pastTense | pastParticiple  ) #IMPLIED > <!-- verb -->
+<!ATTLIST WordForm writtenForm CDATA #REQUIRED >
+<!--  -->
+<!ELEMENT  RelatedForms (RelatedForm+ ) >
+<!ELEMENT RelatedForm EMPTY>
+<!ATTLIST RelatedForm    writtenForm CDATA #REQUIRED>
+<!ATTLIST RelatedForm    variantType  ( formVariant | spellingVariant) #REQUIRED>
+<!--  -->
+<!ELEMENT Morphology EMPTY >
+<!ATTLIST Morphology morphoType ( compderiv  | derivation | compound |  zero-derivation | x-compound | wordgroup | phrasal ) #IMPLIED >
+<!ATTLIST Morphology comparisonType (regular | irregular | mixed) #IMPLIED >  <!-- adjective -->
+<!ATTLIST Morphology declinable (yes | no) #IMPLIED >  <!-- adjective -->
+<!ATTLIST Morphology separability (  separable | inseparable ) #IMPLIED >             <!--verb-->
+<!--  -->
+ <!ELEMENT MorphoSyntax (auxiliaries*)  >
+<!ATTLIST MorphoSyntax pronominalAndGrammaticalGender ( f | m | n | fn | m_f  | mfn | mn  | mf ) #IMPLIED >  <!--noun-->
+<!--  -->
+<!ATTLIST MorphoSyntax adverbialUsage ( yes | no) #IMPLIED >     <!--adjective-->
+<!ATTLIST MorphoSyntax position ( attributive | predicative | attrpred ) #IMPLIED > <!--adjective-->
+<!ELEMENT  auxiliaries EMPTY>   <!---verb--> 
+<!ATTLIST  auxiliaries auxiliary (hebben | zijn) #IMPLIED > <!---verb-->
+<!ATTLIST MorphoSyntax reflexivity (  optionalReflexive | reflexive  ) #IMPLIED ><!---verb--> 
+<!--  -->
+<!ELEMENT SyntacticBehaviour ( Complementation* , SyntacticSubcategorisationFrame* ) >
+<!ATTLIST SyntacticBehaviour valency (mono | di | tri ) #IMPLIED>
+<!ATTLIST SyntacticBehaviour transitivity (transitive | intransitive ) #IMPLIED>
+<!--  -->
+<!ELEMENT Complementation EMPTY >
+<!ATTLIST Complementation complement ( datclause | ofclause | dancomp | whclause |  oblobj | quant | oblprep |  factive | fixprep | omtoinf | prep | psmodnoun | toinf ) #IMPLIED >
+<!ATTLIST Complementation preposition (wegens | te |  zonder | achter | ter...van | met...van | in...van | met...tot | op...bij |  per | aangaande | langs | inzake | boven | door | binnen | via | ten...van | uit | omtrent | om | aan | als | bij | in | jegens | met | naar | onder | onder...van | op | over | rond | tegen | tegenover | tot | tussen | van | voor ) #IMPLIED >
+<!ELEMENT SyntacticSubcategorisationFrame (syntacticArgument+ ) >
+<!ELEMENT syntacticArgument EMPTY >
+<!ATTLIST syntacticArgument constituent   (  nil | np | pp | subclause | ap) #IMPLIED >
+<!ATTLIST syntacticArgument function   ( nil | specifyingComplement | objectComplement | directObject | indirectObject | prepositionalObject ) #IMPLIED >
+<!ATTLIST syntacticArgument preposition   CDATA  #IMPLIED >
+<!ATTLIST syntacticArgument complementizer   (  dat | omte | te| WH | hoe | of ) #IMPLIED >
+<!--  -->
+<!ELEMENT Sense ( Sentiment | Pragmatics | (Semantics-verb | Semantics-noun | Semantics-adjective) | SenseExamples | SenseRelations )* >
+<!ATTLIST Sense id CDATA #REQUIRED >
+<!ATTLIST Sense senseId CDATA #IMPLIED > <!--  sense sequence number  -->
+<!ATTLIST Sense provenance CDATA #IMPLIED >
+<!ATTLIST Sense synset NMTOKEN #IMPLIED > <!--refers to synset Id-->
+<!ATTLIST Sense definition CDATA #REQUIRED > 
+<!ATTLIST Sense annotator CDATA #IMPLIED > 
+
+<!--  -->
+<!ELEMENT Sentiment EMPTY >
+<!ATTLIST Sentiment polarity ( negative | positive ) #REQUIRED >
+<!ATTLIST Sentiment  externalReference NMTOKEN #REQUIRED >
+<!--  -->
+<!ELEMENT Pragmatics (Domains)* >
+<!ELEMENT Domains   EMPTY > <!--domain labels are not defined in ISOcat  -->
+<!ATTLIST Domains domain (accoustics | administration | aeronautics | agriculture | alimentation | anatomy | anthropology | archeology | architecture | art | artisanship | astrology | astronomy | astronautics | astronomie | biochemistry | biology | botany | building_industry | chemistry | cinema | commerce | computer_science | cycling | dance | diplomacy | doctrines | ecology | economy | electronics_electricity | empty | engineering | fashion | fishing | folklore | gastronomy | geography | geology | golf | herladry | history | housekeeping | hunting | hydraulics | industry | insurance | law | linguistics | literature | mathematics | media | medicine | merchant_navy | meteorology | metrology | military | money | music | mythology | pedagogy | pharmacy | philosophy | photography | physics | play | politics | psychology | publishing | railway | religion | school | science | sculpture | sexuality | soccer | sociology | sport | state | swimming | telecommunication | tennis | theatre | theology | transport | zoology ) #IMPLIED >
+<!ATTLIST Pragmatics chronology (  neologism | oldfashioned ) #IMPLIED >
+<!ATTLIST Pragmatics connotation ( euphemistic | jocular | offensive | pejorative ) #IMPLIED >
+<!ATTLIST Pragmatics geography ( belg | ind | dialect) #IMPLIED >
+<!ATTLIST Pragmatics register ( formal | informal | slang | vulgar ) #IMPLIED >
+<!--  --> 
+<!ELEMENT Semantics-noun (semanticShifts-noun)*>
+<!ATTLIST Semantics-noun countability (count |  coll | mass | plurtant) #IMPLIED >
+<!ATTLIST Semantics-noun reference (common|proper) #IMPLIED >
+<!ATTLIST Semantics-noun semanticType (substance | abstract | animate | artefact | concrete | concrother | dynamic | human | institute | measure | nondynamic | nonhuman | place |  time ) #IMPLIED>
+<!ATTLIST Semantics-noun semanticSubType CDATA #IMPLIED >
+<!ELEMENT semanticShifts-noun EMPTY >
+<!ATTLIST semanticShifts-noun semanticType  ( animate | abstract | artefact | concrete | concrother | dynamic | human |  institute | measure | nondynamic | nonhuman |  place |  substance | time ) #IMPLIED>
+ <!--  -->
+<!ELEMENT Semantics-adjective (semanticShifts-adjective)*>
+<!ATTLIST Semantics-adjective semanticType ( substance | place |  temp | stuff | colour | phyper | emomen | abstract) #IMPLIED>
+<!ELEMENT semanticShifts-adjective EMPTY >
+<!ATTLIST semanticShifts-adjective semanticType  (  place | temp | stuff | colour | phyper | emomen | abstract ) #IMPLIED>
+<!--  -->
+<!ELEMENT Semantics-verb (semanticTypes*)  >
+<!ELEMENT semanticTypes  EMPTY >
+<!ATTLIST semanticTypes semanticType (action | process | state)   #IMPLIED >
+<!ATTLIST semanticTypes semanticFeatureSet ( stcognt1 | stcognt2 |stcognt3 |state1 | state2 |state3 |process1 | process2 |process3 |prmvmt1 | prmvmt2 | prmvmt3 | possess2 | possess3 | prcognt1 | prcognt2 |prcognt3 |location1 | location2 | mvmt1 | mvmt2 | mvmt3  | echprod2 | echprod3 | action1 | action2 | action3 | cognt1 | cognt2 | cognt3 )  #IMPLIED>
+<!--  -->
+<!ELEMENT SenseExamples ( SenseExample* ) >
+<!--  -->
+<!ELEMENT SenseExample ( canonicalForm | Pragmatics | Semantics_ex | Syntax_ex | textualForm )* >
+<!ATTLIST SenseExample id NMTOKEN #REQUIRED >
+<!--  -->
+<!ELEMENT canonicalForm EMPTY >
+<!ATTLIST canonicalForm phraseType  (sentence | np | vp  | ap | pp) #IMPLIED >  
+<!ATTLIST canonicalForm canonicalform CDATA #IMPLIED >
+<!ATTLIST canonicalForm expressionType ( freeCombination | slogan | properName | term |  lexicalCollocation | grammaticalCollocation | pragmaticFormula ) #IMPLIED>  <!--enumeration-->
+<!--  -->
+<!ELEMENT Semantics_ex  (lex-collocator)* > <!--currently not defined in ISOcat  -->
+<!ATTLIST Semantics_ex gracol-complem CDATA #IMPLIED >
+<!ATTLIST Semantics_ex gracol-gramword ( expletive | object | material | subject-matter | condition | relation | source | cause | circumstance | direction | goal | location | manner | means | measure | modality | origin | place | purpose | reason | restriction | result | time ) #IMPLIED >
+<!ATTLIST Semantics_ex definition CDATA #IMPLIED >
+<!--  -->
+<!ELEMENT  lex-collocator EMPTY >  <!--currently not defined in ISOcat  -->
+<!ATTLIST lex-collocator collocator ( action | antibonus | anticause | antiexist | antifunct | antimagnus | antimanif | antintense | antioper1 | antioper2 | antipossess | antireal | antiverus | bonus | cause | causenotre | cont | decrease | degrade | dimin | enum | excess | exist | fin | funct | incept | intens | liqui | magnus | malus | manif | measure | minusexist | modif | mult | oper | oper1 | oper2 | process | support | place | plusexist | possess | qualifier | quantifier | real | sing | son | state | type | upgrade | verus ) #IMPLIED >
+<!ATTLIST Semantics_ex lexcol-speccollocator (appear | attend | caretake | consult | consume | container | create | engage | evoke | give | hold | install | introduce | keep | lose | own | portion | practise | prepare | putoff | receive | refuse | reign | remove | solve | suffer | take | takeplace | turnon | use | violate | wear)  #IMPLIED >
+<!--  -->
+<!ELEMENT  Syntax_ex (combiWord+ ) >
+<!ELEMENT combiWord EMPTY >
+<!ATTLIST combiWord partOfSpeech ( adjective | adverb | article | conjunction | noun | numeral| preposition | pronoun | verb ) #IMPLIED >
+<!ATTLIST combiWord lemma CDATA #IMPLIED >
+<!--  -->
+<!ELEMENT textualForm EMPTY >
+<!ATTLIST textualForm textualform CDATA #IMPLIED >
+<!ATTLIST textualForm phraseType (sentence | np | vp | ap | pp) #IMPLIED >
+<!--  -->
+<!ELEMENT SenseRelations ( SenseGroup* ) >
+<!ELEMENT SenseGroup EMPTY >
+<!ATTLIST SenseGroup relationType ( co-annotation | co-hyponyms | co-synonyms | co-relations) #REQUIRED > 
+<!ATTLIST SenseGroup targetSenseId NMTOKEN #REQUIRED > 
+<!--  -->
+<!ELEMENT Synset ( Definitions? , SynsetRelations? , MonolingualExternalRefs?) >
+<!ATTLIST Synset baseConcept CDATA #IMPLIED >
+<!ATTLIST Synset id ID #REQUIRED >
+<!ATTLIST Synset ili CDATA #IMPLIED >
+  
+<!ELEMENT Definitions ( Definition* ) >
+<!--  -->
+<!ELEMENT Definition EMPTY >
+<!ATTLIST Definition gloss CDATA #REQUIRED >
+<!ATTLIST Definition language CDATA #IMPLIED >
+<!ATTLIST Definition provenance CDATA #IMPLIED >
+
+<!--  -->
+<!ELEMENT MonolingualExternalRefs ( MonolingualExternalRef* ) >
+<!--  -->
+<!ELEMENT MonolingualExternalRef ( Meta? ) >
+<!ATTLIST MonolingualExternalRef externalReference CDATA #REQUIRED >
+<!ATTLIST MonolingualExternalRef externalSystem ( SUMO | pwn-20 | pwn-30 | wordnet_domain ) #REQUIRED >
+<!ATTLIST MonolingualExternalRef relType (EQ_BE_IN_STATE | EQ_CAUSES | EQ_CO_ROLE | EQ_HAS_HOLONYM | EQ_HAS_HYPERONYM | EQ_HAS_HYPONYM | EQ_HAS_MERONYM | EQ_HAS_SUBEVENT | EQ_INVOLVED | EQ_IS_CAUSED_BY | EQ_IS_STATE_OF | EQ_IS_SUBEVENT_OF | EQ_NEAR_SYNONYM | EQ_ROLE | EQ_SYNONYM | EQ_UNSPECIFIED)  #IMPLIED >
+<!--  -->
+<!ELEMENT Meta EMPTY >
+<!ATTLIST Meta author CDATA #IMPLIED >
+<!ATTLIST Meta confidence NMTOKEN #REQUIRED >
+<!ATTLIST Meta date NMTOKEN #IMPLIED >
+<!ATTLIST Meta source CDATA #REQUIRED >
+<!ATTLIST Meta status ( yes ) #IMPLIED >
+<!--  -->
+<!ELEMENT SynsetRelations ( SynsetRelation* ) >
+<!--  -->
+<!ELEMENT SynsetRelation ( Meta? ) >
+<!ATTLIST SynsetRelation relType (instance | xpos_near_synonym | has_xpos_hyponym | role_source_direction | be_in_state  | causes  | co_agent_instrument  | co_agent_patient  | co_agent_result  | co_instrument_agent  | co_instrument_patient  | co_instrument_result  | co_patient_agent  | co_patient_instrument  | co_patient_result  | co_result_agent  | co_result_instrument  | co_result_patient  | co_role  | fuzzynym  | has_holo_location  | has_holo_madeof  | has_holo_member  | has_holo_part  | has_holo_portion  | has_holonym  | has_hyperonym  | has_hyponym  | has_mero_location  | has_mero_madeof  | has_mero_member  | has_mero_part  | has_mero_portion  | has_meronym  | has_subevent  | has_xpos_hyperonym  | in_manner  | involved  | involved_agent  | involved_direction  | involved_instrument  | involved_location  | involved_patient  | involved_result  | involved_source_direction  | involved_target_direction  | is_caused_by  | is_subevent_of  | manner_of  | near_antonym  | near_synonym  | role  | role_agent  | role_direction  | role_instrument  | role_location  | role_patient  | role_result  | role_target_direction  | state_of  | xpos_fuzzynym  | xpos_near_antonym  )  #IMPLIED >
+<!ATTLIST SynsetRelation target CDATA #REQUIRED > 
+<!ATTLIST SynsetRelation provenance CDATA #IMPLIED > 
+
+
+<!-- -
+http://www.isocat.org/datcat/DC-5505$lexicalEntry
+http://www.isocat.org/datcat/DC-3921$tds_constrMorphology
+http://www.isocat.org/datcat/DC-6032$Morphosyntax
+http://www.isocat.org/datcat/DC-5673$SenseExample
+http://www.isocat.org/datcat/DC-5700$WordForm
+http://www.isocat.org/datcat/DC-5922$adverbialUsage
+http://www.isocat.org/datcat/DC-2262$auxiliary
+http://www.isocat.org/datcat/DC-6002$canonicalForm
+http://www.isocat.org/datcat/DC-59$chronology$
+http://www.isocat.org/datcat/DC-5787$$oldfashioned$
+http://www.isocat.org/datcat/DC-513$$neologism$
+http://www.isocat.org/datcat/DC-6003$combiWord$
+http://www.isocat.org/datcat/DC-5924$comparisonType$
+http://www.isocat.org/datcat/DC-5925$irregular$
+http://www.isocat.org/datcat/DC-5927$mixed$
+http://www.isocat.org/datcat/DC-5926$regular$
+http://www.isocat.org/datcat/DC-5865$complement$
+http://www.isocat.org/datcat/DC-5867$dancomp$
+http://www.isocat.org/datcat/DC-5873$factive$
+http://www.isocat.org/datcat/DC-5870$fixprep
+http://www.isocat.org/datcat/DC-5874$preposition$
+http://www.isocat.org/datcat/DC-5871$oblobj$
+http://www.isocat.org/datcat/DC-5866$omtoinf$
+http://www.isocat.org/datcat/DC-5869$psmodnoun$
+http://www.isocat.org/datcat/DC-5872$quant$
+http://www.isocat.org/datcat/DC-5868$toinf$
+http://www.isocat.org/datcat/DC-5875$whclause$
+http://www.isocat.org/datcat/DC-5923$complementizer$
+http://www.isocat.org/datcat/DC-5891$dat$
+http://www.isocat.org/datcat/DC-5895$hoe$
+http://www.isocat.org/datcat/DC-5896$of$
+http://www.isocat.org/datcat/DC-5892$omte$
+http://www.isocat.org/datcat/DC-5893$te$
+http://www.isocat.org/datcat/DC-5894$WH$
+http://www.isocat.org/datcat/DC-5929$connotation$
+http://www.isocat.org/datcat/DC-5931$euphemistic$
+http://www.isocat.org/datcat/DC-5932$jocular$
+http://www.isocat.org/datcat/DC-5933$pejorative$
+http://www.isocat.org/datcat/DC-1996$offensive$
+http://www.isocat.org/datcat/DC-6026$countability$
+http://www.isocat.org/datcat/DC-2276$countable$
+http://www.isocat.org/datcat/DC-2277$mass$
+http://www.isocat.org/datcat/DC-6025$plurtant$
+http://www.isocat.org/datcat/DC-1511$coll$
+http://www.isocat.org/datcat/DC-6033$declinable$
+http://www.isocat.org/datcat/DC-3589$article$
+http://www.isocat.org/datcat/DC-1972$definition$
+http://www.isocat.org/datcat/DC-4920$degree$
+http://www.isocat.org/datcat/DC-4924$comparative$
+http://www.isocat.org/datcat/DC-4925$superlative$
+http://www.isocat.org/datcat/DC-2212$domain$
+http://www.isocat.org/datcat/DC-5905$expressionType$
+http://www.isocat.org/datcat/DC-5910$freeCombination$
+http://www.isocat.org/datcat/DC-5907$grammaticalCollocation$
+http://www.isocat.org/datcat/DC-5906$lexicalCollocation$
+http://www.isocat.org/datcat/DC-5908$pragmaticFormula$
+http://www.isocat.org/datcat/DC-5776$properName$
+http://www.isocat.org/datcat/DC-5909$slogan$
+http://www.isocat.org/datcat/DC-5788$term$
+http://www.isocat.org/datcat/DC-351$$idiom$
+http://www.isocat.org/datcat/DC-353$$proverb$
+http://www.isocat.org/datcat/DC-1975$externalReference$
+http://www.isocat.org/datcat/DC-1974$externalSystem$
+http://www.isocat.org/datcat/DC-6028$formType$
+http://www.isocat.org/datcat/DC-331$$abbreviation$
+http://www.isocat.org/datcat/DC-334$$acronym$
+http://www.isocat.org/datcat/DC-354$$contraction$
+http://www.isocat.org/datcat/DC-321$$full$
+http://www.isocat.org/datcat/DC-5935$geography$
+http://www.isocat.org/datcat/DC-5936$belg$
+http://www.isocat.org/datcat/DC-5994$GlobalInformation$
+http://www.isocat.org/datcat/DC-251$$grammaticalNumber$
+http://www.isocat.org/datcat/DC-253$$plural$
+http://www.isocat.org/datcat/DC-252$$singular$
+http://www.isocat.org/datcat/DC-5763$valency$
+http://www.isocat.org/datcat/DC-5899$di$
+http://www.isocat.org/datcat/DC-5898$mono$
+http://www.isocat.org/datcat/DC-5900$tri$
+http://www.isocat.org/datcat/DC-2008$languageCoding$
+http://www.isocat.org/datcat/DC-279$$languageIdentifier$
+http://www.isocat.org/datcat/DC-1324$Lemma$
+http://www.isocat.org/datcat/DC-5992$LexicalResource$
+http://www.isocat.org/datcat/DC-5886$MonolingualExternalRef$
+http://www.isocat.org/datcat/DC-5887$morphoType$
+http://www.isocat.org/datcat/DC-5902$compderiv$
+http://www.isocat.org/datcat/DC-5901$phrasal$
+http://www.isocat.org/datcat/DC-4611$derivative$
+http://www.isocat.org/datcat/DC-5888$wordgroup$
+http://www.isocat.org/datcat/DC-5889$x-compound$
+http://www.isocat.org/datcat/DC-5897$zero-derivation$
+http://www.isocat.org/datcat/DC-352$$compound$
+http://www.isocat.org/datcat/DC-1345$partOfSpeech$
+http://www.isocat.org/datcat/DC-1230$adjective$
+http://www.isocat.org/datcat/DC-1232$adverb$
+http://www.isocat.org/datcat/DC-1892$article$
+http://www.isocat.org/datcat/DC-1260$conjunction$
+http://www.isocat.org/datcat/DC-1333$noun$
+http://www.isocat.org/datcat/DC-1334$numeral$
+http://www.isocat.org/datcat/DC-1366$preposition$
+http://www.isocat.org/datcat/DC-1370$pronoun$
+http://www.isocat.org/datcat/DC-1424$verb$
+http://www.isocat.org/datcat/DC-5769$phraseType$
+http://www.isocat.org/datcat/DC-5767$ap$
+http://www.isocat.org/datcat/DC-2256$np$
+http://www.isocat.org/datcat/DC-5768$pp$
+http://www.isocat.org/datcat/DC-1386$sentence$
+http://www.isocat.org/datcat/DC-2255$vp$
+http://www.isocat.org/datcat/DC-5537$polarity$
+http://www.isocat.org/datcat/DC-5540$negative$
+http://www.isocat.org/datcat/DC-5538$positive$
+http://www.isocat.org/datcat/DC-5930$position$
+http://www.isocat.org/datcat/DC-5242$attributive$
+http://www.isocat.org/datcat/DC-5791$predicative$
+http://www.isocat.org/datcat/DC-4943$attrpred$
+http://www.isocat.org/datcat/DC-2757$prep$
+http://www.isocat.org/datcat/DC5793$$pronominalAndGrammaticalGender$
+http://www.isocat.org/datcat/DC-5801$f$
+http://www.isocat.org/datcat/DC-5797$fn$
+http://www.isocat.org/datcat/DC-5800$m$
+http://www.isocat.org/datcat/DC-5799$m_f$
+http://www.isocat.org/datcat/DC-5795$mf$
+http://www.isocat.org/datcat/DC-5796$mfn$
+http://www.isocat.org/datcat/DC-5798$mn$
+http://www.isocat.org/datcat/DC-5802$n$
+http://www.isocat.org/datcat/DC-5928$reflexivity$
+http://www.isocat.org/datcat/DC-5934$optional$
+http://www.isocat.org/datcat/DC-3842$reflexive$
+http://www.isocat.org/datcat/DC-1988$register$
+http://www.isocat.org/datcat/DC-1992$formal$
+http://www.isocat.org/datcat/DC-1995$slang$
+http://www.isocat.org/datcat/DC-1998$vulgar$
+http://www.isocat.org/datcat/DC-5998$relatedForm$
+http://www.isocat.org/datcat/DC-5937$semanticFeatureSet$
+http://www.isocat.org/datcat/DC-5943$action1$
+http://www.isocat.org/datcat/DC-5944$action2$
+http://www.isocat.org/datcat/DC-5945$action3$
+http://www.isocat.org/datcat/DC-5946$cognt1$
+http://www.isocat.org/datcat/DC-5947$cognt2$
+http://www.isocat.org/datcat/DC-5952$cognt3$
+http://www.isocat.org/datcat/DC-5941$echprod2$
+http://www.isocat.org/datcat/DC-5970$echprod3$
+http://www.isocat.org/datcat/DC-5965$location1$
+http://www.isocat.org/datcat/DC-5966$location2$
+http://www.isocat.org/datcat/DC-5967$mvmt1$
+http://www.isocat.org/datcat/DC-5968$mvmt2$
+http://www.isocat.org/datcat/DC-5948$mvmt3$
+http://www.isocat.org/datcat/DC-5949$possess2$
+http://www.isocat.org/datcat/DC-5942$possess3$
+http://www.isocat.org/datcat/DC-5969$prcognt1$
+http://www.isocat.org/datcat/DC-5964$prcognt2$
+http://www.isocat.org/datcat/DC-5963$prcognt3$
+http://www.isocat.org/datcat/DC-5953$prmvmt1$
+http://www.isocat.org/datcat/DC-5951$prmvmt2$
+http://www.isocat.org/datcat/DC-5950$prmvmt3$
+http://www.isocat.org/datcat/DC-5956$process1$
+http://www.isocat.org/datcat/DC-5955$process2$
+http://www.isocat.org/datcat/DC-5954$process3$
+http://www.isocat.org/datcat/DC-5959$state1$
+http://www.isocat.org/datcat/DC-5958$state2$
+http://www.isocat.org/datcat/DC-5957$state3$
+http://www.isocat.org/datcat/DC-5962$stcognt1$
+http://www.isocat.org/datcat/DC-5961$stcognt2$
+http://www.isocat.org/datcat/DC-5960$stcognt3$
+http://www.isocat.org/datcat/DC-5997$semanticShifts$
+http://www.isocat.org/datcat/DC-5973$semanticType$
+http://www.isocat.org/datcat/DC-5779$abstract$
+http://www.isocat.org/datcat/DC-5974$action$
+http://www.isocat.org/datcat/DC-5991$artefact$
+http://www.isocat.org/datcat/DC-5987$colour$
+http://www.isocat.org/datcat/DC-5984$concrete$
+http://www.isocat.org/datcat/DC-5976$concrother$
+http://www.isocat.org/datcat/DC-5977$dynamic$
+http://www.isocat.org/datcat/DC-5990$emomen$
+http://www.isocat.org/datcat/DC-5978$human$
+http://www.isocat.org/datcat/DC-5979$institute$
+http://www.isocat.org/datcat/DC-5980$measure$
+http://www.isocat.org/datcat/DC-5981$nondynamic$
+http://www.isocat.org/datcat/DC-5982$nonhuman$
+http://www.isocat.org/datcat/DC-5989$phyper$
+http://www.isocat.org/datcat/DC-5988$place$
+http://www.isocat.org/datcat/DC-5985$process$
+http://www.isocat.org/datcat/DC-5986$state$
+http://www.isocat.org/datcat/DC-5983$substance$
+http://www.isocat.org/datcat/DC-5975$time$
+http://www.isocat.org/datcat/DC-5996$SenseGroup$
+http://www.isocat.org/datcat/DC-5794$relationType$
+http://www.isocat.org/datcat/DC-5912$co-annotations$
+http://www.isocat.org/datcat/DC-5913$co-hyponyms$
+http://www.isocat.org/datcat/DC-5914$co-relations$
+http://www.isocat.org/datcat/DC-5915$co-synonyms$
+http://www.isocat.org/datcat/DC-5995$SenseRelation$
+http://www.isocat.org/datcat/DC-5792$separability$
+http://www.isocat.org/datcat/DC-5803$separable$
+http://www.isocat.org/datcat/DC-5804$unseparable$
+http://www.isocat.org/datcat/DC-6000$syntacticArgument$
+http://www.isocat.org/datcat/DC-5999$syntacticBehaviour$
+http://www.isocat.org/datcat/DC-5757$Constituent$
+http://www.isocat.org/datcat/DC-2244$function$
+http://www.isocat.org/datcat/DC-1274$directObject$
+http://www.isocat.org/datcat/DC-1310$indirectObject$
+http://www.isocat.org/datcat/DC-6034$SyntacticSubcategorisationFrame$
+http://www.isocat.org/datcat/DC-6001$textualForm$
+http://www.isocat.org/datcat/DC-5266$transitivity$
+http://www.isocat.org/datcat/DC-1322$intransitive$
+http://www.isocat.org/datcat/DC-1405$transitive$
+http://www.isocat.org/datcat/DC-4908$reference$
+http://www.isocat.org/datcat/DC-4910$common$
+http://www.isocat.org/datcat/DC-4911$proper$
+http://www.isocat.org/datcat/DC-5916$variantType$
+http://www.isocat.org/datcat/DC-5917$formVariant$
+http://www.isocat.org/datcat/DC-5918$spellingVariant$
+http://www.isocat.org/datcat/DC-1427$mood$
+http://www.isocat.org/datcat/DC-1312$infinitive$
+http://www.isocat.org/datcat/DC-6031$tense$
+http://www.isocat.org/datcat/DC-4966$pastTense$
+http://www.isocat.org/datcat/DC-4963$pastParticiple$
+http://www.isocat.org/datcat/DC-5600$WordSentiment$
+http://www.isocat.org/datcat/DC-1836$writtenForm$
+http://www.isocat.org/datcat/DC-5993$synsetRelation$
+http://www.isocat.org/datcat/DC-5882$HAS_XPOS_HYPONYM$
+http://www.isocat.org/datcat/DC-5878$BE_IN_STATE$
+http://www.isocat.org/datcat/DC-5827$CAUSES$
+http://www.isocat.org/datcat/DC-5879$CO_AGENT_INSTRUMENT$
+http://www.isocat.org/datcat/DC-5838$CO_AGENT_PATIENT$
+http://www.isocat.org/datcat/DC-5849$CO_AGENT_RESULT$
+http://www.isocat.org/datcat/DC-5860$CO_INSTRUMENT_AGENT$
+http://www.isocat.org/datcat/DC-5864$CO_INSTRUMENT_PATIENT$
+http://www.isocat.org/datcat/DC-5876$CO_INSTRUMENT_RESULT$
+http://www.isocat.org/datcat/DC-5812$CO_PATIENT_AGENT$
+http://www.isocat.org/datcat/DC-5806$CO_PATIENT_INSTRUMENT$
+http://www.isocat.org/datcat/DC-5807$CO_RESULT_AGENT$
+http://www.isocat.org/datcat/DC-5808$CO_RESULT_INSTRUMENT$
+http://www.isocat.org/datcat/DC-5809$CO_ROLE$
+http://www.isocat.org/datcat/DC-5811$EQ_BE_IN_STATE$
+http://www.isocat.org/datcat/DC-5877$EQ_CAUSES$
+http://www.isocat.org/datcat/DC-5810$EQ_CO_ROLE$
+http://www.isocat.org/datcat/DC-5805$EQ_HAS_HOLONYM$
+http://www.isocat.org/datcat/DC-5813$EQ_HAS_HYPERONYM$
+http://www.isocat.org/datcat/DC-5850$EQ_HAS_HYPONYM$
+http://www.isocat.org/datcat/DC-5851$EQ_HAS_MERONYM$
+http://www.isocat.org/datcat/DC-5852$EQ_HAS_SUBEVENT$
+http://www.isocat.org/datcat/DC-5883$EQ_INVOLVED$
+http://www.isocat.org/datcat/DC-5884$EQ_IS_CAUSED_BY$
+http://www.isocat.org/datcat/DC-5855$EQ_IS_STATE_OF$
+http://www.isocat.org/datcat/DC-5856$EQ_IS_SUBEVENT_OF$
+http://www.isocat.org/datcat/DC-5857$EQ_NEAR_SYNONYM$
+http://www.isocat.org/datcat/DC-5858$EQ_ROLE$
+http://www.isocat.org/datcat/DC-5880$EQ_SYNONYM$
+http://www.isocat.org/datcat/DC-5859$EQ_UNSPECIFIED$
+http://www.isocat.org/datcat/DC-5832$FUZZYNYM$
+http://www.isocat.org/datcat/DC-5816$HAS_HOLO_LOCATION$
+http://www.isocat.org/datcat/DC-5831$HAS_HOLO_MADEOF$
+http://www.isocat.org/datcat/DC-5830$HAS_HOLO_MEMBER$
+http://www.isocat.org/datcat/DC-5817$HAS_HOLO_PART$
+http://www.isocat.org/datcat/DC-5828$HAS_HOLO_PORTION$
+http://www.isocat.org/datcat/DC-5824$HAS_HYPERONYM$
+http://www.isocat.org/datcat/DC-5823$HAS_HYPONYM$
+http://www.isocat.org/datcat/DC-5821$HAS_MERO_LOCATION$
+http://www.isocat.org/datcat/DC-5820$HAS_MERO_MADEOF$
+http://www.isocat.org/datcat/DC-5819$HAS_MERO_MEMBER$
+http://www.isocat.org/datcat/DC-5846$HAS_MERO_PART$
+http://www.isocat.org/datcat/DC-5826$HAS_MERO_PORTION$
+http://www.isocat.org/datcat/DC-5854$HAS_MERONYM$
+http://www.isocat.org/datcat/DC-5853$HAS_SUBEVENT$
+http://www.isocat.org/datcat/DC-5848$HAS_XPOS_HYPONYM$
+http://www.isocat.org/datcat/DC-5837$IN_MANNER$
+http://www.isocat.org/datcat/DC-5847$INVOLVED$
+http://www.isocat.org/datcat/DC-5885$INVOLVED_AGENT$
+http://www.isocat.org/datcat/DC-5845$INVOLVED_DIRECTION$
+http://www.isocat.org/datcat/DC-5844$INVOLVED_INSTRUMENT$
+http://www.isocat.org/datcat/DC-5843$INVOLVED_LOCATION$
+http://www.isocat.org/datcat/DC-5842$INVOLVED_PATIENT$
+http://www.isocat.org/datcat/DC-5841$INVOLVED_RESULT$
+http://www.isocat.org/datcat/DC-5840$INVOLVED_SOURCE_DIRECTION$
+http://www.isocat.org/datcat/DC-5815$INVOLVED_TARGET_DIRECTION$
+http://www.isocat.org/datcat/DC-5839$IS_CAUSED_BY$
+http://www.isocat.org/datcat/DC-5818$IS_SUBEVENT_OF$
+http://www.isocat.org/datcat/DC-5919$MANNER_OF$
+http://www.isocat.org/datcat/DC-5971$NEAR_ANTONYM$
+http://www.isocat.org/datcat/DC-5972$NEAR_SYNONYM$
+http://www.isocat.org/datcat/DC-5940$ROLE$
+http://www.isocat.org/datcat/DC-5939$ROLE_AGENT$
+http://www.isocat.org/datcat/DC-5863$ROLE_DIRECTION$
+http://www.isocat.org/datcat/DC-5862$ROLE_INSTRUMENT$
+http://www.isocat.org/datcat/DC-5861$ROLE_LOCATION$
+http://www.isocat.org/datcat/DC-5814$ROLE_PATIENT$
+http://www.isocat.org/datcat/DC-5835$ROLE_RESULT$
+http://www.isocat.org/datcat/DC-5834$ROLE_SOURCE_DIRECTION$
+http://www.isocat.org/datcat/DC-5833$ROLE_TARGET_DIRECTION$
+http://www.isocat.org/datcat/DC-5825$STATE_OF$
+http://www.isocat.org/datcat/DC-5822$XPOS_FUZZYNYM$
+http://www.isocat.org/datcat/DC-5829$XPOS_NEAR_ANTONYM$
+http://www.isocat.org/datcat/DC-5881$XPOS_NEAR_SYNONYM$
+http://www.isocat.org/datcat/DC-4613$synset$
+http://www.isocat.org/datcat/DC-5938$synsetRelation$
+
+ -->
+
+
