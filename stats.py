@@ -336,30 +336,32 @@ class Stats():
         creates a dict mapping synset identifier to
         find large synsets
         '''
-        freq = defaultdict(int)
+        freq = {}
 
         for le_obj in self.les_get_generator():
             target = le_obj.get_synset_id()
-            freq[target] += 1
+            annotated = le_obj.get_annotator() != ''
+            if target in freq:
+                freq[target]['polysemy'] += 1
+                if not annotated:
+                    freq[target]['annotated'] = annotated
+            else:
+                freq[target] = {'polysemy' : 1,
+                                'annotated': annotated}
 
-        mininum = 10
+        minimum = 5
+        maximum = 10
+        min_max = range(minimum,maximum)
         large_synsets = []
         for key,value in freq.items():
-            if value >= mininum:
-                if key not in large_synsets:
-                    large_synsets.append(key)
+            if all([value['polysemy'] in min_max,
+                    not value['annotated'],
+                    key not in large_synsets]):
+                large_synsets.append(key)
         
-        overlap = large_synsets
-        half    = int( len(overlap) / 2)
-        part1 = overlap[:half]
-        part2 = overlap[half:]
-
-        for basename,item in [('large_synsets1.bin',part1),
-                              ('large_synsets2.bin',part2)]:
-            with open( os.path.join(self.cwd,'resources',basename),'wb') as outfile:
-                pickle.dump(set(item),outfile)
-
-        with open( os.path.join(self.cwd,'resources','large_synsets.bin'),'wb') as outfile:
+        print(len(large_synsets))
+        
+        with open( os.path.join(self.cwd,'resources','synsets_%s_%s.bin' % (minimum,maximum)),'wb') as outfile:
             pickle.dump(large_synsets,outfile)
 
 
@@ -480,6 +482,7 @@ class Stats():
         axes[1].set(title='% of synsets with synonyms')
         axes[0].invert_xaxis()
         axes[0].set(yticks=y, yticklabels=states)
+
         axes[0].yaxis.tick_right()
         
         plt.xlim(0,100)

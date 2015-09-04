@@ -27,7 +27,7 @@ class User():
         #refer to methods
         self.task = input('which task would you like to do: evaluate_resource \
 | resolve_sub_ | empty_base_synsets1 | empty_base_synsets2 | tops | large_synsets \
-large_synsets1 | large_synsets2 ?  ')
+large_synsets1 | large_synsets2 | synsets_5_10 ?  ')
 
         if self.task == 'evaluate_resource':
             self.evaluate_resource()
@@ -36,7 +36,7 @@ large_synsets1 | large_synsets2 ?  ')
             self.resolve_sub_les()
         
         if self.task in ['empty_base_synsets1','empty_base_synsets2','tops','large_synsets',
-                         'large_synsets1','large_synsets2']:
+                         'large_synsets1','large_synsets2','synsets_5_10']:
             self.stats_synset_inspection()
 
     def evaluate_resource(self):
@@ -226,7 +226,7 @@ large_synsets1 | large_synsets2 ?  ')
             if sy_id in synonym_dict:
                 eng_lemmas = synonym_dict[sy_id]
             print('english lemmas: %s' % eng_lemmas)
-            for gloss in sy_obj.get_glosses():
+            for gloss in sy_obj.get_glosses(languages=['en']):
                 print('gloss: %s' % gloss)
             print()
             print('START OF PRINTING LE_IDS') 

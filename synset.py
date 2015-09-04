@@ -47,7 +47,7 @@ class Synset():
         '''
         return self.synset_el.get("ili")
     
-    def get_glosses(self):
+    def get_glosses(self,languages=['en','nl']):
         '''
         get gloss of synset by returning value of attribute "gloss"
         of child "Definition"
@@ -57,7 +57,8 @@ class Synset():
         '''
         if self.defs_els is not None:
             return [def_el.get('gloss')
-                    for def_el in self.defs_els.iterfind("Definition")]
+                    for def_el in self.defs_els.iterfind("Definition")
+                    if def_el.get('language') in languages]
         else:
             return []
     

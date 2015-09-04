@@ -1,4 +1,4 @@
-from odwn import Wn_grid_parser
+from __init__ import Wn_grid_parser
 
 instance = Wn_grid_parser(Wn_grid_parser.odwn)
 instance.annotate()
