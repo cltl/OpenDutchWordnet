@@ -2,6 +2,7 @@
 import os 
 import pickle
 import gzip 
+import subprocess 
 
 #import xml parser (lxml is preferred, else built-in module xml is used)
 try:
@@ -118,7 +119,7 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
         
         return (succes,message)
         
-    def export(self,output_path):
+    def export(self,output_path,format='lmf'):
         '''
         export resource to file.
         self.doc is first validated against dtd.
@@ -126,6 +127,13 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
         
         @type  output_path: str
         @param output_path: output path
+        
+        @type  format: str
+        @param format: default is 'lmf', 
+        
+        others include: 'omw', which is the Open Multilingual Wordnet format
+        (http://compling.hss.ntu.edu.sg/omw/).
+        The output will be stored in the 'resources' folder
         '''
         self.clean()
         
@@ -133,15 +141,61 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
         validation,message = self.validate(self.dtd)
         
         if validation:
-            with open(output_path,"wb") as outfile:
-                self.doc.write(outfile,
-                               pretty_print=True,
-                               xml_declaration=True,
-                               encoding='utf-8')
+            if format == 'lmf':
+                with open(output_path,"wb") as outfile:
+                    self.doc.write(outfile,
+                                   pretty_print=True,
+                                   xml_declaration=True,
+                                   encoding='utf-8')
+            if format == 'omw':
+                self.omw_export()
+                    
         else:
             print("dtd validation was not succesful.")
             print(message)
+    
+    def omw_export(self):
+        '''
+        this method performs the following steps:
+        (1) creates new folder in resources: resources/nld
+        (2) copies LICENSE in it
+        (3) copies reference in it
+        (4) creates wn-data-nld.tab
+        '''
+        cwd = self.cwd
+        out = os.path.join(self.cwd,'resources','nld')
         
+        #(1) creates new folder in resources: resources/nld
+        command = 'rm -rf {out} && mkdir {out}'.format(**locals())
+        subprocess.call(command,shell=True)
+        
+        #(2) copies LICENSE in it
+        command = 'cp {cwd}/LICENSE.md {out}/LICENSE'.format(**locals())
+        subprocess.call(command,shell=True)
+        
+        #(3) copies reference in it
+        command = 'cp {cwd}/citation.bib {out}/'.format(**locals())
+        subprocess.call(command,shell=True)
+        
+        #(4) creates wn-data-nld.tab
+        output_path = os.path.join(out,'wn-data-nld.tab')
+        with open(output_path,'w') as outfile:
+            for le_obj in self.les_get_generator():
+                
+                synset_id = le_obj.get_synset_id()
+                lemma = le_obj.get_lemma()
+                if not synset_id:
+                    continue
+                prov,version,offset,pos = synset_id.split('-')
+                
+                if all([prov == 'eng',
+                        lemma]):
+                    output = '{offset}-{pos}\tlemma\t{lemma}\n'.format(**locals())
+                    outfile.write(output)
+                    
+                
+            
+            
     def get_stats(self,verbose=False):
         '''
         return most important stats into dict

@@ -3,6 +3,15 @@
 This repo provides a python module to work with Open Dutch WordNet. 
 It was created using python 3.4.
 
+If you make use of the resource and/or this repository, please cite the following reference:
+
+@InProceedings{Postma:Miltenburg:Segers:Schoen:Vossen:2016,
+  author =	 "Marten Postma and Emiel van Miltenburg and Roxane Segers and Anneleen Schoen and Piek Vossen",
+  title =	 "Open {Dutch} {WordNet}",
+  booktitle =	 "Proceedings of the Eight Global Wordnet Conference",
+  year =	 2016,
+  address =	 "Bucharest, Romania",
+}
 
 ##USAGE AND INSTALL
 git clone this repository.
