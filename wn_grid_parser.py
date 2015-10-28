@@ -180,6 +180,14 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
         #(4) creates wn-data-nld.tab
         output_path = os.path.join(out,'wn-data-nld.tab')
         with open(output_path,'w') as outfile:
+            
+            #write header
+            header = '\t'.join([
+                                '# Open Dutch WordNet',
+                                'nld',
+                                'http://wordpress.let.vupr.nl/odwn/',
+                                'CC BY SA 4.0'])
+            outfile.write(header+'\n')
             for le_obj in self.les_get_generator():
                 
                 synset_id = le_obj.get_synset_id()
@@ -190,7 +198,7 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
                 
                 if all([prov == 'eng',
                         lemma]):
-                    output = '{offset}-{pos}\tlemma\t{lemma}\n'.format(**locals())
+                    output = '{offset}-{pos}\tnld:lemma\t{lemma}\n'.format(**locals())
                     outfile.write(output)
                     
                 
