@@ -359,7 +359,7 @@ class Stats():
                     key not in large_synsets]):
                 large_synsets.append(key)
         
-        print(len(large_synsets))
+        #print(len(large_synsets))
         
         with open( os.path.join(self.cwd,'resources','synsets_%s_%s.bin' % (minimum,maximum)),'wb') as outfile:
             pickle.dump(large_synsets,outfile)

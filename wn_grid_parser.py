@@ -243,7 +243,7 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
 
         
         if verbose:
-            print('general stats for:')
+            print('general stats for input file:')
             print(os.path.basename(self.path_wn_grid_lmf))
             for key,value in sorted(self.stats.items()):
 

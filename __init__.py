@@ -21,7 +21,7 @@ from wn_grid_parser import Wn_grid_parser
 Wn_grid_parser.odwn           = os.path.join(cwd,
                                'resources',
                                'odwn',
-                               'odwn_orbn_gwg-LMF_1.2.xml.gz')
+                               'odwn_orbn_gwg-LMF_1.3.xml.gz')
 Wn_grid_parser.orbn           = os.path.join(cwd,
                                 'resources',
                                 'odwn',
@@ -38,7 +38,7 @@ Wn_grid_parser.README         = open(os.path.join(cwd,"README.md")).read()
 Wn_grid_parser.LICENSE        = open(os.path.join(cwd,"LICENSE.md")).read()
 Wn_grid_parser.__author__     = "Marten Postma"
 Wn_grid_parser.__license__    = "CC-BY-SA 4.0"
-Wn_grid_parser.__version__    = "1.2"
+Wn_grid_parser.__version__    = "1.3"
 Wn_grid_parser.__maintainer__ = "Marten Postma"
 Wn_grid_parser.__email__      = "martenp@gmail.com"
 Wn_grid_parser.__status__     = "development"
