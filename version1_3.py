@@ -4,8 +4,12 @@ from __init__ import Wn_grid_parser
 import os 
 import pickle
 
-my_parser = Wn_grid_parser(Wn_grid_parser.odwn)
-output_path = Wn_grid_parser.odwn.replace('1.2','1.3')
+path_v_12 = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                         'resources',
+                         'odwn',
+                         'odwn_orbn_gwg-LMF_1.2.xml.gz')
+my_parser = Wn_grid_parser(path_v_12)
+output_path = path_v_12.replace('1.2','1.3')
 output_path = output_path.strip('.gz')
 
 def start_logger():
