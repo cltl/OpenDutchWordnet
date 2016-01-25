@@ -3,6 +3,7 @@ import os
 import pickle
 import gzip 
 import subprocess 
+from collections import defaultdict
 
 #import xml parser (lxml is preferred, else built-in module xml is used)
 try:
@@ -133,6 +134,7 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
         
         others include: 'omw', which is the Open Multilingual Wordnet format
         (http://compling.hss.ntu.edu.sg/omw/).
+        'ili': mapping between pwn and odwn in rdf
         The output will be stored in the 'resources' folder
         '''
         self.clean()
@@ -147,13 +149,56 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
                                    pretty_print=True,
                                    xml_declaration=True,
                                    encoding='utf-8')
-            if format == 'omw':
+            elif format == 'omw':
                 self.omw_export()
+            
+            elif format == 'ili':
+                self.ili_map_export()
                     
         else:
             print("dtd validation was not succesful.")
             print(message)
     
+    
+    def ili_map_export(self):
+        '''
+        creates export file in resources/ili-map-odwnVERSION.ttl
+        based on the original English one at:
+        https://raw.githubusercontent.com/globalwordnet/ili/master/ili-map.ttl
+        '''
+        version = self.__version__.replace('.','')
+        output_path = os.path.join(self.cwd,
+                                   'resources',
+                                   'ili-map-odwn%s.ttl' % version)
+        
+        synonyms_dict = defaultdict(set)
+        for le_obj in self.les_get_generator():
+            synset_id = le_obj.get_synset_id()
+            lemma = le_obj.get_lemma()
+            synonyms_dict[synset_id].add(lemma)
+        
+        with open(output_path,'w') as outfile:
+            
+            outfile.write('\n')
+            outfile.write('@prefix\towl:\t<http://www.w3.org/2002/07/owl#> .\n')
+            outfile.write('\n')
+            outfile.write('### Wordnets\n')
+            outfile.write('@prefix\todwn13:\t<http://odwn-rdf.vu.nl/odwn13/> .\n')
+            outfile.write('\n')
+            outfile.write('### this file\n')
+            outfile.write('\n')
+            outfile.write('@prefix ili: <http://globalwordnet.org/ili/> .\n')
+            outfile.write('@base <http://globalwordnet.org/ili/ili-map.ttl>.\n')
+            outfile.write('\n')
+            for synset_obj in self.synsets_get_generator():
+                ili = synset_obj.get_ili()
+                synset_id = synset_obj.get_id()
+                if synset_id.startswith('eng-30'):
+                    offset_pos = synset_id.replace('eng-30-','')
+                    synonyms = ', '.join(synonyms_dict[synset_id])
+                    outline = 'ili:{ili}\towl:sameAs\todwn13:{offset_pos} . # {synonyms}\n'.format(**locals())
+                    outfile.write(outline)
+            
     def omw_export(self):
         '''
         this method performs the following steps:
