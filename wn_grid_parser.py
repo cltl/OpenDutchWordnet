@@ -195,9 +195,10 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
                 synset_id = synset_obj.get_id()
                 if synset_id.startswith('eng-30'):
                     offset_pos = synset_id.replace('eng-30-','')
-                    synonyms = ', '.join(synonyms_dict[synset_id])
-                    outline = 'ili:{ili}\towl:sameAs\todwn13:{offset_pos} . # {synonyms}\n'.format(**locals())
-                    outfile.write(outline)
+                    if synonyms_dict[synset_id]:
+                        synonyms = ', '.join(synonyms_dict[synset_id])
+                        outline = 'ili:{ili}\towl:sameAs\todwn13:{offset_pos} . # {synonyms}\n'.format(**locals())
+                        outfile.write(outline)
             
     def omw_export(self):
         '''
