@@ -4,13 +4,12 @@ class Le():
     '''
     class from XML element LexicalEntry
     
-    example of LexicalEntry:
-    <LexicalEntry id="havenplaats-n-1">
-    <Lemma partOfSpeech="noun" writtenForm="havenplaats"/>
-    <Sense id="o_n-109910434" 
-           provenance="cdb2.2_Auto" 
-           synset="eng-30-08633957-n"
-    /> 
+    .. highlight:: 
+        <LexicalEntry id="havenplaats-n-1">
+        <Lemma partOfSpeech="noun" writtenForm="havenplaats"/>
+        <Sense id="o_n-109910434" 
+               provenance="cdb2.2_Auto" 
+               synset="eng-30-08633957-n/> 
     '''
     def __init__(self,le_el,lexicon_el):
         self.le_el    = le_el
@@ -23,8 +22,8 @@ class Le():
         return identifier of lexical entry
         by returning attribute "id"
         
-        @rtype: str
-        @return: identifier of lexical entry
+        :rtype: str
+        :return: identifier of lexical entry
         '''
         return self.le_el.get("id")
     
@@ -33,8 +32,8 @@ class Le():
         return lemma of le by returning attribute "writtenForm"
         from child "Lemma"
         
-        @rtype: str
-        @return: lemma of le
+        :rtype: str
+        :return: lemma of le
         '''
         self.lemma_el = self.le_el.find("Lemma")
         if self.lemma_el is not None:
@@ -47,8 +46,8 @@ class Le():
         return pos (noun | verb) of lexical entry
         by returning attribute "partOfSpeech"
         
-        @rtype: str
-        @return: noun | verb. None if not found.
+        :rtype: str
+        :return: noun | verb. None if not found.
         '''
         return self.le_el.get("partOfSpeech")
     
@@ -57,8 +56,8 @@ class Le():
         return sense id from open referentie bestand nederlands
         by returning attribute "id" from child element "Sense"
         
-        @rtype: str
-        @return: sense id from open referentie bestand nederlands.
+        :rtype: str
+        :return: sense id from open referentie bestand nederlands.
         None if not found
         '''
         return self.sense_el.get("id")
@@ -68,8 +67,8 @@ class Le():
         return manual annotator (default is '')
         by returning attribute 'annotator' from child element 'Sense'
         
-        @rtype: str
-        @return: manual annotator (default '')
+        :rtype: str
+        :return: manual annotator (default '')
         '''
         return self.sense_el.get('annotator')
     
@@ -78,8 +77,8 @@ class Le():
         return sense number
         by returning attribute "senseId" from child element "Sense"
         
-        @rtype: int
-        @return: sense number, None if not found
+        :rtype: int
+        :return: sense number, None if not found
         '''
         return self.sense_el.get("senseId")
         
@@ -88,8 +87,8 @@ class Le():
         get provenance of lexical entry by returning
         attribute "provenance" from child element "Sense"
         
-        @rtype: str
-        @return: provenance (source concatenated by "+")
+        :rtype: str
+        :return: provenance (source concatenated by "+")
         '''
         
         return self.sense_el.get("provenance") 
@@ -99,8 +98,8 @@ class Le():
         get definition of lexical entry by returning
         attribute 'definition' from child element 'Sense'
         
-        @rtype: str    
-        @return: definition
+        :rtype: str    
+        :return: definition
         '''
         return self.sense_el.get('definition')
    
@@ -108,8 +107,8 @@ class Le():
         '''
         return synset identifier to which lexical entry belongs
         
-        @rtype: str
-        @return: synset identifier. None if not found
+        :rtype: str
+        :return: synset identifier. None if not found
         '''
         return self.sense_el.get("synset") 
     

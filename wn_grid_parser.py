@@ -21,7 +21,13 @@ from clean import Clean
 from orbn import Orbn
 from user_input import User
 
-class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
+class Wn_grid_parser(Synsets,
+                     Les,
+                     Stats,
+                     Lemma,
+                     Clean,
+                     User,
+                     Orbn):
     '''
     Parser for Global WordNet Grid LMF (inspection, stats, editing)
     
@@ -334,4 +340,42 @@ class Wn_grid_parser(Synsets,Les,Stats,Lemma,Clean,User,Orbn):
         self.clean_impossible_relations()
         self.clean_bidirectional_relations()
 
+
+    def load_synonyms_dicts(self):
+        '''
+        load dicts to obtain synonyms of lemma
     
+        :rtype: dict
+        :return: mapping from lemma to set of synonyms
+        '''
+        self.synset2lemmas = defaultdict(set)
+        self.lemma2synsets = defaultdict(set)
+    
+        for le_obj in self.les_get_generator():
+    
+            lemma = le_obj.get_lemma()
+            synset_id = le_obj.get_synset_id()
+    
+            if lemma is not None:
+                self.synset2lemmas[synset_id].add(lemma)
+                self.lemma2synsets[lemma].add(synset_id)
+    
+    def lemma_synonyms(self,lemma):
+        '''
+        return the synonyms of a lemma 
+    
+        :param str lemma: a lemma (for example 'paard')
+    
+        :rtype: set
+        :return: set of synonyms of the lemma according to odwn
+        '''
+        if not all([hasattr(self,'synset2lemmas'),
+                    hasattr(self,'lemma2synsets')]):
+            self.load_synonyms_dicts()
+                
+            
+        synonyms = set()
+        for synset_id in self.lemma2synsets[lemma]:
+            synonyms.update(self.synset2lemmas[synset_id])
+    
+        return synonyms
