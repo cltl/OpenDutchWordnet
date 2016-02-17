@@ -3,10 +3,10 @@
 This repo provides a python module to work with Open Dutch WordNet.
 It was created using python 3.4. The most recent version (1.3) of the resource can be
 found [here](https://github.com/MartenPostma/OpenDutchWordnet/blob/master/resources/odwn/odwn_orbn_gwg-LMF_1.3.xml.gz).
-Two pdf files in this repository document the resource:
-* [odwn_documentation.pdf](odwn_documentation.pdf): technical report of the creation of version 1.0
-* [gwc2016_odwn13.pdf](gwc2016_odwn13.pdf): paper accepted at [the Global WordNet Conference 2016](http://gwc2016.racai.ro/)
-* [slides_gwc2016_odwn13.pdf](slides_gwc2016_odwn13.pdf): slides from presentating odwn at [the Global WordNet Conference 2016](http://gwc2016.racai.ro/)
+Three pdf files in this repository document the resource:
+* 'odwn_documentation.pdf': technical report of the creation of version 1.0
+* 'gwc2016_odwn13.pdf': paper accepted at [the Global WordNet Conference 2016](http://gwc2016.racai.ro/)
+* 'slides_gwc2016_odwn13.pdf': slides from presentating odwn at [the Global WordNet Conference 2016](http://gwc2016.racai.ro/)
 
 If you make use of the resource and/or this repository, please cite the following reference:
 
