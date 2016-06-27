@@ -1,3 +1,4 @@
+from collections import defaultdict
 from le import Le
 from random import randint
 #import xml parser (lxml is preferred, else built-in module xml is used)
@@ -282,5 +283,44 @@ class Les():
             
             if candidate not in self.orbn_ids:
                 self.orbn_ids[candidate] = ""
-                return candidate              
+                return candidate
 
+
+    def les_load_synonyms_dicts(self):
+        '''
+        load dicts to obtain synonyms of lemma
+
+        :rtype: dict
+        :return: mapping from lemma to set of synonyms
+        '''
+        self.synset2lemmas = defaultdict(set)
+        self.lemma2synsets = defaultdict(set)
+
+        for le_obj in self.les_get_generator():
+
+            lemma = le_obj.get_lemma()
+            synset_id = le_obj.get_synset_id()
+
+            if lemma is not None:
+                self.synset2lemmas[synset_id].add(lemma)
+                self.lemma2synsets[lemma].add(synset_id)
+
+
+    def les_lemma_synonyms(self, lemma):
+        '''
+        return the synonyms of a lemma
+
+        :param str lemma: a lemma (for example 'paard')
+
+        :rtype: set
+        :return: set of synonyms of the lemma according to odwn
+        '''
+        if not all([hasattr(self, 'synset2lemmas'),
+                    hasattr(self, 'lemma2synsets')]):
+            self.les_load_synonyms_dicts()
+
+        synonyms = set()
+        for synset_id in self.lemma2synsets[lemma]:
+            synonyms.update(self.synset2lemmas[synset_id])
+
+        return synonyms
