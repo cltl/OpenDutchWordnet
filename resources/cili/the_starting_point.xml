@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE LexicalResource SYSTEM "http://globalwordnet.github.io/schemas/WN-LMF-1.0.dtd">
+<LexicalResource xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <Lexicon id="odwn-nl"
+             label="Open Dutch WordNet"
+             language="nl"
+             email="piek.vossen@vu.nl"
+             license="https://creativecommons.org/licenses/by-sa/4.0/"
+             version="1.3"
+             citation="Open Dutch WordNet. Marten Postma and Emiel van Miltenburg and Roxane Segers and Anneleen Schoen and Piek Vossen, Proceedings of the Global WordNet Conference 2016, (2016)."
+             url="http://wordpress.let.vupr.nl/odwn/"
+             dc:publisher="Global Wordnet Association">
+    </Lexicon>
+</LexicalResource>
