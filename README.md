@@ -1,7 +1,8 @@
 #Global WordNet Grid LMF parser
 
 This repo provides a python module to work with Open Dutch WordNet.
-It was created using python 3.4. The most recent version (1.3) of the resource can be
+Please first check the [Issues](https://github.com/MartenPostma/OpenDutchWordnet/issues) to see if your question has already
+been answered. It was created using python 3.4. The most recent version (1.3) of the resource can be
 found [here](https://github.com/MartenPostma/OpenDutchWordnet/raw/master/resources/odwn/odwn_orbn_gwg-LMF_1.3.xml.gz).
 Three pdf files in this repository document the resource:
 * [odwn_documentation.pdf](https://github.com/MartenPostma/OpenDutchWordnet/raw/master/odwn_documentation.pdf): technical report of the creation of version 1.0
@@ -17,6 +18,11 @@ If you make use of the resource and/or this repository, please cite the followin
   year =	 2016,
   address =	 "Bucharest, Romania",
 }
+
+## Demo
+A demo for word similarity using Open Dutch WordNet can be found [here](http://130.37.53.15:5000/). 
+In the background, this uses the [WordNetTools](https://github.com/cltl/WordnetTools/). We encourage to use the module locally
+when you need to run for many word pairs.
 
 ##USAGE AND INSTALL
 git clone this repository.
