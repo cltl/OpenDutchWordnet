@@ -120,9 +120,6 @@ with open('resources/cili/new_synsets_v2.csv') as infile:
             rbn_ids.add(rbn_id)
             odwn_ids[odwn_id] = ilidef
 
-#rbn_ids = {'r_n-20636'}
-#odwn_ids = {'odwn-10-104328483-n': 'someone who gets cold easily'}
-
 def validate(dtd_path, loaded_xml):
     '''
     validate against dtd
