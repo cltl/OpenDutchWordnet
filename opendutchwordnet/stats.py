@@ -1,5 +1,7 @@
+import os
+import pickle
 
-def stats(self, verbose=False):
+def stats(instance, verbose):
     """
     Populate dict with most important stats.
 
@@ -7,7 +9,7 @@ def stats(self, verbose=False):
     @param verbose: [optional]. if set to True, general stats
     are send to stdout.
     """
-    num_rels, none_targets = self.stats_rels()
+    num_rels, none_targets = stats_rels()
     tops = self.tops()
     with open(os.path.join(self.cwd, 'resources', 'tops.bin'), 'wb') as outfile:
         pickle.dump(tops, outfile)
@@ -33,16 +35,6 @@ def stats(self, verbose=False):
                   'no_rels': self.sy_no_rels(),
                   'contradicting': self.contradicting_rels()}
 
-    if verbose:
-        print('general stats for input file:')
-        print(os.path.basename(self.path_wn_grid_lmf))
-        for key,value in sorted(self.stats.items()):
-
-            if key in ["bidirectional_relations","polysemy_dict",'empty_leave_odwn_synsets',
-                       "impossible_rels","tops","no_rels","contradicting"]:
-                print(key,len(value))
-            else:
-                print(key,value)
 
 def set_ili_dict(self,file_object):
     """

@@ -145,7 +145,7 @@ print('start', datetime.now())
 dtd_path = 'resources/cili/WN-LMF-1.0.dtd'
 starting_point_path = 'resources/cili/the_starting_point.xml'
 old = WordnetParser(WordnetParser.odwn)
-root = old.doc.getroot()
+root = old._doc.getroot()
 
 parser = etree.XMLParser(remove_blank_text=True)
 new = etree.parse(starting_point_path, parser)

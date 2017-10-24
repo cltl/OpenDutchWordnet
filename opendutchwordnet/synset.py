@@ -1,4 +1,4 @@
-from relation import Relation
+from .relation import Relation
 
 # import xml parser (lxml is preferred, else built-in module xml is used)
 try:
