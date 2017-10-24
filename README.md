@@ -1,4 +1,4 @@
-#Global WordNet Grid LMF parser
+# Global WordNet Grid LMF parser
 
 This repo provides a python module to work with Open Dutch WordNet.
 Please first check the [Issues](https://github.com/MartenPostma/OpenDutchWordnet/issues) to see if your question has already
@@ -20,11 +20,11 @@ If you make use of the resource and/or this repository, please cite the followin
 }
 
 ## Demo
-A demo for word similarity using Open Dutch WordNet can be found [here](http://130.37.53.15:5000/). 
+A demo for word similarity using Open Dutch WordNet can be found [here](http://130.37.53.15:5000/).
 In the background, this uses the [WordNetTools](https://github.com/cltl/WordnetTools/). We encourage to use the module locally
 when you need to run for many word pairs.
 
-##USAGE AND INSTALL
+## USAGE AND INSTALL
 git clone this repository.
 
 The python module 'lxml' is needed. Hopefully, 'pip install lxml'
@@ -80,7 +80,7 @@ python
 'eng-30-00322847-v'
 
 ```	                  
-##Contact
+## Contact
 * Marten Postma
 * m.c.postma@vu.nl
 * http://martenpostma.com/

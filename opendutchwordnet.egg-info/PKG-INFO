@@ -1,0 +1,14 @@
+Metadata-Version: 1.1
+Name: opendutchwordnet
+Version: 1.3
+Summary: Dutch version of Wordnet
+Home-page: UNKNOWN
+Author: Marten Postma
+Author-email: martenp@gmail.com
+License: MIT
+Description: UNKNOWN
+Keywords: wordnet
+Platform: UNKNOWN
+Classifier: Intended Audience :: Developers
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 3
