@@ -76,7 +76,4 @@ python
 
 ```	                  
 ##Contact
-* Marten Postma
-* m.c.postma@vu.nl
-* http://martenpostma.com/
-* Free University of Amsterdam
+* Piek Vossen (piek.vossen@vu.nl)
