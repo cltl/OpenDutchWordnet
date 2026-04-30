@@ -1175,7 +1175,7 @@ function buildSenseBlock(sense, idx, total) {
       <div class="field"><label>Sense ID</label><input type="text" class="s-senseid" value="${h(sense.senseId)}"></div>
     </div>
     <div class="row">
-      <div class="field w2"><label>Synset</label><input type="text" class="s-synset" value="${h(sense.synset)}" placeholder="e.g. eng-30-06952861-n"></div>
+      <div class="field w2"><label>Synset</label><div style="display:flex;gap:4px"><input type="text" class="s-synset" style="flex:1;min-width:0" value="${h(sense.synset)}" placeholder="e.g. eng-30-06952861-n"><button class="addbtn" onclick="jumpToSynset(this.previousElementSibling.value)" title="Open in Synsets panel" style="white-space:nowrap;flex-shrink:0">&#x2197; Open</button></div></div>
       <div class="field"><label>Provenance</label><input type="text" class="s-prov" value="${h(sense.provenance)}"></div>
       <div class="field"><label>Annotator</label><input type="text" class="s-annot" value="${h(sense.annotator)}"></div>
     </div>
@@ -1347,6 +1347,8 @@ function buildSynsetHTML(ss) {
     </div>
   </div>
 
+  ${buildSynonymsCard(ss.id)}
+
   <div class="card">
     <div class="card-hd">Synset Relations <button class="addbtn" onclick="addSSR()">+ Add</button> <span>${ss.synsetRelations.length} relations</span></div>
     <div id="ssr-con">
@@ -1365,6 +1367,7 @@ function buildSSRRow(r) {
     <select class="ssr-type" style="min-width:160px">${sel(SSR_TYPE_OPTS, r.relType)}</select>
     <input type="text" class="ssr-target grow" value="${h(r.target)}" placeholder="Target synset ID…">
     <input type="text" class="ssr-prov" value="${h(r.provenance)}" placeholder="provenance" style="width:80px">
+    <button class="addbtn" onclick="jumpToSynset(this.closest('.ssr-row').querySelector('.ssr-target').value)" title="Open in Synsets panel" style="white-space:nowrap;flex-shrink:0">&#x2197;</button>
     <button class="delbtn" onclick="this.closest('.ssr-row').remove()">&#x2715;</button>
   </div>`;
 }
@@ -1411,6 +1414,100 @@ function updateStatusBar() {
 
 document.addEventListener('keydown', e => { if ((e.metaKey||e.ctrlKey) && e.key==='s') { e.preventDefault(); doSaveXML(); } });
 window.addEventListener('beforeunload', e => { if (state.modified) { e.preventDefault(); e.returnValue=''; } });
+
+// =====================================================================
+// CROSS-PANEL NAVIGATION
+// =====================================================================
+
+// Build a synsetId → [{id, lemma, partOfSpeech, isMWE}] map from loaded entries
+function getSynonymEntries(synsetId) {
+  const results = [];
+  for (const e of state.entries) {
+    if (e._indexOnly) continue; // not yet fetched in collab mode
+    for (const s of (e.senses || [])) {
+      if (s.synset === synsetId) {
+        results.push({ id: e.id, lemma: e.isMWE ? e.mweForm : e.lemma, partOfSpeech: e.partOfSpeech, isMWE: e.isMWE });
+        break;
+      }
+    }
+  }
+  return results;
+}
+
+function buildSynonymsCard(ssId) {
+  const syns = getSynonymEntries(ssId);
+  const note = collabMode && syns.length === 0
+    ? '<div class="empty-msg">Open individual entries to index their synset links.</div>'
+    : (syns.length === 0 ? '<div class="empty-msg">No entries reference this synset.</div>' : '');
+  return `<div class="card">
+    <div class="card-hd">Synonyms <span>${syns.length ? syns.length + ' entr' + (syns.length === 1 ? 'y' : 'ies') : ''}</span></div>
+    ${note}
+    ${syns.map(e => `<div class="irow" style="padding:4px 0;border-bottom:1px solid #f4f4f4">
+      <div style="flex:1;min-width:0">
+        <span style="font-weight:600;font-size:13px">${h(e.lemma || e.id)}</span>
+        <span style="font-size:11px;color:#999;margin-left:6px;text-transform:uppercase">${h(e.partOfSpeech || (e.isMWE ? 'MWE' : ''))}</span>
+      </div>
+      <button class="addbtn" onclick="jumpToEntry('${h(e.id)}')" title="Open in Entries panel">&#x2197; Open</button>
+    </div>`).join('')}
+  </div>`;
+}
+
+function jumpToSynset(synsetId) {
+  if (!synsetId) return;
+  // Save current entry edits first
+  collectEditorState();
+  // Switch to synsets tab without resetting selectedId yet
+  state.mode = 'synsets';
+  state.filter = '';
+  document.getElementById('search').value = '';
+  document.getElementById('tab-entries').classList.remove('active');
+  document.getElementById('tab-synsets').classList.add('active');
+  document.getElementById('add-btn').textContent = '+ Add Synset';
+  rebuildVS();
+  // Check the synset exists
+  const ss = getSynset(synsetId);
+  if (!ss) { showToast('Synset not found: ' + synsetId, true); renderVS(true); renderEditor(); return; }
+  state.selectedId = synsetId;
+  renderVS(true);
+  renderEditor();
+  scrollVSToId(synsetId);
+  updateStatusBar();
+}
+
+function jumpToEntry(entryId) {
+  if (!entryId) return;
+  // Save current synset edits first
+  collectEditorState();
+  state.mode = 'entries';
+  state.filter = '';
+  document.getElementById('search').value = '';
+  document.getElementById('tab-entries').classList.add('active');
+  document.getElementById('tab-synsets').classList.remove('active');
+  document.getElementById('add-btn').textContent = '+ Add Entry';
+  rebuildVS();
+  const e = getEntry(entryId);
+  if (!e) { showToast('Entry not found: ' + entryId, true); renderVS(true); renderEditor(); return; }
+  state.selectedId = entryId;
+  // In collab mode selectItem handles lazy loading; call it directly
+  if (collabMode && e._indexOnly) { window.selectItem(entryId); return; }
+  renderVS(true);
+  renderEditor();
+  scrollVSToId(entryId);
+  updateStatusBar();
+}
+
+function scrollVSToId(id) {
+  const listEl = document.getElementById('entry-list');
+  const src = state.mode === 'entries' ? state.entries : state.synsets;
+  const vsIdx = vsFiltered.findIndex(i => src[i] && src[i].id === id);
+  if (vsIdx < 0) return;
+  const targetY = vsIdx * ITEM_H;
+  const viewH = listEl.clientHeight || 600;
+  if (targetY < listEl.scrollTop || targetY + ITEM_H > listEl.scrollTop + viewH) {
+    listEl.scrollTop = Math.max(0, targetY - viewH / 2 + ITEM_H / 2);
+  }
+  _paintVS(listEl);
+}
 
 // =====================================================================
 // COLLABORATIVE MODE

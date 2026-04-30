@@ -103,6 +103,8 @@ Each entry can have one or more senses. Click **+ Add** to append a sense; click
 | Provenance | Data source (`bing`, `google`, `opus`, `cdb2.2_Auto`, …) |
 | Annotator | Name of the responsible annotator |
 
+The **Synset** field has an **↗ Open** button that switches to the Synsets panel and opens the referenced synset directly.
+
 Each sense block also contains collapsible sections:
 
 **Sense Relations** — links to other senses via `SenseGroup`:
@@ -199,9 +201,15 @@ Click the **Synsets** tab in the sidebar to browse and edit synsets.
 
 Each synset can have multiple definitions with gloss, language code, and provenance.
 
+### Synonyms
+
+A **Synonyms** card lists all entries that have a sense pointing to this synset. Each entry shows its lemma and part of speech, with an **↗ Open** button that switches to the Entries panel and opens that entry directly.
+
+In collaborative mode, only entries that have already been fetched from the server appear in this list. Opening an entry once is enough to index it.
+
 ### Synset Relations
 
-Relations to other synsets. Each row has relation type (from a full enumeration including `has_hyperonym`, `has_hyponym`, `near_synonym`, `role_agent`, …), target synset ID, and provenance.
+Relations to other synsets. Each row has a relation type (from a full enumeration including `has_hyperonym`, `has_hyponym`, `near_synonym`, `role_agent`, …), a target synset ID, and provenance. Each row has an **↗** button to jump directly to the target synset.
 
 ### Monolingual External Refs
 
