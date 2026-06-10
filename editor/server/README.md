@@ -211,6 +211,49 @@ In collaborative mode, only entries that have already been fetched from the serv
 
 Relations to other synsets. Each row has a relation type (from a full enumeration including `has_hyperonym`, `has_hyponym`, `near_synonym`, `role_agent`, …), a target synset ID, and provenance. Each row has an **↗** button to jump directly to the target synset.
 
+### Relation Graph
+
+Every synset editor shows a **Relation Graph** card below the relations table. The graph visualises the synset's neighbourhood as a force-directed SVG diagram.
+
+**Layout**
+
+- The current synset sits at the centre (dark node).
+- Its direct relations radiate outward as **level-1 nodes** (blue).
+- Each level-1 node's own relations are shown as **level-2 nodes** (lighter blue), giving two levels of depth by default. Up to 8 outgoing relations are shown per non-root node; if more exist a grey **+N more** node marks the remainder.
+- Edges are labelled with the relation type name and colour-coded by category. A colour legend appears below the graph.
+- Solid lines connect level-1 nodes; dashed lines connect level-2 nodes. Arrowheads point toward the target synset.
+
+**Node labels**
+
+Each node is labelled with the synonym lemmas of that synset, taken from any entries that reference it. If no entries have been loaded for a synset, the first definition gloss is used instead. Labels wrap across two lines inside the node circle.
+
+**Hover tooltip**
+
+Hovering over any node shows a floating tooltip with:
+
+- The synset ID (small, monospace)
+- All synonym lemmas in bold
+- All definition glosses in italic
+
+The tooltip repositions automatically to stay within the viewport.
+
+**Interaction**
+
+| Action | Effect |
+|---|---|
+| Hover a **node** | Shows the tooltip with full synonyms and glosses |
+| Click an **edge** | Toggles expand/collapse on the target node — first click reveals that node's own relations as additional nodes; second click hides them again |
+| Click a **node** | Opens a small popup with two buttons |
+| Popup → **Expand** | Reveals the node's further relations (same as clicking its outgoing edges) |
+| Popup → **Collapse** | Hides the nodes added by expanding this node |
+| Popup → **Make center** | Navigates to that synset, making it the new centre of the graph |
+| **Reset** button (card header) | Collapses all expansions back to the default two-level view |
+| Drag the background | Pans the graph |
+
+Expanded nodes are highlighted with an orange ring. Clicking anywhere outside the popup dismisses it.
+
+> In collaborative mode, level-2 and deeper synsets are only shown if their full data has already been fetched from the server (i.e. you have opened them at least once).
+
 ### Monolingual External Refs
 
 Read-only display of external references (Princeton WordNet, etc.). Edit via raw XML if needed.

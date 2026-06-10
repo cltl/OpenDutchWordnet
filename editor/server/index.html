@@ -41,6 +41,16 @@
     .ei-main { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ei-sub  { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ei-sub.mwe { color: #e67e22; font-weight: 700; text-transform: none; }
+    .ei-count { display:inline-flex;align-items:center;justify-content:center;background:#4f8ef7;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:18px;height:16px;padding:0 5px;margin-left:5px;vertical-align:middle; }
+    .ov-table { width:100%;border-collapse:collapse;font-size:12px; }
+    .ov-table th { text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e8e8e8;background:#fafafa; }
+    .ov-table td { padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top; }
+    .ov-row { cursor:pointer; }
+    .ov-row:hover td { background:#eef3ff; }
+    .ov-id { font-family:monospace;font-size:11px;color:#aaa;word-break:break-all;max-width:180px; }
+    .ov-def { color:#555;max-width:260px; }
+    .ov-synlink { color:#4f8ef7;text-decoration:underline dotted;cursor:pointer; }
+    .ov-synlink:hover { text-decoration:underline; }
     #sb-foot { padding: 8px; border-top: 1px solid #eee; }
     #add-btn { width: 100%; padding: 7px; background: #4f8ef7; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
     #add-btn:hover { background: #3a7de8; }
@@ -136,6 +146,23 @@
     .toast { background: #1a1a2e; color: white; padding: 9px 14px; border-radius: 6px; font-size: 12px; opacity: 0; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s; max-width: 320px; box-shadow: 0 3px 12px rgba(0,0,0,0.3); }
     .toast.show { opacity: 1; transform: translateY(0); }
     .toast.toast-err { background: #c0392b; }
+
+    /* Synset Relation Graph */
+    .sg-wrap { border-radius:6px; overflow:hidden; border:1px solid #dce8f0; background:#f6f9ff; }
+    #sg-node-popup { position:fixed; display:flex; border:1px solid #c0cce0; border-radius:6px; overflow:hidden; box-shadow:0 3px 10px rgba(0,0,0,.2); z-index:9999; }
+    #sg-node-popup button { padding:5px 12px; border:none; cursor:pointer; font-size:11px; font-weight:700; font-family:inherit; }
+    #sg-node-popup button:hover { filter:brightness(0.94); }
+    #sg-tooltip { position:fixed; background:#1a1a2e; color:#fff; border-radius:7px; padding:9px 13px; max-width:300px; pointer-events:none; z-index:9998; box-shadow:0 3px 14px rgba(0,0,0,.35); line-height:1.45; display:none; }
+    .sg-tt-id   { font-size:10px; color:rgba(255,255,255,.45); font-family:monospace; margin-bottom:4px; }
+    .sg-tt-syns { font-size:13px; font-weight:700; margin-bottom:5px; }
+    .sg-tt-gloss { font-size:12px; color:rgba(255,255,255,.78); font-style:italic; }
+    .sg-bar  { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid #dce8f0; background:#eef3ff; font-size:11px; color:#888; }
+    .sg-bar strong { color:#555; }
+    #sg-svg  { display:block; width:100%; cursor:grab; user-select:none; }
+    #sg-svg:active { cursor:grabbing; }
+    .sg-legend { display:flex; flex-wrap:wrap; gap:5px 14px; padding:7px 10px; border-top:1px solid #dce8f0; }
+    .sg-li   { display:flex; align-items:center; gap:4px; font-size:10px; color:#555; white-space:nowrap; }
+    .sg-sw   { width:22px; height:3px; border-radius:2px; flex-shrink:0; }
   </style>
 </head>
 <body>
@@ -291,6 +318,7 @@ let state = {
   entries: [],
   synsets: [],
   selectedId: null,
+  selectedGroupIds: null, // array of entry IDs when showing overview; null = editor/empty
   mode: 'entries',   // 'entries' | 'synsets'
   filter: ''
 };
@@ -332,29 +360,46 @@ function makeSynset() {
 
 const ITEM_H = 52, VS_BUF = 8;
 let vsFiltered = [];
+let vsGroups    = {};  // repId → [indices] — populated when entries filter is active
+let vsEntryGroup = {}; // entryId → repId — reverse lookup
 let vsRaf = false;
 
 function rebuildVS() {
   const f = state.filter.toLowerCase();
   const list = state.mode === 'entries' ? state.entries : state.synsets;
+
+  vsGroups = {}; vsEntryGroup = {};
+  vsFiltered = [];
+
   if (!f) {
     vsFiltered = list.map((_, i) => i);
-  } else {
-    vsFiltered = [];
-    if (state.mode === 'entries') {
-      for (let i = 0; i < list.length; i++) {
-        const e = list[i];
-        if ((e.lemma + ' ' + e.id + ' ' + e.mweForm).toLowerCase().includes(f)) vsFiltered.push(i);
-      }
-    } else {
-      for (let i = 0; i < list.length; i++) {
-        const s = list[i];
-        const gloss = s.definitions.length ? s.definitions[0].gloss : '';
-        if ((s.id + ' ' + gloss).toLowerCase().includes(f)) vsFiltered.push(i);
+  } else if (state.mode === 'entries') {
+    const exactMap = new Map(), subMap = new Map();
+    for (let i = 0; i < list.length; i++) {
+      const e = list[i];
+      const key = (e.isMWE ? e.mweForm : e.lemma) || e.id;
+      const kl  = key.toLowerCase();
+      const hay = (kl + ' ' + e.id + ' ' + (e.mweForm || '')).toLowerCase();
+      if (kl === f)         { if (!exactMap.has(key)) exactMap.set(key, []); exactMap.get(key).push(i); }
+      else if (hay.includes(f)) { if (!subMap.has(key))  subMap.set(key,  []); subMap.get(key).push(i);  }
+    }
+    for (const [, indices] of [...exactMap, ...subMap]) {
+      const repId = list[indices[0]].id;
+      vsFiltered.push(indices[0]);
+      if (indices.length > 1) {
+        vsGroups[repId] = indices;
+        for (const i of indices) vsEntryGroup[list[i].id] = repId;
       }
     }
+  } else {
+    for (let i = 0; i < list.length; i++) {
+      const s = list[i];
+      const gloss = s.definitions.length ? s.definitions[0].gloss : '';
+      if ((s.id + ' ' + gloss).toLowerCase().includes(f)) vsFiltered.push(i);
+    }
   }
-  const total = state.mode === 'entries' ? state.entries.length : state.synsets.length;
+
+  const total = list.length;
   document.getElementById('entry-count').textContent =
     f ? `${vsFiltered.length} of ${total}` : `${total} items`;
 }
@@ -375,11 +420,15 @@ function _paintVS(list) {
   const parts = [`<div style="height:${start * ITEM_H}px"></div>`];
   for (let i = start; i < end; i++) {
     const item = src[vsFiltered[i]];
-    const act  = item.id === state.selectedId ? ' active' : '';
+    const repId = vsEntryGroup[state.selectedId];
+    const act   = (item.id === state.selectedId || item.id === repId ||
+                   (state.selectedGroupIds && state.selectedGroupIds[0] === item.id)) ? ' active' : '';
     if (state.mode === 'entries') {
       const e = item;
+      const gc = vsGroups[e.id] ? vsGroups[e.id].length : 0;
+      const badge = gc > 1 ? `<span class="ei-count">${gc}</span>` : '';
       parts.push(`<div class="ei${act}" onclick="selectItem('${h(e.id)}')">
-        <div class="ei-main">${h(e.isMWE ? (e.mweForm || e.id) : (e.lemma || '(no lemma)'))}</div>
+        <div class="ei-main">${h(e.isMWE ? (e.mweForm || e.id) : (e.lemma || '(no lemma)'))}${badge}</div>
         <div class="ei-sub${e.isMWE ? ' mwe' : ''}">${h(e.isMWE ? 'MWE' : (e.partOfSpeech || '—'))}</div>
       </div>`);
     } else {
@@ -818,22 +867,24 @@ function setMode(mode) {
   collectEditorState();
   state.mode = mode;
   state.selectedId = null;
+  state.selectedGroupIds = null;
   state.filter = '';
   document.getElementById('search').value = '';
   document.getElementById('tab-entries').classList.toggle('active', mode === 'entries');
   document.getElementById('tab-synsets').classList.toggle('active', mode === 'synsets');
-  document.getElementById('add-btn').textContent = mode === 'entries' ? '+ Add Entry' : '+ Add Synset';
+  document.getElementById('add-btn').textContent = mode === 'synsets' ? '+ Add Synset' : '+ Add Entry';
   rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
 }
 
 function addItem() {
   collectEditorState();
-  if (state.mode === 'entries') {
-    const e = makeEntry(); state.entries.unshift(e); state.selectedId = e.id;
-    setTimeout(() => { const el = document.getElementById('f-lemma'); if (el) el.focus(); }, 40);
-  } else {
+  if (state.mode === 'synsets') {
     const s = makeSynset(); state.synsets.unshift(s); state.selectedId = s.id;
     setTimeout(() => { const el = document.getElementById('f-ssid'); if (el) el.focus(); }, 40);
+  } else {
+    const e = makeEntry(); state.entries.unshift(e); state.selectedId = e.id;
+    state.selectedGroupIds = null;
+    setTimeout(() => { const el = document.getElementById('f-lemma'); if (el) el.focus(); }, 40);
   }
   state.modified = true;
   rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
@@ -864,10 +915,16 @@ function duplicateEntry(id) {
 }
 
 function selectItem(id) {
-  if (state.selectedId === id) return;
+  const grp = vsGroups[id];
+  if (grp && state.selectedGroupIds && state.selectedGroupIds[0] === id) return;
+  if (!grp && state.selectedId === id && !state.selectedGroupIds) return;
   collectEditorState();
   state.selectedId = id;
+  state.selectedGroupIds = (grp && grp.length > 1)
+    ? grp.map(i => state.entries[i].id)
+    : null;
   renderVS(); renderEditor();
+  document.getElementById('editor').scrollTop = 0;
 }
 
 function filterList(val) { state.filter = val; rebuildVS(); renderVS(true); }
@@ -877,7 +934,7 @@ function filterList(val) { state.filter = val; rebuildVS(); renderVS(true); }
 // =====================================================================
 
 function collectEditorState() {
-  if (!state.selectedId) return;
+  if (!state.selectedId || state.selectedGroupIds) return;
   if (state.mode === 'synsets') { collectSynsetState(); return; }
   const entry = getEntry(state.selectedId); if (!entry) return;
 
@@ -996,11 +1053,17 @@ function renderAll() {
 
 function renderEditor() {
   const empty = document.getElementById('ed-empty'), content = document.getElementById('ed-content');
-  const item  = state.mode === 'entries' ? getEntry(state.selectedId) : getSynset(state.selectedId);
+  if (state.selectedGroupIds) {
+    empty.style.display = 'none'; content.style.display = 'block';
+    content.innerHTML = buildOverviewHTML(state.selectedGroupIds);
+    return;
+  }
+  const item = state.mode === 'entries' ? getEntry(state.selectedId) : getSynset(state.selectedId);
   if (!item) { empty.style.display = 'flex'; content.style.display = 'none'; return; }
   empty.style.display = 'none'; content.style.display = 'block';
   content.innerHTML = state.mode === 'entries' ? buildEntryHTML(item) : buildSynsetHTML(item);
   if (state.mode === 'entries') attachEntryListeners(item);
+  if (state.mode === 'synsets') { _graphExpanded = new Set(); renderSynsetGraph(item.id); }
 }
 
 // ── Entry editor ──────────────────────────────────────────────────────
@@ -1164,7 +1227,7 @@ function buildSenseBlock(sense, idx, total) {
     <div class="sublabel">Semantic Shifts <button class="addbtn" onclick="addSAShift(this)">+ Add</button></div>
     <div class="sashift-list">${(sense.semanticsAdj.shifts||[]).map(sh => `<div class="irow sashift-row"><select class="sashift-type grow">${sel(SA_SEMTYPE_OPTS, sh.semanticType)}</select><button class="delbtn" onclick="this.closest('.sashift-row').remove()">&#x2715;</button></div>`).join('') || '<div class="empty-msg">None.</div>'}</div>` : '';
 
-  return `<div class="sblock" data-sid="${h(sense.id)}">
+  return `<div class="sblock" id="sb-${h(sense.id)}" data-sid="${h(sense.id)}">
     <div class="sblock-hd">
       <span class="snum">Sense ${idx + 1}</span>
       <span class="sid-tag">${h(sense.id)}</span>
@@ -1314,6 +1377,85 @@ function addSVType(btn)   { const l = btn.closest('.sv-section').querySelector('
 function addWF()          { document.getElementById('wf-empty')?.remove(); document.getElementById('wf-con').insertAdjacentHTML('beforeend', `<div class="irow wf-row"><input type="text" class="wf-form grow" placeholder="Written form…" style="min-width:100px"><select class="wf-num">${sel(GRAM_NUM_OPTS,'')}</select><select class="wf-comp">${sel(COMPARISON_OPTS,'')}</select><input type="text" class="wf-art" placeholder="article" style="width:60px"><select class="wf-tense">${sel(GRAM_TENSE_OPTS,'')}</select><button class="delbtn" onclick="this.closest('.wf-row').remove()">&#x2715;</button></div>`); document.querySelector('.wf-form:last-of-type')?.focus(); }
 function addRF()          { document.getElementById('rf-empty')?.remove(); document.getElementById('rf-con').insertAdjacentHTML('beforeend', `<div class="irow rf-row"><input type="text" class="rf-form grow" placeholder="Written form…"><select class="rf-type">${sel(VARIANT_TYPE_OPTS,'')}</select><button class="delbtn" onclick="this.closest('.rf-row').remove()">&#x2715;</button></div>`); document.querySelector('.rf-form:last-of-type')?.focus(); }
 
+// ── Overview panel (grouped entry view) ──────────────────────────────
+
+function buildOverviewHTML(entryIds) {
+  const items = entryIds.map(id => getEntry(id)).filter(Boolean);
+  if (!items.length) return '';
+  const label = h(items[0].isMWE ? items[0].mweForm : items[0].lemma) || '—';
+
+  // Sort by senseId (numeric if possible, else lexicographic)
+  items.sort((a, b) => {
+    const sa = (a.senses && a.senses.length) ? (a.senses[0].senseId || '') : '';
+    const sb = (b.senses && b.senses.length) ? (b.senses[0].senseId || '') : '';
+    const na = parseFloat(sa), nb = parseFloat(sb);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return sa.localeCompare(sb);
+  });
+
+  let rows = '';
+  for (const e of items) {
+    const senses = e.senses && e.senses.length ? e.senses : [];
+    const s = senses[0] || null;
+
+    // All sense definitions joined with ";"
+    const defText = senses.map(x => x.definition).filter(Boolean).join('; ') || '—';
+
+    // Synset from first sense; English-only glosses joined with ";"
+    const ss = (s && s.synset) ? getSynset(s.synset) : null;
+    const enGlosses = ss && ss.definitions
+      ? ss.definitions.filter(d => (d.language || '').toLowerCase().startsWith('en')).map(d => d.gloss).filter(Boolean)
+      : [];
+    const glossText = enGlosses.length ? enGlosses.join('; ') : '';
+
+    const synCell = (s && s.synset)
+      ? `<span class="ov-synlink" onclick="event.stopPropagation();jumpToSynset('${h(s.synset)}')">${h(s.synset)}</span>`
+      : '—';
+    rows += `<tr class="ov-row" onclick="selectEntry('${h(e.id)}')">
+      <td>${h(e.isMWE ? e.mweForm : e.lemma)}</td>
+      <td class="ov-id">${h(e.id)}</td>
+      <td>${h(e.partOfSpeech || '—')}</td>
+      <td class="ov-id">${s ? h(s.senseId || '—') : '—'}</td>
+      <td class="ov-def">${h(defText)}</td>
+      <td class="ov-id">${synCell}</td>
+      <td class="ov-def">${h(glossText) || '—'}</td>
+    </tr>`;
+  }
+  return `
+  <div class="ed-hd">
+    <h2>${label}</h2>
+    <span class="pill pill-blue">${items.length} entr${items.length === 1 ? 'y' : 'ies'}</span>
+    <span style="font-size:12px;color:#aaa;margin-left:6px">— click a row to edit</span>
+  </div>
+  <div class="card">
+    <div class="card-hd">Senses</div>
+    <div style="overflow-x:auto">
+      <table class="ov-table">
+        <thead><tr><th>Form</th><th>Entry ID</th><th>POS</th><th>Sense ID</th><th>Definition</th><th>Synset</th><th>Synset gloss</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function selectEntry(id) {
+  state.selectedGroupIds = null;
+  state.selectedId = id;
+  // In collab mode the entry may be a stub — use window.selectItem to lazy-load
+  if (typeof collabMode !== 'undefined' && collabMode) {
+    const e = getEntry(id);
+    if (e && e._indexOnly) {
+      fetch('/api/entry/' + encodeURIComponent(id))
+        .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
+        .then(full => { const idx = state.entries.findIndex(x => x.id === id); if (idx >= 0) state.entries[idx] = full; renderVS(); renderEditor(); document.getElementById('editor').scrollTop = 0; })
+        .catch(err => { showToast('Could not fetch: ' + err, true); renderVS(); renderEditor(); document.getElementById('editor').scrollTop = 0; });
+      return;
+    }
+  }
+  renderVS(); renderEditor();
+  document.getElementById('editor').scrollTop = 0;
+}
+
 // ── Synset editor ─────────────────────────────────────────────────────
 
 function buildSynsetHTML(ss) {
@@ -1359,6 +1501,14 @@ function buildSynsetHTML(ss) {
   <div class="card">
     <div class="card-hd">Monolingual External Refs <span>${ss.monolingualExternalRefs.length} refs — edit via XML</span></div>
     ${ss.monolingualExternalRefs.map(m => `<div style="font-size:12px;color:#666;padding:2px 0">${h(m.externalSystem)}: ${h(m.externalReference)} <em style="color:#aaa">${h(m.relType)}</em></div>`).join('') || '<div class="empty-msg">None.</div>'}
+  </div>
+
+  <div class="card">
+    <div class="card-hd">Relation Graph
+      <span>Click node or edge for options · drag to pan</span>
+      <button class="addbtn" onclick="resetSynsetGraph('${h(ss.id)}')">Reset</button>
+    </div>
+    <div class="sg-wrap"><div id="sg-container"><div class="empty-msg" style="padding:12px">Building graph…</div></div></div>
   </div>`;
 }
 
@@ -1454,11 +1604,10 @@ function buildSynonymsCard(ssId) {
 
 function jumpToSynset(synsetId) {
   if (!synsetId) return;
-  // Save current entry edits first
   collectEditorState();
-  // Switch to synsets tab without resetting selectedId yet
   state.mode = 'synsets';
   state.filter = '';
+  state.selectedGroupIds = null;
   document.getElementById('search').value = '';
   document.getElementById('tab-entries').classList.remove('active');
   document.getElementById('tab-synsets').classList.add('active');
@@ -1587,14 +1736,36 @@ async function fetchIndex() {
 const _selectItemOrig = selectItem;
 window.selectItem = async function(id) {
   if (!collabMode) { _selectItemOrig(id); return; }
-  if (state.selectedId === id) return;
-  // Flush current edits before switching
-  if (state.selectedId) {
+  const grp = vsGroups[id];
+  if (grp && state.selectedGroupIds && state.selectedGroupIds[0] === id) return;
+  if (!grp && state.selectedId === id && !state.selectedGroupIds) return;
+  // Flush current edits before switching (not needed when in overview)
+  if (!state.selectedGroupIds && state.selectedId) {
     collectEditorState();
     await _pushUpdate();
   }
   state.selectedId = id;
   renderVS();
+
+  if (grp && grp.length > 1) {
+    const groupIds = grp.map(i => state.entries[i].id);
+    state.selectedGroupIds = groupIds;
+    // Fetch all stubs in parallel so overview shows definitions
+    await Promise.all(groupIds.map(async gid => {
+      const e = getEntry(gid);
+      if (e && e._indexOnly) {
+        try {
+          const r = await fetch('/api/entry/' + encodeURIComponent(gid));
+          if (r.ok) { const full = await r.json(); const idx = state.entries.findIndex(x => x.id === gid); if (idx >= 0) state.entries[idx] = full; }
+        } catch (_) {}
+      }
+    }));
+    renderEditor();
+    document.getElementById('editor').scrollTop = 0;
+    return;
+  }
+
+  state.selectedGroupIds = null;
   const item = state.mode === 'entries' ? getEntry(id) : getSynset(id);
   if (item && item._indexOnly) {
     try {
@@ -1614,6 +1785,7 @@ window.selectItem = async function(id) {
     }
   }
   renderEditor();
+  document.getElementById('editor').scrollTop = 0;
 };
 
 // Override addItem to POST new item to server
@@ -1793,6 +1965,489 @@ function showToast(msg, isError) {
   container.appendChild(t);
   setTimeout(() => t.classList.add('show'), 10);
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+// =====================================================================
+// SYNSET RELATION GRAPH
+// =====================================================================
+
+const REL_COLOR = (() => {
+  const m = {
+    has_hyperonym:'#2471a3',     has_xpos_hyperonym:'#2471a3',
+    has_hyponym:'#5dade2',       has_xpos_hyponym:'#5dade2',
+    has_holonym:'#1a9150',       has_holo_member:'#1a9150',  has_holo_part:'#239b56',
+    has_holo_portion:'#27ae60',  has_holo_madeof:'#52be80',  has_holo_location:'#82e0aa',
+    has_meronym:'#1d8348',       has_mero_member:'#27ae60',  has_mero_part:'#52be80',
+    has_mero_portion:'#7dcea0',  has_mero_madeof:'#a9dfbf',  has_mero_location:'#a9dfbf',
+    near_synonym:'#b7950b',      xpos_near_synonym:'#b7950b',
+    near_antonym:'#c0392b',      xpos_near_antonym:'#c0392b',
+    fuzzynym:'#e74c3c',          xpos_fuzzynym:'#e74c3c',
+    role:'#7d3c98',              role_agent:'#8e44ad',        role_patient:'#9b59b6',
+    role_instrument:'#a569bd',   role_location:'#b07fdc',     role_result:'#bb8fce',
+    role_source_direction:'#c39bd3', role_target_direction:'#d2b4de', role_direction:'#d7bde2',
+    involved:'#154360',          involved_agent:'#1f618d',    involved_patient:'#2471a3',
+    involved_instrument:'#2e86c1', involved_location:'#3498db', involved_result:'#5dade2',
+    involved_direction:'#7fb3d3', involved_source_direction:'#7fb3d3', involved_target_direction:'#7fb3d3',
+    co_role:'#922b21',           co_agent_patient:'#c0392b',  co_agent_instrument:'#c0392b',
+    co_agent_result:'#c0392b',   co_instrument_agent:'#922b21', co_instrument_patient:'#922b21',
+    co_instrument_result:'#922b21', co_patient_agent:'#c0392b', co_patient_instrument:'#c0392b',
+    co_patient_result:'#c0392b', co_result_agent:'#922b21',   co_result_instrument:'#922b21',
+    co_result_patient:'#922b21',
+    causes:'#e67e22',            is_caused_by:'#f39c12',
+    be_in_state:'#117a65',       state_of:'#1abc9c',
+    has_subevent:'#d4ac0d',      is_subevent_of:'#f1c40f',
+    in_manner:'#148f77',         manner_of:'#117a65',
+    instance:'#784212',          other:'#7f8c8d',
+  };
+  return rel => m[rel] || '#7f8c8d';
+})();
+
+let _graphExpanded = new Set();
+let _graphNodePositions = new Map();
+
+function _synsetLabel(ssId) {
+  const syns = getSynonymEntries(ssId);
+  if (syns.length) {
+    const lemmas = syns.slice(0, 3).map(e => e.lemma || e.id);
+    return lemmas.join(', ') + (syns.length > 3 ? ' +' + (syns.length - 3) : '');
+  }
+  const ss = getSynset(ssId);
+  if (ss && ss.definitions.length) {
+    const g = ss.definitions[0].gloss || '';
+    return g.slice(0, 28) + (g.length > 28 ? '…' : '');
+  }
+  return ssId.slice(0, 22);
+}
+
+function _buildGraphData(rootId) {
+  const MAX_PER_NODE = 8;
+  const nodes = new Map();
+  const edgeKeys = new Set();
+  const edges = [];
+
+  const addNode = (id, depth) => {
+    if (!nodes.has(id)) nodes.set(id, { id, label: _synsetLabel(id), depth });
+    else if (nodes.get(id).depth > depth) nodes.get(id).depth = depth;
+  };
+  const addEdge = (from, to, relType, extra) => {
+    const key = `${from}→${to}→${relType}`;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push(Object.assign({ from, to, relType }, extra));
+  };
+
+  addNode(rootId, 0);
+  const queue = [{ id: rootId, depth: 0 }];
+  const processed = new Set();
+
+  while (queue.length) {
+    const { id, depth } = queue.shift();
+    if (processed.has(id)) continue;
+    processed.add(id);
+
+    const shouldExpand = depth < 2 || _graphExpanded.has(id);
+    if (!shouldExpand) continue;
+
+    const ss = getSynset(id);
+    if (!ss || ss._indexOnly) continue;
+
+    const rels = ss.synsetRelations || [];
+    const shown = depth === 0 ? rels : rels.slice(0, MAX_PER_NODE);
+
+    for (const r of shown) {
+      if (r.target === rootId && depth > 0) { addEdge(id, r.target, r.relType); continue; }
+      addNode(r.target, depth + 1);
+      addEdge(id, r.target, r.relType);
+      if (!processed.has(r.target)) queue.push({ id: r.target, depth: depth + 1 });
+    }
+
+    if (depth > 0 && rels.length > MAX_PER_NODE && !_graphExpanded.has(id)) {
+      const moreId = '__more_' + id;
+      nodes.set(moreId, { id: moreId, label: '+' + (rels.length - MAX_PER_NODE) + ' more',
+        depth: depth + 1, isMore: true, parentId: id });
+      addEdge(id, moreId, '__more__', { isMore: true });
+    }
+  }
+
+  const validIds = new Set(nodes.keys());
+  return { nodes: [...nodes.values()], edges: edges.filter(e => validIds.has(e.from) && validIds.has(e.to)) };
+}
+
+function _initPositions(nodes, edges, W, H) {
+  const cx = W / 2, cy = H / 2;
+  const byDepth = {};
+  for (const n of nodes) (byDepth[n.depth] = byDepth[n.depth] || []).push(n);
+
+  // Depth 0 at center
+  if (byDepth[0]) { byDepth[0][0].x = cx; byDepth[0][0].y = cy; }
+
+  // Build parent map for guided init
+  const parentOf = {};
+  for (const e of edges) {
+    const src = nodes.find(n => n.id === e.from);
+    const tgt = nodes.find(n => n.id === e.to);
+    if (src && tgt && tgt.depth === src.depth + 1 && !parentOf[tgt.id]) parentOf[tgt.id] = src;
+  }
+
+  // Depth 1: evenly around root
+  const d1 = byDepth[1] || [];
+  d1.forEach((n, i) => {
+    const a = (i / d1.length) * 2 * Math.PI - Math.PI / 2;
+    n.x = cx + 150 * Math.cos(a); n.y = cy + 150 * Math.sin(a); n._angle = a;
+  });
+
+  // Depth 2+: near parent
+  for (const [depth, dnodes] of Object.entries(byDepth)) {
+    if (+depth < 2) continue;
+    const R = 140 + (+depth) * 120;
+    const byParent = {};
+    for (const n of dnodes) {
+      const par = parentOf[n.id];
+      const pk = par ? par.id : '__none__';
+      (byParent[pk] = byParent[pk] || []).push(n);
+    }
+    for (const [pk, children] of Object.entries(byParent)) {
+      const par = nodes.find(n => n.id === pk);
+      const baseAngle = par?._angle ?? 0;
+      const arc = par ? (2 * Math.PI / Math.max(d1.length, 1) * 0.7) : 2 * Math.PI;
+      children.forEach((n, j) => {
+        const a = baseAngle - arc / 2 + (children.length > 1 ? j / (children.length - 1) : 0.5) * arc;
+        n.x = cx + R * Math.cos(a); n.y = cy + R * Math.sin(a); n._angle = a;
+      });
+    }
+  }
+}
+
+function _forceLayout(nodes, edges, W, H) {
+  if (nodes.length < 2) return;
+  const cx = W / 2, cy = H / 2;
+  _initPositions(nodes, edges, W, H);
+
+  const REPEL = 6000, K = 130, GRAVITY = 0.01, ATTRACT = 0.008;
+  let T = 55;
+
+  for (let iter = 0; iter < 220; iter++) {
+    const fx = new Float64Array(nodes.length);
+    const fy = new Float64Array(nodes.length);
+    const idx = new Map(nodes.map((n, i) => [n.id, i]));
+
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const dx = nodes[j].x - nodes[i].x, dy = nodes[j].y - nodes[i].y;
+        const d2 = dx * dx + dy * dy + 1;
+        const f = REPEL / d2;
+        fx[i] -= f * dx; fy[i] -= f * dy;
+        fx[j] += f * dx; fy[j] += f * dy;
+      }
+    }
+
+    for (const e of edges) {
+      const si = idx.get(e.from), ti = idx.get(e.to);
+      if (si === undefined || ti === undefined) continue;
+      const dx = nodes[ti].x - nodes[si].x, dy = nodes[ti].y - nodes[si].y;
+      const d = Math.hypot(dx, dy) + 0.01;
+      const f = ATTRACT * (d - K * (1 + nodes[ti].depth * 0.3));
+      fx[si] += f * dx; fy[si] += f * dy;
+      fx[ti] -= f * dx; fy[ti] -= f * dy;
+    }
+
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].depth === 0) continue;
+      fx[i] -= GRAVITY * (nodes[i].x - cx);
+      fy[i] -= GRAVITY * (nodes[i].y - cy);
+      const mag = Math.hypot(fx[i], fy[i]) || 1;
+      const step = Math.min(mag, T);
+      nodes[i].x += fx[i] / mag * step;
+      nodes[i].y += fy[i] / mag * step;
+    }
+    T *= 0.955;
+  }
+
+  const PAD = 48;
+  for (const n of nodes) {
+    n.x = Math.max(PAD, Math.min(W - PAD, n.x));
+    n.y = Math.max(PAD, Math.min(H - PAD, n.y));
+  }
+}
+
+function _wrapLabel(text, maxCh) {
+  const words = text.split(/[\s,]+/).filter(Boolean);
+  const lines = []; let cur = '';
+  for (const w of words) {
+    if (lines.length >= 2) break;
+    const next = cur ? cur + ' ' + w : w;
+    if (next.length > maxCh && cur) { lines.push(cur); cur = w.length > maxCh ? w.slice(0, maxCh - 1) + '…' : w; }
+    else cur = next.length > maxCh ? next.slice(0, maxCh - 1) + '…' : next;
+  }
+  if (cur && lines.length < 2) lines.push(cur);
+  if (!lines.length) lines.push(text.slice(0, maxCh));
+  return lines;
+}
+
+function renderSynsetGraph(ssId) {
+  dismissNodePopup();
+  hideNodeTooltip();
+  const container = document.getElementById('sg-container');
+  if (!container) return;
+
+  const W = 780, H = 480;
+  const { nodes, edges } = _buildGraphData(ssId);
+
+  if (!nodes.length) { container.innerHTML = '<div class="empty-msg" style="padding:12px">No relations found.</div>'; return; }
+
+  _forceLayout(nodes, edges, W, H);
+  _graphNodePositions = new Map(nodes.map(n => [n.id, { x: n.x, y: n.y }]));
+
+  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const relTypes = [...new Set(edges.filter(e => !e.isMore).map(e => e.relType))];
+
+  const nodeR = n => n.depth === 0 ? 48 : (n.isMore ? 20 : (n.depth === 1 ? 36 : 24));
+  const nodeFill  = n => n.depth === 0 ? '#1a1a2e' : (n.isMore ? '#c8d6e0' : (n.depth === 1 ? '#4f8ef7' : '#8ab4d4'));
+  const nodeTC    = n => n.depth <= 1 && !n.isMore ? '#fff' : '#333';
+  const nodeSW    = n => _graphExpanded.has(n.id) ? 3 : 2;
+  const nodeSC    = n => _graphExpanded.has(n.id) ? '#f39c12' : '#fff';
+
+  // SVG marker defs (one per unique relType)
+  const encRT = rt => 'a' + rt.replace(/[^a-zA-Z0-9]/g, '_');
+  const defs = relTypes.map(rt =>
+    `<marker id="${encRT(rt)}" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0,0 L7,3.5 L0,7 Z" fill="${REL_COLOR(rt)}" opacity="0.85"/>
+    </marker>`
+  ).join('');
+
+  // Edges
+  let edgesSVG = '';
+  for (const e of edges) {
+    const src = nodeMap.get(e.from), tgt = nodeMap.get(e.to);
+    if (!src || !tgt) continue;
+    const color = e.isMore ? '#bbb' : REL_COLOR(e.relType);
+
+    const mx = (src.x + tgt.x) / 2, my = (src.y + tgt.y) / 2;
+    const dx = tgt.x - src.x, dy = tgt.y - src.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const perp = Math.min(28, len * 0.18);
+    const cpx = mx - (dy / len) * perp, cpy = my + (dx / len) * perp;
+
+    const rT = nodeR(tgt) + 2;
+    const tdx = tgt.x - cpx, tdy = tgt.y - cpy, tl = Math.hypot(tdx, tdy) || 1;
+    const tx = tgt.x - (tdx / tl) * rT, ty = tgt.y - (tdy / tl) * rT;
+
+    const rS = nodeR(src) + 2;
+    const sdx = cpx - src.x, sdy = cpy - src.y, sl = Math.hypot(sdx, sdy) || 1;
+    const sx = src.x + (sdx / sl) * rS, sy = src.y + (sdy / sl) * rS;
+
+    const t = 0.5;
+    const lx = (1-t)*(1-t)*sx + 2*(1-t)*t*cpx + t*t*tx;
+    const ly = (1-t)*(1-t)*sy + 2*(1-t)*t*cpy + t*t*ty - 4;
+
+    const sw = tgt.depth <= 1 ? 1.8 : 1.2;
+    const dash = tgt.depth >= 2 ? '5,3' : 'none';
+    const markerAttr = e.isMore ? '' : `marker-end="url(#${encRT(e.relType)})"`;
+    const clickTarget = tgt.isMore ? `graphExpandMore(event,'${h(tgt.parentId)}','${h(ssId)}')` : `event.stopPropagation();graphToggleExpand('${h(tgt.id)}','${h(ssId)}')`;
+
+    edgesSVG += `<g class="sg-edge" onclick="${clickTarget}" style="cursor:pointer" title="${h(e.relType)}: ${h(e.to)}">
+      <path d="M${sx.toFixed(1)},${sy.toFixed(1)} Q${cpx.toFixed(1)},${cpy.toFixed(1)} ${tx.toFixed(1)},${ty.toFixed(1)}"
+        fill="none" stroke="${color}" stroke-width="${sw}" stroke-dasharray="${dash}" ${markerAttr}/>
+      <path d="M${sx.toFixed(1)},${sy.toFixed(1)} Q${cpx.toFixed(1)},${cpy.toFixed(1)} ${tx.toFixed(1)},${ty.toFixed(1)}"
+        fill="none" stroke="transparent" stroke-width="10"/>
+      ${e.isMore ? '' : `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-size="8.5"
+        fill="${color}" font-weight="500" font-family="system-ui,sans-serif"
+        paint-order="stroke" stroke="#f6f9ff" stroke-width="2.5" style="pointer-events:none">${h(e.relType)}</text>`}
+    </g>`;
+  }
+
+  // Nodes
+  let nodesSVG = '';
+  for (const n of nodes) {
+    const r = nodeR(n);
+    const maxCh = Math.max(3, Math.floor(r * 1.7 / 6.5));
+    const lines = n.isMore ? [n.label] : _wrapLabel(n.label, maxCh);
+    const fsize = n.depth === 0 ? 13 : (n.depth === 1 ? 11.5 : 10);
+    const fw = n.depth <= 1 ? '600' : '400';
+    const tc = nodeTC(n);
+
+    const lh = fsize * 1.25;
+    const txtHTML = lines.length >= 2
+      ? `<text x="${n.x.toFixed(1)}" y="${(n.y - lh * 0.5 + 1).toFixed(1)}" text-anchor="middle" font-size="${fsize}" font-weight="${fw}" fill="${tc}" font-family="system-ui,sans-serif" style="pointer-events:none">${h(lines[0])}</text>
+         <text x="${n.x.toFixed(1)}" y="${(n.y + lh * 0.5 + 1).toFixed(1)}" text-anchor="middle" font-size="${fsize}" font-weight="${fw}" fill="${tc}" font-family="system-ui,sans-serif" style="pointer-events:none">${h(lines[1])}</text>`
+      : `<text x="${n.x.toFixed(1)}" y="${(n.y + fsize * 0.38).toFixed(1)}" text-anchor="middle" font-size="${fsize}" font-weight="${fw}" fill="${tc}" font-family="system-ui,sans-serif" style="pointer-events:none">${h(lines[0] || n.id.slice(0,14))}</text>`;
+
+    let clickAttr = '';
+    if (n.depth === 0) {
+      clickAttr = '';
+    } else if (n.isMore) {
+      clickAttr = `onclick="graphExpandMore(event,'${h(n.parentId)}','${h(ssId)}')"`;
+    } else {
+      clickAttr = `onclick="showNodePopup(event,'${h(n.id)}','${h(ssId)}')"`;
+    }
+
+    const ttAttr = n.isMore ? '' : `onmouseenter="showNodeTooltip(event,'${h(n.id)}')" onmouseleave="hideNodeTooltip()"`;
+    nodesSVG += `<g class="sg-node" ${clickAttr} ${ttAttr} style="cursor:${n.depth === 0 ? 'default' : 'pointer'}">
+      <circle cx="${n.x.toFixed(1)}" cy="${n.y.toFixed(1)}" r="${r}" fill="${nodeFill(n)}" stroke="${nodeSC(n)}" stroke-width="${nodeSW(n)}"/>
+      ${txtHTML}
+    </g>`;
+  }
+
+  const legendHTML = relTypes.map(rt =>
+    `<div class="sg-li"><div class="sg-sw" style="background:${REL_COLOR(rt)}"></div>${h(rt)}</div>`
+  ).join('');
+
+  container.innerHTML =
+    `<svg id="sg-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px" onclick="dismissNodePopup()">
+      <defs>${defs}</defs>
+      <g id="sg-pan">
+        <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" style="pointer-events:all"/>
+        ${edgesSVG}
+        ${nodesSVG}
+      </g>
+    </svg>
+    ${relTypes.length ? `<div class="sg-legend">${legendHTML}</div>` : ''}`;
+
+  _attachGraphPan('sg-svg');
+}
+
+function _attachGraphPan(svgId) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  let drag = false, ox = 0, oy = 0, tx = 0, ty = 0;
+  svg.addEventListener('mousedown', e => {
+    if (e.target.closest('.sg-node') || e.target.closest('.sg-edge')) return;
+    dismissNodePopup();
+    drag = true; ox = e.clientX - tx; oy = e.clientY - ty; svg.style.cursor = 'grabbing';
+  });
+  const onMove = e => {
+    if (!drag) return;
+    tx = e.clientX - ox; ty = e.clientY - oy;
+    const g = document.getElementById('sg-pan');
+    if (g) g.setAttribute('transform', `translate(${tx},${ty})`);
+  };
+  const onUp = () => { if (drag) { drag = false; const s = document.getElementById(svgId); if (s) s.style.cursor = 'grab'; } };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+  svg.style.cursor = 'grab';
+}
+
+function showNodePopup(event, nodeId, rootId) {
+  event.stopPropagation();
+  hideNodeTooltip();
+  dismissNodePopup();
+
+  const svg = document.getElementById('sg-svg');
+  const wrap = svg && svg.closest('.sg-wrap');
+  if (!svg || !wrap) return;
+
+  const pos = _graphNodePositions.get(nodeId);
+  if (!pos) return;
+
+  // Read current pan offset
+  const panG = document.getElementById('sg-pan');
+  let panX = 0, panY = 0;
+  if (panG) {
+    const m = (panG.getAttribute('transform') || '').match(/translate\(([^,]+),([^)]+)\)/);
+    if (m) { panX = +m[1]; panY = +m[2]; }
+  }
+
+  // Convert viewBox coords → viewport (fixed) coordinates
+  const svgRect = svg.getBoundingClientRect();
+  const W = 780, H = 480;
+  const scaleX = svgRect.width / W, scaleY = svgRect.height / H;
+
+  const screenX = svgRect.left + (pos.x + panX) * scaleX;
+  const screenY = svgRect.top  + (pos.y + panY) * scaleY;
+
+  const isExp = _graphExpanded.has(nodeId);
+
+  const popup = document.createElement('div');
+  popup.id = 'sg-node-popup';
+  popup.style.left = (screenX - 74) + 'px';
+  popup.style.top  = (screenY - 64) + 'px';
+
+  const expBtn = document.createElement('button');
+  expBtn.textContent = isExp ? 'Collapse' : 'Expand';
+  expBtn.style.background = isExp ? '#fff3e0' : '#eef3ff';
+  expBtn.style.color      = isExp ? '#e67e22' : '#4f8ef7';
+  expBtn.onclick = e => { e.stopPropagation(); graphToggleExpand(nodeId, rootId); };
+
+  const centerBtn = document.createElement('button');
+  centerBtn.textContent = 'Make center';
+  centerBtn.style.background = '#eafaf1';
+  centerBtn.style.color      = '#1d8348';
+  centerBtn.onclick = e => { e.stopPropagation(); graphMakeCenter(nodeId); };
+
+  popup.appendChild(expBtn);
+  popup.appendChild(centerBtn);
+  document.body.appendChild(popup);
+}
+
+function dismissNodePopup() {
+  document.getElementById('sg-node-popup')?.remove();
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('#sg-node-popup')) return;
+  dismissNodePopup();
+});
+
+function graphToggleExpand(nodeId, rootId) {
+  if (_graphExpanded.has(nodeId)) _graphExpanded.delete(nodeId);
+  else _graphExpanded.add(nodeId);
+  renderSynsetGraph(rootId);
+}
+
+function graphMakeCenter(nodeId) {
+  jumpToSynset(nodeId);
+}
+
+function graphExpandMore(event, parentId, rootId) {
+  event.stopPropagation();
+  _graphExpanded.add(parentId);
+  renderSynsetGraph(rootId);
+}
+
+function showNodeTooltip(event, nodeId) {
+  const syns = getSynonymEntries(nodeId);
+  const ss   = getSynset(nodeId);
+
+  let html = `<div class="sg-tt-id">${h(nodeId)}</div>`;
+
+  if (syns.length) {
+    html += `<div class="sg-tt-syns">${h(syns.map(e => e.lemma || e.id).join(', '))}</div>`;
+  }
+
+  const glosses = ss ? ss.definitions.map(d => d.gloss).filter(Boolean) : [];
+  if (glosses.length) {
+    html += glosses.map(g => `<div class="sg-tt-gloss">${h(g)}</div>`).join('');
+  }
+
+  if (!syns.length && !glosses.length) {
+    html += `<div class="sg-tt-syns">${h(nodeId)}</div>`;
+  }
+
+  let tip = document.getElementById('sg-tooltip');
+  if (!tip) { tip = document.createElement('div'); tip.id = 'sg-tooltip'; document.body.appendChild(tip); }
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  _positionTooltip(event, tip);
+}
+
+function _positionTooltip(event, tip) {
+  const pad = 16, vw = window.innerWidth, vh = window.innerHeight;
+  let x = event.clientX + pad, y = event.clientY - pad;
+  tip.style.left = '0'; tip.style.top = '0'; // reset so offsetWidth is accurate
+  const tw = tip.offsetWidth || 260, th = tip.offsetHeight || 80;
+  if (x + tw > vw - 8) x = event.clientX - tw - pad;
+  if (y + th > vh - 8) y = event.clientY - th - pad;
+  tip.style.left = Math.max(4, x) + 'px';
+  tip.style.top  = Math.max(4, y) + 'px';
+}
+
+function hideNodeTooltip() {
+  const tip = document.getElementById('sg-tooltip');
+  if (tip) tip.style.display = 'none';
+}
+
+function resetSynsetGraph(ssId) {
+  _graphExpanded.clear();
+  renderSynsetGraph(ssId);
 }
 
 // =====================================================================
