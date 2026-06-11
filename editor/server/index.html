@@ -106,12 +106,44 @@
     .check-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #555; margin-bottom: 4px; }
     .check-row input[type=checkbox] { width: auto; }
 
+    /* Save button */
+    .btn-save { background: #2ecc71; color: #111; font-weight: 700; }
+    .btn-save:disabled { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.3); cursor: default; opacity: 1; border: 1px solid rgba(255,255,255,0.1); }
     /* Sense block */
     .sblock { border: 1px solid #e8e8e8; border-radius: 6px; padding: 14px; margin-bottom: 10px; background: #fafafa; }
     .sblock:last-child { margin-bottom: 0; }
     .sblock-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
     .snum { font-size: 11px; font-weight: 700; color: #4f8ef7; text-transform: uppercase; flex: 1; }
     .sid-tag { font-size: 10px; color: #bbb; font-family: monospace; }
+    .sense-gloss { font-size: 11px; color: #888; margin-top: 3px; font-style: italic; line-height: 1.4; }
+    /* Synonym add row */
+    .syn-add-row { display: flex; gap: 6px; margin-top: 10px; align-items: center; padding-top: 8px; border-top: 1px solid #eee; }
+    .en-syns-list { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+    .en-syn-pill { background: #e8f0fe; color: #1a56c4; border-radius: 12px; padding: 3px 10px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+    /* Synonym search modal */
+    #ssm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9995; justify-content:center; align-items:center; }
+    #ssm-overlay.open { display:flex; }
+    #ssm-box { background:#fff; color:#222; border-radius:10px; width:500px; max-width:95vw; max-height:78vh; display:flex; flex-direction:column; box-shadow:0 8px 40px rgba(0,0,0,.28); overflow:hidden; }
+    .ssm-hd { display:flex; justify-content:space-between; align-items:center; padding:13px 16px 11px; border-bottom:1px solid #eee; flex-shrink:0; }
+    .ssm-hd-title { font-size:14px; font-weight:700; color:#1a1a2e; }
+    #ssm-body { padding:14px 16px; overflow-y:auto; flex:1; }
+    .ssm-result { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:5px; cursor:pointer; border:1px solid transparent; }
+    .ssm-result:hover { background:#f0f4ff; border-color:#d0dcff; }
+    .ssm-r-lemma { font-weight:600; font-size:13px; flex:1; }
+    .ssm-r-pos { font-size:11px; color:#888; text-transform:uppercase; width:55px; flex-shrink:0; }
+    .ssm-r-id { font-size:10px; color:#bbb; flex-shrink:0; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ssm-sense-row { display:flex; align-items:flex-start; gap:8px; padding:8px 10px; border:1px solid #e4e8f0; border-radius:6px; margin-bottom:6px; background:#fafbff; }
+    .ssm-sense-num { font-weight:700; color:#4f8ef7; min-width:20px; font-size:13px; padding-top:1px; flex-shrink:0; }
+    .ssm-sense-info { flex:1; min-width:0; }
+    .ssm-sense-def { font-size:12px; color:#333; margin-bottom:3px; }
+    .ssm-sense-ss { font-size:11px; color:#aaa; font-family:monospace; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ssm-foot { display:flex; gap:7px; padding:10px 16px; border-top:1px solid #eee; flex-shrink:0; background:#fafafa; }
+    .ssr-sr-item { padding:9px 10px; border:1px solid #e4e8f0; border-radius:6px; margin-bottom:7px; cursor:pointer; background:#fafbff; }
+    .ssr-sr-item:hover { background:#eef3ff; border-color:#c0d0f8; }
+    .ssr-sr-id { font-family:monospace; font-size:11px; color:#999; margin-bottom:4px; }
+    .ssr-sr-nl { font-size:12px; font-weight:600; color:#222; margin-bottom:2px; }
+    .ssr-sr-en { font-size:12px; color:#4a90d9; margin-bottom:2px; }
+    .ssr-sr-gloss { font-size:11px; color:#666; font-style:italic; }
 
     /* Collapsible */
     details { margin-top: 8px; }
@@ -140,6 +172,36 @@
     /* Collab indicator */
     #collab-ind { display: none; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.7); margin-left: 6px; }
     #collab-dot { width: 8px; height: 8px; border-radius: 50%; background: #aaa; flex-shrink: 0; }
+
+    /* Lock banner */
+    #lock-banner { display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:9px 14px; margin-bottom:12px; font-size:12px; color:#856404; align-items:center; gap:10px; }
+    #lock-banner .lock-icon { font-size:15px; flex-shrink:0; }
+    #lock-banner .lock-msg  { flex:1; line-height:1.4; }
+    #lock-banner .lock-ttl  { font-weight:700; }
+    #lock-banner button { padding:4px 10px; border:1px solid #ffc107; border-radius:4px; background:#fff; color:#856404; cursor:pointer; font-size:11px; font-weight:700; white-space:nowrap; }
+    #lock-banner button:hover { background:#fff3cd; }
+
+    /* Login overlay */
+    #login-overlay { position:fixed; inset:0; background:rgba(15,15,30,0.72); display:none; align-items:center; justify-content:center; z-index:10000; backdrop-filter:blur(3px); }
+    #login-overlay.active { display:flex; }
+    #login-box { background:#fff; border-radius:12px; padding:36px 40px; width:360px; box-shadow:0 12px 40px rgba(0,0,0,0.35); }
+    #login-box h2 { font-size:19px; font-weight:800; margin-bottom:3px; color:#1a1a2e; }
+    .login-sub { color:#888; font-size:13px; margin-bottom:22px; }
+    #login-err { background:#fde8e8; color:#c0392b; border-radius:6px; padding:8px 11px; font-size:12px; margin-bottom:14px; display:none; line-height:1.4; }
+    #login-btn { width:100%; margin-top:10px; padding:10px; font-size:14px; font-weight:700; border-radius:6px; background:#4f8ef7; color:#fff; border:none; cursor:pointer; }
+    #login-btn:hover { background:#3a7de8; }
+    #login-btn:disabled { opacity:0.6; cursor:default; }
+    .login-username-badge { font-size:12px; color:rgba(255,255,255,0.6); margin-left:6px; }
+    #logout-btn { padding:5px 11px; border:1px solid rgba(255,255,255,0.25); border-radius:5px; background:transparent; color:rgba(255,255,255,0.7); cursor:pointer; font-size:11px; font-weight:600; display:none; }
+    #logout-btn:hover { background:rgba(255,255,255,0.1); }
+
+    /* Change history popup */
+    #hist-popup { position:fixed; background:#fff; border:1px solid #c0cce0; border-radius:8px; padding:14px 16px; min-width:270px; max-width:400px; max-height:55vh; overflow-y:auto; box-shadow:0 4px 20px rgba(0,0,0,.18); z-index:9998; display:none; color:#333; }
+    #hist-popup h3 { font-size:13px; font-weight:700; margin:0 0 10px; color:#1a1a2e; }
+    .hist-row { display:flex; justify-content:space-between; align-items:baseline; gap:12px; font-size:12px; padding:5px 0; border-bottom:1px solid #eef1f5; }
+    .hist-row:last-child { border-bottom:none; }
+    .hist-user { font-weight:700; color:#4f8ef7; flex-shrink:0; }
+    .hist-ts { color:#888; white-space:nowrap; }
 
     /* Toast notifications */
     #toast-container { position: fixed; bottom: 28px; right: 16px; display: flex; flex-direction: column; gap: 6px; z-index: 300; pointer-events: none; }
@@ -170,16 +232,31 @@
 <div id="toolbar">
   <h1>ODWN LMF Editor</h1>
   <div class="sep"></div>
-  <button class="btn btn-odwn" onclick="loadODWN()">Load ODWN</button>
-  <button class="btn btn-sec" onclick="document.getElementById('file-input').click()">Open XML</button>
-  <input type="file" id="file-input" accept=".xml,.lmf" onchange="openFile(event)">
-  <button class="btn btn-pri" onclick="doSaveXML()">Save XML</button>
+  <button class="btn btn-pri" onclick="doExportXML()">Export XML</button>
   <button class="btn btn-sec" onclick="doExportJSON()">Export JSON</button>
   <div class="sep"></div>
-  <button class="btn btn-sec" onclick="newLexicon()">New</button>
   <button class="btn btn-sec" onclick="showSettings()">Lexicon Settings</button>
   <div id="collab-ind"><div id="collab-dot"></div><span id="collab-users">1 user</span></div>
+  <span class="login-username-badge" id="tb-username"></span>
+  <button id="logout-btn" onclick="doLogout()">Sign out</button>
   <span id="tb-name"></span>
+</div>
+
+<div id="login-overlay">
+  <div id="login-box">
+    <h2>ODWN LMF Editor</h2>
+    <p class="login-sub">Sign in to collaborate</p>
+    <div id="login-err"></div>
+    <div class="field">
+      <label class="label">Username</label>
+      <input type="text" id="login-user" class="finput" autocomplete="username" placeholder="Username">
+    </div>
+    <div class="field" style="margin-top:8px">
+      <label class="label">Password</label>
+      <input type="password" id="login-pass" class="finput" autocomplete="current-password" placeholder="Password">
+    </div>
+    <button id="login-btn" onclick="doLogin()">Sign in</button>
+  </div>
 </div>
 
 <div id="main">
@@ -201,7 +278,12 @@
   <div id="editor">
     <div id="ed-empty">
       <div class="ico">&#128218;</div>
-      <p>Click <strong>Load ODWN</strong> or open an LMF XML file.</p>
+      <p>Select an entry or synset from the sidebar.</p>
+    </div>
+    <div id="lock-banner">
+      <span class="lock-icon">&#128274;</span>
+      <span class="lock-msg">Being edited by <strong id="lock-user"></strong> — <span class="lock-ttl" id="lock-ttl"></span></span>
+      <button onclick="claimLock()">Claim when free</button>
     </div>
     <div id="ed-content"></div>
   </div>
@@ -232,6 +314,22 @@
       <button class="btn btn-cancel" onclick="closeSettings()">Cancel</button>
       <button class="btn btn-pri" onclick="saveSettings()">Save</button>
     </div>
+  </div>
+</div>
+
+<div id="hist-popup">
+  <h3 id="hist-popup-title">Change History</h3>
+  <div id="hist-popup-body"></div>
+</div>
+
+<div id="ssm-overlay" onclick="if(event.target===this)closeSynSearch()">
+  <div id="ssm-box">
+    <div class="ssm-hd">
+      <span class="ssm-hd-title" id="ssm-title">Find word</span>
+      <button class="delbtn" onclick="closeSynSearch()" title="Cancel">&#x2715;</button>
+    </div>
+    <div id="ssm-body"></div>
+    <div class="ssm-foot" id="ssm-foot"></div>
   </div>
 </div>
 
@@ -342,7 +440,7 @@ function makeEntry() {
 
 function makeSense() {
   return {
-    id: uid('s'), senseId: '1', definition: '', synset: '', provenance: '', annotator: '',
+    id: uid('s'), senseId: '1', definition: '', synset: '', provenance: '', annotator: collabUser || '',
     senseRelations: [],
     semanticsNoun: null, semanticsVerb: null, semanticsAdj: null,
     pragmatics: { domains: [], chronology: '', connotation: '', geography: '', register: '' },
@@ -394,8 +492,9 @@ function rebuildVS() {
   } else {
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
-      const gloss = s.definitions.length ? s.definitions[0].gloss : '';
-      if ((s.id + ' ' + gloss).toLowerCase().includes(f)) vsFiltered.push(i);
+      const gloss = s.definitions && s.definitions.length ? s.definitions[0].gloss : '';
+      const hay = s.id + ' ' + gloss + ' ' + (s.enSyns || '');
+      if (hay.toLowerCase().includes(f)) vsFiltered.push(i);
     }
   }
 
@@ -832,26 +931,51 @@ function parseAndLoad(text, filename) {
   }, 60);
 }
 
-function doSaveXML() {
-  collectEditorState();
-  showLoading('Generating XML…');
-  setTimeout(() => {
+async function doExportXML() {
+  if (collabMode) {
+    showLoading('Generating XML from database…');
     try {
-      download(serializeODWN(state), state.filename || 'lexicon.xml', 'application/xml');
-      state.modified = false;
-      updateStatusBar();
-    } finally { hideLoading(); }
-  }, 30);
+      const r = await _authFetch('/api/export/xml');
+      if (!r.ok) { alert('Export failed: HTTP ' + r.status); return; }
+      const blob = await r.blob();
+      const fname = (r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/);
+      download(blob, fname ? fname[1] : 'lexicon.xml', 'application/xml');
+    } catch (err) { alert('Export error: ' + err.message); }
+    finally { hideLoading(); }
+  } else {
+    collectEditorState();
+    showLoading('Generating XML…');
+    setTimeout(() => {
+      try {
+        download(serializeODWN(state), state.filename || 'lexicon.xml', 'application/xml');
+        state.modified = false;
+        updateStatusBar();
+      } finally { hideLoading(); }
+    }, 30);
+  }
 }
 
-function doExportJSON() {
-  collectEditorState();
-  const data = { globalInfo: state.globalInfo, lexicon: state.lexicon, entries: state.entries, synsets: state.synsets };
-  download(JSON.stringify(data, null, 2), (state.filename || 'lexicon').replace(/\.xml$/i, '') + '.json', 'application/json');
+async function doExportJSON() {
+  if (collabMode) {
+    showLoading('Generating JSON from database…');
+    try {
+      const r = await _authFetch('/api/export/json');
+      if (!r.ok) { alert('Export failed: HTTP ' + r.status); return; }
+      const blob = await r.blob();
+      const fname = (r.headers.get('Content-Disposition') || '').match(/filename="([^"]+)"/);
+      download(blob, fname ? fname[1] : 'lexicon.json', 'application/json');
+    } catch (err) { alert('Export error: ' + err.message); }
+    finally { hideLoading(); }
+  } else {
+    collectEditorState();
+    const data = { globalInfo: state.globalInfo, lexicon: state.lexicon, entries: state.entries, synsets: state.synsets };
+    download(JSON.stringify(data, null, 2), (state.filename || 'lexicon').replace(/\.xml$/i, '') + '.json', 'application/json');
+  }
 }
 
 function download(content, filename, type) {
-  const url = URL.createObjectURL(new Blob([content], { type }));
+  const blob = content instanceof Blob ? content : new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
   Object.assign(document.createElement('a'), { href: url, download: filename }).click();
   URL.revokeObjectURL(url);
 }
@@ -880,14 +1004,12 @@ function addItem() {
   collectEditorState();
   if (state.mode === 'synsets') {
     const s = makeSynset(); state.synsets.unshift(s); state.selectedId = s.id;
+    state.modified = true;
+    rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
     setTimeout(() => { const el = document.getElementById('f-ssid'); if (el) el.focus(); }, 40);
   } else {
-    const e = makeEntry(); state.entries.unshift(e); state.selectedId = e.id;
-    state.selectedGroupIds = null;
-    setTimeout(() => { const el = document.getElementById('f-lemma'); if (el) el.focus(); }, 40);
+    openNewEntryDialog();
   }
-  state.modified = true;
-  rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
 }
 
 function deleteItem(id) {
@@ -1092,7 +1214,8 @@ function buildEntryHTML(entry) {
     ${entry.isMWE ? `<span class="pill pill-orange">MWE</span>` : ''}
     ${entry.formType ? `<span class="pill pill-green">${h(entry.formType)}</span>` : ''}
     <div class="hd-btns">
-      <button class="btn btn-sec" onclick="duplicateEntry('${h(entry.id)}')">Duplicate</button>
+      ${collabMode ? `<button class="btn btn-save" id="save-btn" disabled onclick="editorSave()">Save</button>` : ''}
+      <button class="btn btn-sec" onclick="showHistoryPopup(event,'${h(entry.id)}','entry')">&#128336; History</button>
       <button class="btn btn-red" onclick="deleteItem('${h(entry.id)}')">Delete</button>
     </div>
   </div>
@@ -1205,6 +1328,10 @@ function buildSensesCard(entry) {
 }
 
 function buildSenseBlock(sense, idx, total) {
+  // Synset gloss for the linked synset
+  const _ss = sense.synset ? getSynset(sense.synset) : null;
+  const _ssGloss = _ss && _ss.definitions && _ss.definitions.length ? _ss.definitions[0].gloss : '';
+
   // Semantics-noun section
   const snHTML = sense.semanticsNoun !== null ? `
     <div class="row">
@@ -1238,7 +1365,14 @@ function buildSenseBlock(sense, idx, total) {
       <div class="field"><label>Sense ID</label><input type="text" class="s-senseid" value="${h(sense.senseId)}"></div>
     </div>
     <div class="row">
-      <div class="field w2"><label>Synset</label><div style="display:flex;gap:4px"><input type="text" class="s-synset" style="flex:1;min-width:0" value="${h(sense.synset)}" placeholder="e.g. eng-30-06952861-n"><button class="addbtn" onclick="jumpToSynset(this.previousElementSibling.value)" title="Open in Synsets panel" style="white-space:nowrap;flex-shrink:0">&#x2197; Open</button></div></div>
+      <div class="field w2"><label>Synset <span style="font-size:10px;color:#aaa;font-weight:400">(type ID or paste, then Save)</span></label>
+        <div style="display:flex;gap:4px">
+          <input type="text" class="s-synset" style="flex:1;min-width:0" value="${h(sense.synset)}" placeholder="e.g. eng-30-06952861-n" oninput="updateSenseGloss(this)">
+          ${sense.synset ? `<button class="addbtn" onclick="jumpToSynset(this.previousElementSibling.value)" title="Open in Synsets panel" style="white-space:nowrap;flex-shrink:0">&#x2197; Open</button>` : ''}
+          ${sense.synset ? `<button class="addbtn" style="border-color:#e74c3c;color:#e74c3c;white-space:nowrap;flex-shrink:0" onclick="unlinkSense(this)" title="Remove synset link">Unlink</button>` : `<button class="addbtn" style="white-space:nowrap;flex-shrink:0" onclick="linkSense(this)" title="Set synset from input">Link</button>`}
+        </div>
+        ${_ssGloss ? `<div class="sense-gloss">${h(_ssGloss)}</div>` : `<div class="sense-gloss" style="display:none"></div>`}
+      </div>
       <div class="field"><label>Provenance</label><input type="text" class="s-prov" value="${h(sense.provenance)}"></div>
       <div class="field"><label>Annotator</label><input type="text" class="s-annot" value="${h(sense.annotator)}"></div>
     </div>
@@ -1382,7 +1516,8 @@ function addRF()          { document.getElementById('rf-empty')?.remove(); docum
 function buildOverviewHTML(entryIds) {
   const items = entryIds.map(id => getEntry(id)).filter(Boolean);
   if (!items.length) return '';
-  const label = h(items[0].isMWE ? items[0].mweForm : items[0].lemma) || '—';
+  const rawLemma = items[0].isMWE ? items[0].mweForm : items[0].lemma;
+  const label = h(rawLemma) || '—';
 
   // Sort by senseId (numeric if possible, else lexicographic)
   items.sort((a, b) => {
@@ -1428,7 +1563,7 @@ function buildOverviewHTML(entryIds) {
     <span style="font-size:12px;color:#aaa;margin-left:6px">— click a row to edit</span>
   </div>
   <div class="card">
-    <div class="card-hd">Senses</div>
+    <div class="card-hd">Senses <button class="addbtn" onclick="openNewEntryDialog(${JSON.stringify(rawLemma)})">+ Add sense</button></div>
     <div style="overflow-x:auto">
       <table class="ov-table">
         <thead><tr><th>Form</th><th>Entry ID</th><th>POS</th><th>Sense ID</th><th>Definition</th><th>Synset</th><th>Synset gloss</th></tr></thead>
@@ -1464,6 +1599,8 @@ function buildSynsetHTML(ss) {
     <h2 id="eh-title">${h(ss.id)}</h2>
     ${ss.ili ? `<span class="pill pill-blue">ILI: ${h(ss.ili)}</span>` : ''}
     <div class="hd-btns">
+      ${collabMode ? `<button class="btn btn-save" id="save-btn" disabled onclick="editorSave()">Save</button>` : ''}
+      <button class="btn btn-sec" onclick="showHistoryPopup(event,'${h(ss.id)}','synset')">&#128336; History</button>
       <button class="btn btn-red" onclick="deleteItem('${h(ss.id)}')">Delete</button>
     </div>
   </div>
@@ -1484,12 +1621,14 @@ function buildSynsetHTML(ss) {
         <input type="text" class="def-gloss grow" value="${h(d.gloss)}" placeholder="Gloss…" style="min-width:200px">
         <input type="text" class="def-lang" value="${h(d.language)}" placeholder="lang" style="width:50px">
         <input type="text" class="def-prov" value="${h(d.provenance)}" placeholder="provenance" style="width:80px">
-        <button class="delbtn" onclick="this.closest('.def-row').remove()">&#x2715;</button>
+        <button class="delbtn" onclick="this.closest('.def-row').remove();scheduleAutosave()">&#x2715;</button>
       </div>`).join('') || '<div class="empty-msg" id="def-empty">No definitions.</div>'}
     </div>
   </div>
 
-  ${buildSynonymsCard(ss.id)}
+  ${buildEnSynonymsCard(ss)}
+
+  ${buildSynonymsCard(ss)}
 
   <div class="card">
     <div class="card-hd">Synset Relations <button class="addbtn" onclick="addSSR()">+ Add</button> <span>${ss.synsetRelations.length} relations</span></div>
@@ -1517,13 +1656,14 @@ function buildSSRRow(r) {
     <select class="ssr-type" style="min-width:160px">${sel(SSR_TYPE_OPTS, r.relType)}</select>
     <input type="text" class="ssr-target grow" value="${h(r.target)}" placeholder="Target synset ID…">
     <input type="text" class="ssr-prov" value="${h(r.provenance)}" placeholder="provenance" style="width:80px">
+    <button class="addbtn" onclick="openSSRSearch(this)" title="Search for synset" style="white-space:nowrap;flex-shrink:0">&#x1F50D;</button>
     <button class="addbtn" onclick="jumpToSynset(this.closest('.ssr-row').querySelector('.ssr-target').value)" title="Open in Synsets panel" style="white-space:nowrap;flex-shrink:0">&#x2197;</button>
-    <button class="delbtn" onclick="this.closest('.ssr-row').remove()">&#x2715;</button>
+    <button class="delbtn" onclick="this.closest('.ssr-row').remove();scheduleAutosave()">&#x2715;</button>
   </div>`;
 }
 
-function addDef() { document.getElementById('def-empty')?.remove(); document.getElementById('def-con').insertAdjacentHTML('beforeend', `<div class="irow def-row" style="align-items:flex-start;gap:6px"><input type="text" class="def-gloss grow" placeholder="Gloss…" style="min-width:200px"><input type="text" class="def-lang" placeholder="lang" style="width:50px"><input type="text" class="def-prov" placeholder="provenance" style="width:80px"><button class="delbtn" onclick="this.closest('.def-row').remove()">&#x2715;</button></div>`); document.querySelector('.def-gloss:last-of-type')?.focus(); }
-function addSSR() { document.getElementById('ssr-empty')?.remove(); document.getElementById('ssr-con').insertAdjacentHTML('beforeend', buildSSRRow({ relType:'has_hyperonym', target:'', provenance:'' })); }
+function addDef() { document.getElementById('def-empty')?.remove(); document.getElementById('def-con').insertAdjacentHTML('beforeend', `<div class="irow def-row" style="align-items:flex-start;gap:6px"><input type="text" class="def-gloss grow" placeholder="Gloss…" style="min-width:200px"><input type="text" class="def-lang" placeholder="lang" style="width:50px"><input type="text" class="def-prov" placeholder="provenance" style="width:80px"><button class="delbtn" onclick="this.closest('.def-row').remove();scheduleAutosave()">&#x2715;</button></div>`); document.querySelector('.def-gloss:last-of-type')?.focus(); scheduleAutosave(); }
+function addSSR() { document.getElementById('ssr-empty')?.remove(); document.getElementById('ssr-con').insertAdjacentHTML('beforeend', buildSSRRow({ relType:'has_hyperonym', target:'', provenance:'' })); scheduleAutosave(); }
 
 // =====================================================================
 // LEXICON SETTINGS
@@ -1562,7 +1702,7 @@ function updateStatusBar() {
 // KEYBOARD SHORTCUTS
 // =====================================================================
 
-document.addEventListener('keydown', e => { if ((e.metaKey||e.ctrlKey) && e.key==='s') { e.preventDefault(); doSaveXML(); } });
+document.addEventListener('keydown', e => { if ((e.metaKey||e.ctrlKey) && e.key==='s') { e.preventDefault(); doExportXML(); } });
 window.addEventListener('beforeunload', e => { if (state.modified) { e.preventDefault(); e.returnValue=''; } });
 
 // =====================================================================
@@ -1584,21 +1724,49 @@ function getSynonymEntries(synsetId) {
   return results;
 }
 
-function buildSynonymsCard(ssId) {
-  const syns = getSynonymEntries(ssId);
-  const note = collabMode && syns.length === 0
+function buildEnSynonymsCard(ss) {
+  const words = ss._en_synonyms;
+  if (!words || words.length === 0) return '';
+  const pills = words.map(w =>
+    `<span class="en-syn-pill">${h(w.replace(/_/g, ' '))}</span>`
+  ).join('');
+  return `<div class="card">
+    <div class="card-hd">English synonyms <span style="font-weight:400;font-size:11px;color:#aaa">(read-only · Princeton WordNet 3.0)</span></div>
+    <div class="en-syns-list">${pills}</div>
+  </div>`;
+}
+
+function buildSynonymsCard(ss) {
+  const ssId = typeof ss === 'string' ? ss : ss.id;
+  // In collab mode the server provides _nl_entries with all Dutch synonyms;
+  // in standalone mode fall back to scanning loaded entries in memory.
+  let syns;
+  if (ss._nl_entries) {
+    syns = ss._nl_entries;
+  } else {
+    syns = getSynonymEntries(ssId).map(e => ({
+      id: e.id, lemma: e.isMWE ? (e.mweForm || e.id) : (e.lemma || e.id), partOfSpeech: e.partOfSpeech || ''
+    }));
+  }
+  const note = (!ss._nl_entries && collabMode && syns.length === 0)
     ? '<div class="empty-msg">Open individual entries to index their synset links.</div>'
     : (syns.length === 0 ? '<div class="empty-msg">No entries reference this synset.</div>' : '');
   return `<div class="card">
-    <div class="card-hd">Synonyms <span>${syns.length ? syns.length + ' entr' + (syns.length === 1 ? 'y' : 'ies') : ''}</span></div>
+    <div class="card-hd">Dutch synonyms <span>${syns.length ? syns.length + ' entr' + (syns.length === 1 ? 'y' : 'ies') : ''}</span></div>
     ${note}
     ${syns.map(e => `<div class="irow" style="padding:4px 0;border-bottom:1px solid #f4f4f4">
       <div style="flex:1;min-width:0">
-        <span style="font-weight:600;font-size:13px">${h(e.lemma || e.id)}</span>
-        <span style="font-size:11px;color:#999;margin-left:6px;text-transform:uppercase">${h(e.partOfSpeech || (e.isMWE ? 'MWE' : ''))}</span>
+        <span style="font-weight:600;font-size:13px">${h(e.lemma)}</span>
+        <span style="font-size:11px;color:#999;margin-left:6px;text-transform:uppercase">${h(e.partOfSpeech)}</span>
       </div>
       <button class="addbtn" onclick="jumpToEntry('${h(e.id)}')" title="Open in Entries panel">&#x2197; Open</button>
+      <button class="addbtn" style="border-color:#e74c3c;color:#e74c3c" onclick="unlinkSynonym('${h(e.id)}','${h(ssId)}')" title="Remove synset link">Unlink</button>
     </div>`).join('')}
+    <div class="syn-add-row">
+      <input type="text" id="syn-add-input" placeholder="Entry ID…" style="flex:1;font-size:12px;padding:4px 7px;border:1px solid #ddd;border-radius:4px;background:#fff;color:#333">
+      <button class="addbtn" onclick="addSynonym('${h(ssId)}')">+ Link ID</button>
+      <button class="addbtn" onclick="openSynSearch('${h(ssId)}')">&#128269; Find word</button>
+    </div>
   </div>`;
 }
 
@@ -1613,19 +1781,24 @@ function jumpToSynset(synsetId) {
   document.getElementById('tab-synsets').classList.add('active');
   document.getElementById('add-btn').textContent = '+ Add Synset';
   rebuildVS();
-  // Check the synset exists
   const ss = getSynset(synsetId);
   if (!ss) { showToast('Synset not found: ' + synsetId, true); renderVS(true); renderEditor(); return; }
-  state.selectedId = synsetId;
-  renderVS(true);
-  renderEditor();
   scrollVSToId(synsetId);
   updateStatusBar();
+  if (collabMode) {
+    // Always fetch full data via selectItem — stub has empty synsetRelations and
+    // rendering it would let collectSynsetState wipe relations from the database.
+    state.selectedId = null; // reset so selectItem doesn't early-return on same id
+    window.selectItem(synsetId);
+  } else {
+    state.selectedId = synsetId;
+    renderVS(true);
+    renderEditor();
+  }
 }
 
 function jumpToEntry(entryId) {
   if (!entryId) return;
-  // Save current synset edits first
   collectEditorState();
   state.mode = 'entries';
   state.filter = '';
@@ -1636,13 +1809,16 @@ function jumpToEntry(entryId) {
   rebuildVS();
   const e = getEntry(entryId);
   if (!e) { showToast('Entry not found: ' + entryId, true); renderVS(true); renderEditor(); return; }
-  state.selectedId = entryId;
-  // In collab mode selectItem handles lazy loading; call it directly
-  if (collabMode && e._indexOnly) { window.selectItem(entryId); return; }
-  renderVS(true);
-  renderEditor();
   scrollVSToId(entryId);
   updateStatusBar();
+  if (collabMode) {
+    state.selectedId = null; // reset so selectItem doesn't early-return on same id
+    window.selectItem(entryId);
+  } else {
+    state.selectedId = entryId;
+    renderVS(true);
+    renderEditor();
+  }
 }
 
 function scrollVSToId(id) {
@@ -1664,15 +1840,25 @@ function scrollVSToId(id) {
 
 let collabMode = false;
 let collabSeq  = 0;
-let collabUser = localStorage.getItem('lmf_user') || '';
+let collabUser = '';
 let collabCache = { entries: {}, synsets: {} };
 let collabSaveTimer = null;
+let collabLock = null;        // { user, expires_at, is_mine, item_type, item_id } or null
+let _lockCountdownTimer = null;
+
+// Auth state
+let lmf_token    = localStorage.getItem('lmf_token')    || '';
+let lmf_username = localStorage.getItem('lmf_username') || '';
+
+function _authFetch(url, opts = {}) {
+  if (lmf_token) {
+    opts.headers = Object.assign({ 'X-Session-Token': lmf_token }, opts.headers || {});
+  }
+  return fetch(url, opts);
+}
 
 function getOrSetUser() {
-  if (!collabUser) {
-    collabUser = prompt('Enter your username for collaborative editing:', 'user_' + Math.floor(Math.random()*900+100)) || 'anon';
-    localStorage.setItem('lmf_user', collabUser);
-  }
+  collabUser = lmf_username || 'anon';
   return collabUser;
 }
 
@@ -1680,26 +1866,113 @@ async function initCollab() {
   try {
     const resp = await fetch('/api/status', { signal: AbortSignal.timeout(1500) });
     if (!resp.ok) return;
-    const status = await resp.json();
     collabMode = true;
-    getOrSetUser();
-    _updateCollabDot(true, status.active_users || 1);
-    await fetchIndex();
-    setInterval(pollChanges, 3000);
-    setInterval(sendHeartbeat, 30000);
-    sendHeartbeat();
-    // Autosave on any input in the editor area
-    document.getElementById('editor').addEventListener('input', scheduleAutosave);
-    document.getElementById('editor').addEventListener('change', scheduleAutosave);
+
+    // Validate stored session
+    if (lmf_token) {
+      try {
+        const w = await _authFetch('/api/whoami');
+        if (w.ok) {
+          const wj = await w.json();
+          lmf_username = wj.username;
+          localStorage.setItem('lmf_username', lmf_username);
+          getOrSetUser();
+          await _afterLogin();
+          return;
+        }
+      } catch (_) {}
+      // Token invalid — clear it
+      lmf_token = '';
+      localStorage.removeItem('lmf_token');
+    }
+
+    // No valid session — show login form
+    _showLoginOverlay();
   } catch (_) {
-    // No server running — standalone mode, nothing to do
+    // No server running — standalone mode
   }
+}
+
+function _showLoginOverlay() {
+  const ov = document.getElementById('login-overlay');
+  if (ov) { ov.classList.add('active'); document.getElementById('login-user').focus(); }
+  // Allow Enter key in password field
+  const pw = document.getElementById('login-pass');
+  if (pw) pw.onkeydown = e => { if (e.key === 'Enter') doLogin(); };
+  const u = document.getElementById('login-user');
+  if (u)  u.onkeydown = e => { if (e.key === 'Enter') document.getElementById('login-pass').focus(); };
+}
+
+async function doLogin() {
+  const usernameEl = document.getElementById('login-user');
+  const passwordEl = document.getElementById('login-pass');
+  const errEl      = document.getElementById('login-err');
+  const btn        = document.getElementById('login-btn');
+  const username   = usernameEl.value.trim();
+  const password   = passwordEl.value;
+  if (!username || !password) {
+    errEl.textContent = 'Please enter your username and password.';
+    errEl.style.display = 'block'; return;
+  }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  errEl.style.display = 'none';
+  try {
+    const resp = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const res = await resp.json();
+    if (!resp.ok) {
+      errEl.textContent = res.error || 'Login failed.';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Sign in';
+      passwordEl.value = ''; passwordEl.focus();
+      return;
+    }
+    lmf_token    = res.token;
+    lmf_username = res.username;
+    localStorage.setItem('lmf_token',    lmf_token);
+    localStorage.setItem('lmf_username', lmf_username);
+    getOrSetUser();
+    document.getElementById('login-overlay').classList.remove('active');
+    btn.disabled = false; btn.textContent = 'Sign in';
+    await _afterLogin();
+  } catch (err) {
+    errEl.textContent = 'Connection error: ' + err.message;
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+async function doLogout() {
+  try {
+    await _authFetch('/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+  } catch (_) {}
+  localStorage.removeItem('lmf_token');
+  localStorage.removeItem('lmf_username');
+  window.location.reload();
+}
+
+async function _afterLogin() {
+  const status = await (await fetch('/api/status')).json().catch(() => ({}));
+  _updateCollabDot(true, status.active_users || 1);
+  const logoutBtn = document.getElementById('logout-btn');
+  if (logoutBtn) logoutBtn.style.display = 'inline-block';
+  const tbUser = document.getElementById('tb-username');
+  if (tbUser) tbUser.textContent = lmf_username;
+  await fetchIndex();
+  setInterval(pollChanges, 3000);
+  setInterval(sendHeartbeat, 30000);
+  sendHeartbeat();
+  document.getElementById('editor').addEventListener('input', scheduleAutosave);
+  document.getElementById('editor').addEventListener('change', scheduleAutosave);
 }
 
 async function fetchIndex() {
   showLoading('Loading index from server…');
   try {
-    const resp = await fetch('/api/index');
+    const resp = await _authFetch('/api/index');
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
     collabSeq        = data.seq || 0;
@@ -1719,6 +1992,7 @@ async function fetchIndex() {
     state.synsets = (data.synset_index || []).map(si => ({
       id: si.id, ili: '', baseConcept: '', _indexOnly: true,
       definitions: si.gloss ? [{ gloss: si.gloss, language: '', provenance: '' }] : [],
+      enSyns: si.enSyns || '',
       synsetRelations: [], monolingualExternalRefs: []
     }));
     state.modified = false;
@@ -1739,7 +2013,15 @@ window.selectItem = async function(id) {
   const grp = vsGroups[id];
   if (grp && state.selectedGroupIds && state.selectedGroupIds[0] === id) return;
   if (!grp && state.selectedId === id && !state.selectedGroupIds) return;
-  // Flush current edits before switching (not needed when in overview)
+
+  // Release lock on current item before switching
+  if (!state.selectedGroupIds && state.selectedId && collabLock && collabLock.is_mine) {
+    _releaseLock(collabLock.item_type, state.selectedId);
+  }
+  collabLock = null;
+  _updateLockBanner();
+
+  // Flush current edits before switching
   if (!state.selectedGroupIds && state.selectedId) {
     collectEditorState();
     await _pushUpdate();
@@ -1750,13 +2032,12 @@ window.selectItem = async function(id) {
   if (grp && grp.length > 1) {
     const groupIds = grp.map(i => state.entries[i].id);
     state.selectedGroupIds = groupIds;
-    // Fetch all stubs in parallel so overview shows definitions
     await Promise.all(groupIds.map(async gid => {
       const e = getEntry(gid);
       if (e && e._indexOnly) {
         try {
-          const r = await fetch('/api/entry/' + encodeURIComponent(gid));
-          if (r.ok) { const full = await r.json(); const idx = state.entries.findIndex(x => x.id === gid); if (idx >= 0) state.entries[idx] = full; }
+          const r = await _authFetch('/api/entry/' + encodeURIComponent(gid));
+          if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.entries.findIndex(x => x.id === gid); if (idx >= 0) state.entries[idx] = full; }
         } catch (_) {}
       }
     }));
@@ -1767,12 +2048,20 @@ window.selectItem = async function(id) {
 
   state.selectedGroupIds = null;
   const item = state.mode === 'entries' ? getEntry(id) : getSynset(id);
-  if (item && item._indexOnly) {
-    try {
-      const url = state.mode === 'entries' ? '/api/entry/' + encodeURIComponent(id) : '/api/synset/' + encodeURIComponent(id);
-      const resp = await fetch(url);
+  const needFetch = item && item._indexOnly;
+  try {
+    const itype = state.mode === 'entries' ? 'entry' : 'synset';
+    const base  = state.mode === 'entries' ? '/api/entry/' : '/api/synset/';
+    const url   = base + encodeURIComponent(id);
+    if (needFetch || true) { // always re-fetch to get fresh lock state
+      const resp = await _authFetch(url);
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const full = await resp.json();
+      // Extract and store lock info, then remove it from the data object
+      if (full._lock) {
+        collabLock = { ...full._lock, item_type: itype, item_id: id };
+        delete full._lock;
+      }
       if (state.mode === 'entries') {
         const idx = state.entries.findIndex(e => e.id === id);
         if (idx >= 0) state.entries[idx] = full;
@@ -1780,10 +2069,11 @@ window.selectItem = async function(id) {
         const idx = state.synsets.findIndex(s => s.id === id);
         if (idx >= 0) state.synsets[idx] = full;
       }
-    } catch (err) {
-      showToast('Could not fetch item: ' + err.message, true);
     }
+  } catch (err) {
+    showToast('Could not fetch item: ' + err.message, true);
   }
+  _updateLockBanner();
   renderEditor();
   document.getElementById('editor').scrollTop = 0;
 };
@@ -1791,11 +2081,12 @@ window.selectItem = async function(id) {
 // Override addItem to POST new item to server
 const _addItemOrig = addItem;
 window.addItem = async function() {
-  _addItemOrig();
+  if (state.mode === 'entries') { openNewEntryDialog(); return; }
+  _addItemOrig(); // synsets branch only
   if (!collabMode) return;
   const id = state.selectedId;
-  const data = state.mode === 'entries' ? getEntry(id) : getSynset(id);
-  if (data) await _pushUpdate('add', state.mode === 'entries' ? 'entry' : 'synset', data);
+  const data = getSynset(id);
+  if (data) await _pushUpdate('add', 'synset', data);
 };
 
 // Override deleteItem to also POST delete to server
@@ -1823,26 +2114,11 @@ window.duplicateEntry = async function(id) {
   if (copy) await _pushUpdate('add', 'entry', copy);
 };
 
-// Override doSaveXML to write to disk via server when in collab mode
-const _doSaveXMLOrig = doSaveXML;
-window.doSaveXML = async function() {
-  if (!collabMode) { _doSaveXMLOrig(); return; }
-  // Flush current entry first
-  if (state.selectedId) { collectEditorState(); await _pushUpdate(); }
-  try {
-    setAutosaveStatus('Saving XML to disk…');
-    const resp = await fetch('/api/save', { method: 'POST' });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    setAutosaveStatus('Saved to disk');
-    showToast('File saved to disk.');
-  } catch (err) {
-    setAutosaveStatus('Save failed!', true);
-    alert('Save failed: ' + err.message);
-  }
-};
 
 // Debounced autosave triggered by editor input events
 function scheduleAutosave() {
+  const btn = document.getElementById('save-btn');
+  if (btn) btn.disabled = false;
   if (!collabMode || !state.selectedId) return;
   clearTimeout(collabSaveTimer);
   setAutosaveStatus('Saving…');
@@ -1852,20 +2128,33 @@ function scheduleAutosave() {
   }, 1500);
 }
 
-async function _pushUpdate(op, itemType, data) {
+async function _pushUpdate(op, itemType, data, explicit) {
   op       = op       || 'update';
   itemType = itemType || (state.mode === 'entries' ? 'entry' : 'synset');
   if (!data) data = state.mode === 'entries' ? getEntry(state.selectedId) : getSynset(state.selectedId);
   if (!data || data._indexOnly) return;
   try {
-    const resp = await fetch('/api/update', {
+    const resp = await _authFetch('/api/update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ op, itemType, data, user: collabUser })
+      body: JSON.stringify({ op, itemType, data, user: collabUser, explicit: !!explicit })
     });
+    if (resp.status === 423) {
+      const res = await resp.json();
+      const holder = res.lock ? res.lock.user : 'someone else';
+      setAutosaveStatus('Locked by ' + holder, true);
+      showToast('Save blocked — ' + holder + ' is editing this item', true);
+      if (res.lock) {
+        collabLock = { ...res.lock, item_type: itemType, item_id: data.id, is_mine: false };
+        _updateLockBanner();
+      }
+      return;
+    }
     if (resp.ok) {
       const res = await resp.json();
       if (res.seq) collabSeq = res.seq;
+      // Sync server-assigned _changes back onto the local item so the history popup stays current
+      if (res.changes && op === 'update' && data) data._changes = res.changes;
       setAutosaveStatus('Saved');
     } else {
       setAutosaveStatus('Save error', true);
@@ -1875,10 +2164,58 @@ async function _pushUpdate(op, itemType, data) {
   }
 }
 
+function _releaseLock(itemType, itemId) {
+  if (!itemType || !itemId) return;
+  // Use sendBeacon for reliability on page unload (token in body since sendBeacon has no custom headers)
+  const body = JSON.stringify({ itemType, itemId, user: collabUser, token: lmf_token });
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon('/api/unlock', new Blob([body], { type: 'application/json' }));
+  } else {
+    fetch('/api/unlock', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Session-Token': lmf_token }, body }).catch(() => {});
+  }
+}
+
+function _updateLockBanner() {
+  clearInterval(_lockCountdownTimer);
+  const banner   = document.getElementById('lock-banner');
+  const lockUser = document.getElementById('lock-user');
+  const lockTtl  = document.getElementById('lock-ttl');
+  const editor   = document.getElementById('ed-content');
+  if (!banner) return;
+
+  if (!collabLock || collabLock.is_mine) {
+    banner.style.display = 'none';
+    if (editor) editor.querySelectorAll('input,select,textarea,button.addbtn,.btn-red').forEach(el => el.disabled = false);
+    return;
+  }
+
+  banner.style.display = 'flex';
+  if (lockUser) lockUser.textContent = collabLock.user;
+
+  function updateTtl() {
+    const secs = Math.max(0, Math.round(collabLock.expires_at - Date.now() / 1000));
+    if (lockTtl) lockTtl.textContent = secs > 0 ? `lock expires in ${secs}s` : 'lock expired — click Claim';
+    if (editor) editor.querySelectorAll('input,select,textarea').forEach(el => el.disabled = true);
+  }
+  updateTtl();
+  _lockCountdownTimer = setInterval(() => {
+    updateTtl();
+    if (collabLock && Date.now() / 1000 > collabLock.expires_at) clearInterval(_lockCountdownTimer);
+  }, 1000);
+}
+
+function claimLock() {
+  if (!state.selectedId) return;
+  // Re-fetch the item, which will attempt lock acquisition
+  const id = state.selectedId;
+  state.selectedId = null;  // force re-fetch even though same id
+  window.selectItem(id);
+}
+
 // Poll for remote changes every 3 seconds
 async function pollChanges() {
   try {
-    const resp = await fetch('/api/changes?since=' + collabSeq);
+    const resp = await _authFetch('/api/changes?since=' + collabSeq);
     if (!resp.ok) return;
     const data = await resp.json();
     if (data.changes && data.changes.length) {
@@ -1926,18 +2263,26 @@ function applyChange(ch) {
   }
 
   rebuildVS(); renderVS();
+  if (collabMode) _updateLockBanner();
   showToast(ch.user + ' ' + op + 'd a ' + itemType);
 }
 
 async function sendHeartbeat() {
   try {
-    await fetch('/api/heartbeat', {
+    await _authFetch('/api/heartbeat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: collabUser })
     });
   } catch (_) {}
 }
+
+// Release lock when the page is closed or navigated away
+window.addEventListener('beforeunload', () => {
+  if (collabMode && collabLock && collabLock.is_mine && state.selectedId) {
+    _releaseLock(collabLock.item_type, state.selectedId);
+  }
+});
 
 function _updateCollabDot(connected, userCount) {
   const ind = document.getElementById('collab-ind');
@@ -1955,6 +2300,641 @@ function setAutosaveStatus(msg, isError) {
   el.textContent = msg;
   el.style.color = isError ? '#e74c3c' : 'rgba(255,255,255,0.5)';
 }
+
+// Immediately save the current item to the database
+async function editorSave() {
+  if (!collabMode) return;
+  collectEditorState();
+  const btn = document.getElementById('save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  await _pushUpdate('update', null, null, true);
+  if (btn) { btn.textContent = 'Save'; }
+}
+
+// Update the inline gloss below a synset input when the value changes
+function updateSenseGloss(input) {
+  const gloss = input.closest('.field').querySelector('.sense-gloss');
+  if (!gloss) return;
+  const ss = input.value ? getSynset(input.value) : null;
+  const text = ss && ss.definitions && ss.definitions.length ? ss.definitions[0].gloss : '';
+  gloss.textContent = text;
+  gloss.style.display = text ? '' : 'none';
+}
+
+// Fetch a full entry (handles stub _indexOnly entries in collab mode, or looks up in state)
+async function _fetchFullEntry(entryId) {
+  let entry = getEntry(entryId);
+  if (entry && !entry._indexOnly) return entry;
+  if (!collabMode) {
+    if (!entry) throw new Error('Entry not found: ' + entryId);
+    return entry;
+  }
+  const r = await _authFetch('/api/entry/' + encodeURIComponent(entryId));
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  entry = await r.json();
+  delete entry._lock;
+  const idx = state.entries.findIndex(e => e.id === entryId);
+  if (idx >= 0) state.entries[idx] = entry; else state.entries.push(entry);
+  return entry;
+}
+
+// Clear the synset field of the sense whose Unlink button was clicked
+function unlinkSense(btn) {
+  const input = btn.closest('.field').querySelector('.s-synset');
+  if (!input) return;
+  input.value = '';
+  updateSenseGloss(input);
+  scheduleAutosave();
+}
+
+// Treat current input value as the synset link (called when sense has no synset yet)
+function linkSense(btn) {
+  const input = btn.closest('.field').querySelector('.s-synset');
+  if (!input || !input.value.trim()) { input && input.focus(); return; }
+  updateSenseGloss(input);
+  scheduleAutosave();
+}
+
+// Remove the synset link from an entry's sense (called from Synonyms card)
+async function unlinkSynonym(entryId, synsetId) {
+  if (!confirm('Remove synset link from entry ' + entryId + '?')) return;
+  let entry;
+  try { entry = await _fetchFullEntry(entryId); }
+  catch (err) { showToast('Could not load entry: ' + err.message, true); return; }
+  let changed = false;
+  for (const s of entry.senses || []) {
+    if (s.synset === synsetId) { s.synset = ''; changed = true; }
+  }
+  if (!changed) { showToast('No sense found linking to this synset', true); return; }
+  if (collabMode) {
+    try {
+      const resp = await _authFetch('/api/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op: 'update', itemType: 'entry', data: entry, user: collabUser })
+      });
+      if (!resp.ok) { showToast('Save failed', true); return; }
+    } catch (err) { showToast('Error: ' + err.message, true); return; }
+  }
+  const ss = getSynset(synsetId);
+  if (ss && ss._nl_entries) {
+    ss._nl_entries = ss._nl_entries.filter(e => e.id !== entryId);
+  }
+  showToast('Synonym link removed');
+  _refreshSynonymsCard(synsetId);
+}
+
+// Link an entry to this synset (sets its first sense's synset field)
+async function addSynonym(synsetId) {
+  const input = document.getElementById('syn-add-input');
+  const entryId = input ? input.value.trim() : '';
+  if (!entryId) { if (input) input.focus(); return; }
+  let entry;
+  try { entry = await _fetchFullEntry(entryId); }
+  catch (err) { showToast('Entry not found: ' + entryId, true); return; }
+  if (!entry.senses || !entry.senses.length) {
+    showToast('Entry has no senses to link', true); return;
+  }
+  if (entry.senses.some(s => s.synset === synsetId)) {
+    showToast('Entry already linked to this synset'); return;
+  }
+  entry.senses[0].synset = synsetId;
+  if (collabMode) {
+    try {
+      const resp = await _authFetch('/api/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op: 'update', itemType: 'entry', data: entry, user: collabUser })
+      });
+      if (!resp.ok) { showToast('Save failed', true); return; }
+    } catch (err) { showToast('Error: ' + err.message, true); return; }
+  }
+  const ss = getSynset(synsetId);
+  if (ss && ss._nl_entries && !ss._nl_entries.some(e => e.id === entryId)) {
+    ss._nl_entries.push({
+      id: entryId,
+      lemma: entry.isMWE ? (entry.mweForm || entryId) : (entry.lemma || entryId),
+      partOfSpeech: entry.partOfSpeech || ''
+    });
+  }
+  if (input) input.value = '';
+  showToast('Synonym linked');
+  _refreshSynonymsCard(synsetId);
+}
+
+// ── Synonym search modal ──────────────────────────────────────────────
+
+let _ssmState = {};
+
+function openSynSearch(synsetId) {
+  _ssmState = { synsetId, query: '' };
+  document.getElementById('ssm-overlay').classList.add('open');
+  _ssmShowSearch('');
+}
+
+function closeSynSearch() {
+  document.getElementById('ssm-overlay').classList.remove('open');
+}
+
+function _ssmFoot(html) {
+  document.getElementById('ssm-foot').innerHTML = html;
+}
+
+function _ssmShowSearch(query) {
+  _ssmState.query = query;
+  document.getElementById('ssm-title').textContent = 'Find word to add as synonym';
+  document.getElementById('ssm-body').innerHTML = `
+    <input type="text" id="ssm-q" placeholder="Type a written form…"
+           value="${h(query)}"
+           oninput="_ssmRunSearch(this.value)"
+           onkeydown="if(event.key==='Escape')closeSynSearch()"
+           style="width:100%;box-sizing:border-box;padding:7px 10px;border:1px solid #ccc;border-radius:5px;font-size:13px;margin-bottom:10px">
+    <div id="ssm-results"></div>`;
+  _ssmFoot(`<button class="btn btn-sec" style="margin-left:auto" onclick="closeSynSearch()">Cancel</button>`);
+  setTimeout(() => {
+    const inp = document.getElementById('ssm-q');
+    if (inp) { inp.focus(); inp.selectionStart = inp.selectionEnd = query.length; }
+  }, 20);
+  if (query) _ssmRunSearch(query);
+}
+
+function _ssmRunSearch(query) {
+  _ssmState.query = query;
+  const cont = document.getElementById('ssm-results');
+  if (!cont) return;
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    cont.innerHTML = '<div style="color:#aaa;font-size:12px;padding:2px 0">Start typing to search entries…</div>';
+    return;
+  }
+  const exact = [], prefix = [], sub = [];
+  for (const e of state.entries) {
+    const lemma = (e.isMWE ? (e.mweForm || '') : (e.lemma || '')).toLowerCase();
+    if (!lemma) continue;
+    if (lemma === q)              exact.push(e);
+    else if (lemma.startsWith(q)) prefix.push(e);
+    else if (lemma.includes(q))   sub.push(e);
+  }
+  const all = [...exact, ...prefix, ...sub];
+  if (all.length === 0) {
+    cont.innerHTML = `
+      <div style="font-size:13px;color:#555;padding:4px 0">
+        No entry found for "<strong>${h(query.trim())}</strong>".
+      </div>`;
+    _ssmFoot(`
+      <button class="btn btn-pri" onclick="_ssmAskCreate(${JSON.stringify(query.trim())})">Create new entry</button>
+      <button class="btn btn-sec" style="margin-left:auto" onclick="closeSynSearch()">Cancel</button>`);
+    return;
+  }
+  _ssmFoot(`<button class="btn btn-sec" style="margin-left:auto" onclick="closeSynSearch()">Cancel</button>`);
+  const shown = all.slice(0, 20);
+  cont.innerHTML = shown.map(e => {
+    const lemma = e.isMWE ? (e.mweForm || e.id) : (e.lemma || e.id);
+    return `<div class="ssm-result" onclick="_ssmSelectEntry('${h(e.id)}')">
+      <span class="ssm-r-lemma">${h(lemma)}</span>
+      <span class="ssm-r-pos">${h(e.partOfSpeech || '')}</span>
+      <span class="ssm-r-id">${h(e.id)}</span>
+    </div>`;
+  }).join('') + (all.length > 20
+    ? `<div style="color:#aaa;font-size:11px;padding:6px 2px">…${all.length - 20} more results hidden — type more to narrow down</div>`
+    : '');
+}
+
+async function _ssmSelectEntry(entryId) {
+  document.getElementById('ssm-title').textContent = 'Loading…';
+  document.getElementById('ssm-body').innerHTML = '<div style="color:#aaa;font-size:12px;padding:8px 0">Loading entry…</div>';
+  _ssmFoot('');
+  let entry;
+  try { entry = await _fetchFullEntry(entryId); }
+  catch (err) {
+    document.getElementById('ssm-body').innerHTML =
+      `<div style="color:#c00;font-size:12px">Could not load entry: ${h(err.message)}</div>`;
+    _ssmFoot(`<button class="btn btn-sec" onclick="_ssmShowSearch(${JSON.stringify(_ssmState.query)})">← Back</button>
+              <button class="btn btn-sec" style="margin-left:auto" onclick="closeSynSearch()">Cancel</button>`);
+    return;
+  }
+  _ssmState.entry = entry;
+  _ssmShowSenses();
+}
+
+function _ssmShowSenses() {
+  const { entry, synsetId } = _ssmState;
+  const lemma = entry.isMWE ? (entry.mweForm || entry.id) : (entry.lemma || entry.id);
+  document.getElementById('ssm-title').textContent = `Senses of "${lemma}"`;
+  const senses = entry.senses || [];
+
+  const rows = senses.map((s, i) => {
+    const alreadyThis  = s.synset === synsetId;
+    const otherSynset  = s.synset && !alreadyThis;
+    const def = s.definition || '';
+    const ssLabel = alreadyThis
+      ? `<span style="color:#27ae60">✓ already linked to this synset</span>`
+      : s.synset
+      ? `<span style="color:#e67e22">→ ${h(s.synset)} (will be replaced)</span>`
+      : `<span style="color:#bbb">no synset</span>`;
+    const btn = alreadyThis
+      ? `<button class="addbtn" disabled style="opacity:.4;flex-shrink:0">Linked</button>`
+      : `<button class="addbtn" style="flex-shrink:0" onclick="_ssmLinkSense(${i})">Select</button>`;
+    return `<div class="ssm-sense-row">
+      <span class="ssm-sense-num">${h(String(s.senseId || (i + 1)))}</span>
+      <div class="ssm-sense-info">
+        <div class="ssm-sense-def">${def ? h(def) : '<em style="color:#bbb">no definition</em>'}</div>
+        <div class="ssm-sense-ss">${ssLabel}</div>
+      </div>
+      ${btn}
+    </div>`;
+  }).join('');
+
+  document.getElementById('ssm-body').innerHTML =
+    (rows || '<div style="color:#aaa;font-size:12px;margin-bottom:10px">This entry has no senses yet.</div>') +
+    `<button class="addbtn" style="width:100%;justify-content:center;padding:7px;margin-top:6px"
+             onclick="_ssmAddNewSense()">+ Add new sense and link to this synset</button>`;
+
+  _ssmFoot(`
+    <button class="btn btn-sec" onclick="_ssmShowSearch(${JSON.stringify(_ssmState.query)})">← Back</button>
+    <button class="btn btn-sec" style="margin-left:auto" onclick="closeSynSearch()">Cancel</button>`);
+}
+
+async function _ssmLinkSense(senseIdx) {
+  const { entry, synsetId } = _ssmState;
+  const sense = entry.senses[senseIdx];
+  if (sense.synset && sense.synset !== synsetId) {
+    if (!confirm(`This sense is already linked to\n${sense.synset}\n\nReplace with ${synsetId}?`)) return;
+  }
+  sense.synset = synsetId;
+  await _ssmSaveEntry(entry);
+}
+
+async function _ssmAddNewSense() {
+  const { entry, synsetId } = _ssmState;
+  const maxId = Math.max(0, ...(entry.senses || []).map(s => parseInt(s.senseId) || 0));
+  const ns = makeSense();
+  ns.senseId = String(maxId + 1);
+  ns.synset  = synsetId;
+  entry.senses.push(ns);
+  await _ssmSaveEntry(entry);
+}
+
+async function _ssmSaveEntry(entry) {
+  const { synsetId } = _ssmState;
+  if (collabMode) {
+    try {
+      const resp = await _authFetch('/api/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op: 'update', itemType: 'entry', data: entry, user: collabUser })
+      });
+      if (!resp.ok) { showToast('Save failed: HTTP ' + resp.status, true); return; }
+    } catch (err) { showToast('Error saving: ' + err.message, true); return; }
+  }
+  // Keep _nl_entries on the synset up to date
+  const ss = getSynset(synsetId);
+  const lemma = entry.isMWE ? (entry.mweForm || entry.id) : (entry.lemma || entry.id);
+  if (ss && ss._nl_entries && !ss._nl_entries.some(e => e.id === entry.id)) {
+    ss._nl_entries.push({ id: entry.id, lemma, partOfSpeech: entry.partOfSpeech || '' });
+  }
+  showToast('Synonym linked');
+  closeSynSearch();
+  _refreshSynonymsCard(synsetId);
+}
+
+function _ssmAskCreate(word) {
+  document.getElementById('ssm-title').textContent = 'Create new entry';
+  document.getElementById('ssm-body').innerHTML = `
+    <div style="font-size:13px;color:#444;margin-bottom:14px;line-height:1.5">
+      No entry found for "<strong>${h(word)}</strong>".<br>
+      Create a new lexical entry with one sense linked to this synset?
+    </div>
+    <div class="field" style="margin-bottom:4px">
+      <label class="label">Part of speech</label>
+      <select id="ssm-pos" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;width:180px">
+        <option value="noun">noun</option>
+        <option value="verb">verb</option>
+        <option value="adjective">adjective</option>
+        <option value="adverb">adverb</option>
+        <option value="other">other</option>
+      </select>
+    </div>`;
+  _ssmFoot(`
+    <button class="btn btn-pri" onclick="_ssmCreateEntry(${JSON.stringify(word)})">Create &amp; link</button>
+    <button class="btn btn-sec" onclick="_ssmShowSearch(${JSON.stringify(word)})">← Back</button>
+    <button class="btn btn-sec" style="margin-left:auto" onclick="closeSynSearch()">Cancel</button>`);
+}
+
+async function _ssmCreateEntry(word) {
+  const { synsetId } = _ssmState;
+  const pos = document.getElementById('ssm-pos')?.value || 'noun';
+  const abbr = { noun:'n', verb:'v', adjective:'a', adverb:'r', other:'o' }[pos] || 'n';
+  let n = 1;
+  while (state.entries.some(e => e.id === `${word}-${abbr}-${n}`)) n++;
+  const entryId = `${word}-${abbr}-${n}`;
+  const ns = makeSense();
+  ns.senseId = '1';
+  ns.synset  = synsetId;
+  const entry = {
+    id: entryId, lemma: word, partOfSpeech: pos,
+    isMWE: false, mweForm: '', mweExpressionType: '', lemmaMode: '', formType: '',
+    wordForms: [], relatedForms: [], senses: [ns],
+    morphology: { morphoType:'', comparisonType:'', declinable:'', separability:'' },
+    morphoSyntax: { pronominalAndGrammaticalGender:'', adverbialUsage:'', position:'', reflexivity:'', auxiliaries:[] },
+    syntacticBehaviour: { valency:'', transitivity:'', complementations:[], subcatFrames:[] }
+  };
+  if (collabMode) {
+    try {
+      const resp = await _authFetch('/api/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op: 'add', itemType: 'entry', data: entry, user: collabUser })
+      });
+      if (!resp.ok) { showToast('Create failed: HTTP ' + resp.status, true); return; }
+    } catch (err) { showToast('Error: ' + err.message, true); return; }
+  }
+  state.entries.unshift(entry);
+  const ss = getSynset(synsetId);
+  if (ss && ss._nl_entries && !ss._nl_entries.some(e => e.id === entryId)) {
+    ss._nl_entries.push({ id: entryId, lemma: word, partOfSpeech: pos });
+  }
+  showToast(`Entry "${entryId}" created and linked`);
+  closeSynSearch();
+  rebuildVS();
+  _refreshSynonymsCard(synsetId);
+}
+
+function _nextOdwn20Id(posAbbr) {
+  let max = 0;
+  const re = /^odwn-20-(\d+)-[a-z]+$/;
+  for (const s of state.synsets) {
+    const m = re.exec(s.id);
+    if (m) { const n = parseInt(m[1], 10); if (n > max) max = n; }
+  }
+  return `odwn-20-${String(max + 1).padStart(9, '0')}-${posAbbr}`;
+}
+
+function openNewEntryDialog(prefillLemma) {
+  document.getElementById('ssm-title').textContent = 'New entry & synset';
+  document.getElementById('ssm-body').innerHTML = `
+    <div style="font-size:13px;color:#555;margin-bottom:12px;line-height:1.5">
+      A new synset will be created automatically and linked to this entry.
+    </div>
+    <div class="field" style="margin-bottom:10px">
+      <label class="label">Lemma</label>
+      <input id="ssm-new-lemma" type="text" style="width:100%;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px" placeholder="written form"
+             value="${prefillLemma ? h(prefillLemma) : ''}"
+             onkeydown="if(event.key==='Enter')_createNewEntryWithSynset();if(event.key==='Escape')closeSynSearch()">
+    </div>
+    <div class="field">
+      <label class="label">Part of speech</label>
+      <select id="ssm-new-pos" style="padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;width:180px">
+        <option value="noun">noun</option>
+        <option value="verb">verb</option>
+        <option value="adjective">adjective</option>
+        <option value="adverb">adverb</option>
+        <option value="other">other</option>
+      </select>
+    </div>`;
+  _ssmFoot(`
+    <button class="btn btn-pri" onclick="_createNewEntryWithSynset()">Create</button>
+    <button class="btn btn-sec" style="margin-left:auto" onclick="closeSynSearch()">Cancel</button>`);
+  document.getElementById('ssm-overlay').classList.add('open');
+  setTimeout(() => {
+    const el = prefillLemma ? document.getElementById('ssm-new-pos') : document.getElementById('ssm-new-lemma');
+    if (el) el.focus();
+  }, 40);
+}
+
+async function _createNewEntryWithSynset() {
+  const lemmaEl = document.getElementById('ssm-new-lemma');
+  const posEl   = document.getElementById('ssm-new-pos');
+  const word = (lemmaEl?.value || '').trim();
+  const pos  = posEl?.value || 'noun';
+  if (!word) { if (lemmaEl) { lemmaEl.style.borderColor = '#e55'; lemmaEl.focus(); } return; }
+
+  const abbr = { noun:'n', verb:'v', adjective:'a', adverb:'r', other:'o' }[pos] || 'n';
+  let n = 1;
+  while (state.entries.some(e => e.id === `${word}-${abbr}-${n}`)) n++;
+  const entryId  = `${word}-${abbr}-${n}`;
+  const synsetId = _nextOdwn20Id(abbr);
+
+  const ns = makeSense();
+  ns.senseId = '1';
+  ns.synset  = synsetId;
+
+  const entry = {
+    id: entryId, lemma: word, partOfSpeech: pos,
+    isMWE: false, mweForm: '', mweExpressionType: '', lemmaMode: '', formType: '',
+    wordForms: [], relatedForms: [], senses: [ns],
+    morphology: { morphoType:'', comparisonType:'', declinable:'', separability:'' },
+    morphoSyntax: { pronominalAndGrammaticalGender:'', adverbialUsage:'', position:'', reflexivity:'', auxiliaries:[] },
+    syntacticBehaviour: { valency:'', transitivity:'', complementations:[], subcatFrames:[] }
+  };
+
+  const synset = {
+    id: synsetId, ili: '', baseConcept: '', definitions: [], synsetRelations: [],
+    monolingualExternalRefs: [],
+    _nl_entries: [{ id: entryId, lemma: word, partOfSpeech: pos }]
+  };
+
+  if (collabMode) {
+    try {
+      let resp = await _authFetch('/api/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op: 'add', itemType: 'synset', data: synset, user: collabUser })
+      });
+      if (!resp.ok) { showToast('Create synset failed: HTTP ' + resp.status, true); return; }
+      resp = await _authFetch('/api/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op: 'add', itemType: 'entry', data: entry, user: collabUser })
+      });
+      if (!resp.ok) { showToast('Create entry failed: HTTP ' + resp.status, true); return; }
+    } catch (err) { showToast('Error: ' + err.message, true); return; }
+  }
+
+  state.synsets.unshift(synset);
+  state.entries.unshift(entry);
+  state.modified = true;
+  closeSynSearch();
+  state.mode = 'entries';
+  state.selectedId = entryId;
+  state.selectedGroupIds = null;
+  rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
+  showToast(`Created "${entryId}" → ${synsetId}`);
+}
+
+// ── Synset relation search ─────────────────────────────────────────────
+let _ssrState = { row: null };
+
+function openSSRSearch(btn) {
+  _ssrState.row = btn.closest('.ssr-row');
+  document.getElementById('ssm-title').textContent = 'Find synset';
+  document.getElementById('ssm-body').innerHTML = `
+    <div class="irow" style="gap:6px;margin-bottom:10px">
+      <input id="ssm-sr-q" type="text" style="flex:1;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px"
+             placeholder="Dutch or English synonym…"
+             oninput="_ssrRunSearch(this.value)"
+             onkeydown="if(event.key==='Escape')closeSynSearch()">
+    </div>
+    <div id="ssm-sr-results"></div>`;
+  _ssmFoot(`<button class="btn btn-sec" style="margin-left:auto" onclick="closeSynSearch()">Cancel</button>`);
+  document.getElementById('ssm-overlay').classList.add('open');
+  setTimeout(() => { document.getElementById('ssm-sr-q')?.focus(); }, 40);
+  _ssrRunSearch('');
+}
+
+function _ssrRunSearch(query) {
+  const el = document.getElementById('ssm-sr-results');
+  if (!el) return;
+  const q = query.trim().toLowerCase();
+  if (!q) {
+    el.innerHTML = '<div style="color:#aaa;font-size:12px;padding:4px 0">Type a Dutch or English word to find synsets…</div>';
+    return;
+  }
+
+  // Collect hits: synsetId → score. Exact matches score much higher than partial.
+  const hits = new Map();
+  const bump = (id, n) => hits.set(id, (hits.get(id) || 0) + n);
+
+  // Dutch: scan fully-loaded entries
+  for (const e of state.entries) {
+    if (e._indexOnly) continue;
+    const lemma = (e.isMWE ? e.mweForm : e.lemma) || '';
+    const ll = lemma.toLowerCase();
+    if (!ll.includes(q)) continue;
+    const exact = ll === q;
+    for (const s of (e.senses || [])) {
+      if (s.synset) bump(s.synset, exact ? 20 : 4);
+    }
+  }
+
+  // Dutch: also scan _nl_entries on any fully-loaded synsets (collab: set when synset is opened)
+  for (const ss of state.synsets) {
+    if (!ss._nl_entries) continue;
+    for (const e of ss._nl_entries) {
+      const ll = (e.lemma || '').toLowerCase();
+      if (!ll.includes(q)) continue;
+      bump(ss.id, ll === q ? 20 : 4);
+    }
+  }
+
+  // English: scan enSyns stub field and _en_synonyms if loaded; also match synset ID
+  for (const ss of state.synsets) {
+    const idL = ss.id.toLowerCase();
+    if (idL === q)         bump(ss.id, 30);
+    else if (idL.includes(q)) bump(ss.id, 6);
+
+    if (ss._en_synonyms) {
+      for (const w of ss._en_synonyms) {
+        const wl = w.replace(/_/g, ' ').toLowerCase();
+        if (!wl.includes(q)) continue;
+        bump(ss.id, wl === q ? 15 : 2);
+      }
+    } else if (ss.enSyns) {
+      for (const w of ss.enSyns.split(' ')) {
+        const wl = w.replace(/_/g, ' ').toLowerCase();
+        if (!wl.includes(q)) continue;
+        bump(ss.id, wl === q ? 15 : 2);
+      }
+    }
+  }
+
+  if (!hits.size) {
+    el.innerHTML = '<div style="color:#aaa;font-size:12px;padding:4px 0">No synsets found.</div>';
+    return;
+  }
+
+  const sorted = [...hits.entries()].sort((a, b) => b[1] - a[1]);
+  const shown  = sorted.slice(0, 25);
+
+  let html = '';
+  for (const [ssId] of shown) {
+    const ss = getSynset(ssId);
+
+    const gloss = (ss && ss.definitions && ss.definitions.length)
+      ? ss.definitions[0].gloss
+      : (ss && ss.gloss) || '';
+
+    // Dutch synonyms: prefer server-provided _nl_entries, fall back to entry scan
+    let nlSyns = [];
+    if (ss && ss._nl_entries) {
+      nlSyns = ss._nl_entries.map(e => e.lemma);
+    } else {
+      nlSyns = getSynonymEntries(ssId).map(e => e.lemma);
+    }
+
+    // English synonyms
+    let enWords = [];
+    if (ss && ss._en_synonyms) {
+      enWords = ss._en_synonyms.map(w => w.replace(/_/g, ' '));
+    } else if (ss && ss.enSyns) {
+      enWords = ss.enSyns.split(' ').filter(Boolean).map(w => w.replace(/_/g, ' '));
+    }
+
+    html += `<div class="ssr-sr-item" onclick="_ssrSelectSynset(${JSON.stringify(ssId)})">
+      <div style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div class="ssr-sr-id">${h(ssId)}</div>
+          ${nlSyns.length ? `<div class="ssr-sr-nl">NL: ${h(nlSyns.join(', '))}</div>` : ''}
+          ${enWords.length ? `<div class="ssr-sr-en">EN: ${h(enWords.slice(0, 8).join(', '))}${enWords.length > 8 ? ' …' : ''}</div>` : ''}
+          ${gloss ? `<div class="ssr-sr-gloss">${h(gloss)}</div>` : ''}
+        </div>
+        <button class="btn btn-pri" style="flex-shrink:0;padding:4px 10px;font-size:11px"
+                onclick="event.stopPropagation();_ssrSelectSynset(${JSON.stringify(ssId)})">Select</button>
+      </div>
+    </div>`;
+  }
+
+  if (sorted.length > 25) {
+    html += `<div style="color:#aaa;font-size:11px;padding:5px 0">${sorted.length - 25} more — narrow your search.</div>`;
+  }
+  el.innerHTML = html;
+}
+
+function _ssrSelectSynset(synsetId) {
+  if (_ssrState.row) {
+    const inp = _ssrState.row.querySelector('.ssr-target');
+    if (inp) { inp.value = synsetId; scheduleAutosave(); }
+  }
+  closeSynSearch();
+}
+
+// Re-render the Dutch synonyms card in-place after a synonym link/unlink
+function _refreshSynonymsCard(ssId) {
+  const editor = document.getElementById('ed-content');
+  if (!editor) return;
+  const ss = getSynset(ssId);
+  if (!ss) return;
+  for (const card of editor.querySelectorAll('.card')) {
+    const hd = card.querySelector('.card-hd');
+    if (hd && hd.textContent.trim().startsWith('Dutch synonyms')) {
+      card.outerHTML = buildSynonymsCard(ss);
+      return;
+    }
+  }
+}
+
+function showHistoryPopup(event, itemId, itemType) {
+  event.stopPropagation();
+  const data = itemType === 'entry' ? getEntry(itemId) : getSynset(itemId);
+  const changes = (data && data._changes) || [];
+  const popup = document.getElementById('hist-popup');
+  document.getElementById('hist-popup-title').textContent =
+    (itemType === 'entry' ? 'Entry' : 'Synset') + ' Change History';
+  const body = document.getElementById('hist-popup-body');
+  if (changes.length === 0) {
+    body.innerHTML = '<div style="color:#888;font-size:12px;padding:4px 0">No changes recorded yet.</div>';
+  } else {
+    body.innerHTML = changes.slice().reverse().map(c => {
+      const d = new Date(c.ts * 1000);
+      const ds = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      return `<div class="hist-row"><span class="hist-user">${h(c.user)}</span><span class="hist-ts">${ds}</span></div>`;
+    }).join('');
+  }
+  const rect = event.currentTarget.getBoundingClientRect();
+  popup.style.display = 'block';
+  const left = Math.min(rect.left, window.innerWidth - 420);
+  popup.style.top  = (rect.bottom + 6) + 'px';
+  popup.style.left = Math.max(8, left) + 'px';
+}
+
+document.addEventListener('click', () => {
+  const p = document.getElementById('hist-popup');
+  if (p) p.style.display = 'none';
+});
 
 function showToast(msg, isError) {
   const container = document.getElementById('toast-container');
@@ -2119,9 +3099,9 @@ function _initPositions(nodes, edges, W, H) {
 }
 
 function _forceLayout(nodes, edges, W, H) {
+  _initPositions(nodes, edges, W, H);
   if (nodes.length < 2) return;
   const cx = W / 2, cy = H / 2;
-  _initPositions(nodes, edges, W, H);
 
   const REPEL = 6000, K = 130, GRAVITY = 0.01, ATTRACT = 0.008;
   let T = 55;
@@ -2387,9 +3367,28 @@ document.addEventListener('click', e => {
   dismissNodePopup();
 });
 
-function graphToggleExpand(nodeId, rootId) {
-  if (_graphExpanded.has(nodeId)) _graphExpanded.delete(nodeId);
-  else _graphExpanded.add(nodeId);
+async function _ensureSynsetLoaded(id) {
+  if (!collabMode) return;
+  const ss = getSynset(id);
+  if (!ss || !ss._indexOnly) return;
+  try {
+    const resp = await _authFetch('/api/synset/' + encodeURIComponent(id));
+    if (!resp.ok) return;
+    const full = await resp.json();
+    delete full._lock;
+    const idx = state.synsets.findIndex(s => s.id === id);
+    if (idx >= 0) state.synsets[idx] = full; else state.synsets.push(full);
+  } catch (_) {}
+}
+
+async function graphToggleExpand(nodeId, rootId) {
+  if (_graphExpanded.has(nodeId)) {
+    _graphExpanded.delete(nodeId);
+  } else {
+    _graphExpanded.add(nodeId);
+    await _ensureSynsetLoaded(nodeId);
+  }
+  dismissNodePopup();
   renderSynsetGraph(rootId);
 }
 
@@ -2397,9 +3396,10 @@ function graphMakeCenter(nodeId) {
   jumpToSynset(nodeId);
 }
 
-function graphExpandMore(event, parentId, rootId) {
+async function graphExpandMore(event, parentId, rootId) {
   event.stopPropagation();
   _graphExpanded.add(parentId);
+  await _ensureSynsetLoaded(parentId);
   renderSynsetGraph(rootId);
 }
 
