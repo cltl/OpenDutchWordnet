@@ -225,6 +225,17 @@
     .sg-legend { display:flex; flex-wrap:wrap; gap:5px 14px; padding:7px 10px; border-top:1px solid #dce8f0; }
     .sg-li   { display:flex; align-items:center; gap:4px; font-size:10px; color:#555; white-space:nowrap; }
     .sg-sw   { width:22px; height:3px; border-radius:2px; flex-shrink:0; }
+
+    /* Filter panel */
+    #sb-filters { padding: 5px 0 2px; border-top: 1px solid #eee; margin-top: 4px; }
+    .flt-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+    .flt-lbl { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.3px; width: 46px; flex-shrink: 0; }
+    .flt-sel { flex: 1; padding: 3px 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-family: inherit; min-width: 0; background: white; color: #333; }
+    .flt-sel:focus { outline: none; border-color: #4f8ef7; }
+    .flt-sel.active { border-color: #4f8ef7; color: #4f8ef7; font-weight: 600; }
+    .flt-chk { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; cursor: pointer; margin-bottom: 3px; user-select: none; padding: 1px 0; }
+    .flt-chk input[type=checkbox] { width: auto; cursor: pointer; margin: 0; }
+    .flt-chk.active { color: #4f8ef7; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -267,6 +278,7 @@
     </div>
     <div id="sb-search">
       <input type="text" id="search" placeholder="Search…" oninput="filterList(this.value)">
+      <div id="sb-filters"></div>
       <div id="entry-count"></div>
     </div>
     <div id="entry-list" onscroll="onVScroll()"></div>
@@ -418,7 +430,13 @@ let state = {
   selectedId: null,
   selectedGroupIds: null, // array of entry IDs when showing overview; null = editor/empty
   mode: 'entries',   // 'entries' | 'synsets'
-  filter: ''
+  filter: '',
+  activeFilters: {
+    pos: '',                   // POS filter (entries: full name; synsets: letter code)
+    senses: '',                // entries only: '', '1', '2+', '3+', '5+'
+    missingSynsetLink: false,  // entries only: show entries with any sense lacking a synset
+    missingDutchSynonyms: false // synsets only: show synsets with no Dutch entries
+  }
 };
 
 let _seq = 0;
@@ -464,21 +482,68 @@ let vsRaf = false;
 
 function rebuildVS() {
   const f = state.filter.toLowerCase();
+  const af = state.activeFilters;
   const list = state.mode === 'entries' ? state.entries : state.synsets;
 
   vsGroups = {}; vsEntryGroup = {};
   vsFiltered = [];
 
+  // For missingDutchSynonyms: build set of synset IDs that have at least one Dutch entry
+  let synsetNlSet = null;
+  if (state.mode === 'synsets' && af.missingDutchSynonyms) {
+    synsetNlSet = new Set();
+    for (const ss of state.synsets) {
+      if (ss._nl_entries && ss._nl_entries.length > 0) synsetNlSet.add(ss.id);
+    }
+    // Standalone mode: scan all loaded entries
+    for (const e of state.entries) {
+      if (e._indexOnly) continue;
+      for (const s of (e.senses || [])) { if (s.synset) synsetNlSet.add(s.synset); }
+    }
+  }
+
+  const hasAttrFilters = !!(state.mode === 'entries'
+    ? (af.pos || af.senses || af.missingSynsetLink)
+    : (af.pos || af.missingDutchSynonyms));
+
+  function passesAttr(item) {
+    if (state.mode === 'entries') {
+      if (af.pos && item.partOfSpeech !== af.pos) return false;
+      if (af.senses && !item._indexOnly) {
+        const sc = (item.senses || []).length;
+        if (af.senses === '1'  && sc !== 1) return false;
+        if (af.senses === '2+' && sc < 2)   return false;
+        if (af.senses === '3+' && sc < 3)   return false;
+        if (af.senses === '5+' && sc < 5)   return false;
+      }
+      if (af.missingSynsetLink && !item._indexOnly) {
+        if (!(item.senses || []).some(s => !s.synset)) return false;
+      }
+    } else {
+      if (af.pos) {
+        const ssPos = item.id.split('-').pop();
+        if (ssPos !== af.pos) return false;
+      }
+      if (af.missingDutchSynonyms && synsetNlSet) {
+        if (synsetNlSet.has(item.id)) return false;
+      }
+    }
+    return true;
+  }
+
   if (!f) {
-    vsFiltered = list.map((_, i) => i);
+    for (let i = 0; i < list.length; i++) {
+      if (passesAttr(list[i])) vsFiltered.push(i);
+    }
   } else if (state.mode === 'entries') {
     const exactMap = new Map(), subMap = new Map();
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
+      if (!passesAttr(e)) continue;
       const key = (e.isMWE ? e.mweForm : e.lemma) || e.id;
       const kl  = key.toLowerCase();
       const hay = (kl + ' ' + e.id + ' ' + (e.mweForm || '')).toLowerCase();
-      if (kl === f)         { if (!exactMap.has(key)) exactMap.set(key, []); exactMap.get(key).push(i); }
+      if (kl === f)             { if (!exactMap.has(key)) exactMap.set(key, []); exactMap.get(key).push(i); }
       else if (hay.includes(f)) { if (!subMap.has(key))  subMap.set(key,  []); subMap.get(key).push(i);  }
     }
     for (const [, indices] of [...exactMap, ...subMap]) {
@@ -492,6 +557,7 @@ function rebuildVS() {
   } else {
     for (let i = 0; i < list.length; i++) {
       const s = list[i];
+      if (!passesAttr(s)) continue;
       const gloss = s.definitions && s.definitions.length ? s.definitions[0].gloss : '';
       const hay = s.id + ' ' + gloss + ' ' + (s.enSyns || '');
       if (hay.toLowerCase().includes(f)) vsFiltered.push(i);
@@ -500,7 +566,7 @@ function rebuildVS() {
 
   const total = list.length;
   document.getElementById('entry-count').textContent =
-    f ? `${vsFiltered.length} of ${total}` : `${total} items`;
+    (f || hasAttrFilters) ? `${vsFiltered.length} of ${total}` : `${total} items`;
 }
 
 function renderVS(resetScroll) {
@@ -993,10 +1059,12 @@ function setMode(mode) {
   state.selectedId = null;
   state.selectedGroupIds = null;
   state.filter = '';
+  state.activeFilters = { pos: '', senses: '', missingSynsetLink: false, missingDutchSynonyms: false };
   document.getElementById('search').value = '';
   document.getElementById('tab-entries').classList.toggle('active', mode === 'entries');
   document.getElementById('tab-synsets').classList.toggle('active', mode === 'synsets');
   document.getElementById('add-btn').textContent = mode === 'synsets' ? '+ Add Synset' : '+ Add Entry';
+  renderFilters();
   rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
 }
 
@@ -1050,6 +1118,71 @@ function selectItem(id) {
 }
 
 function filterList(val) { state.filter = val; rebuildVS(); renderVS(true); }
+
+function renderFilters() {
+  const flt = document.getElementById('sb-filters');
+  if (!flt) return;
+  const af = state.activeFilters;
+  if (state.mode === 'entries') {
+    flt.innerHTML = `
+      <div class="flt-row">
+        <label class="flt-lbl">POS</label>
+        <select class="flt-sel${af.pos ? ' active' : ''}" id="flt-pos" onchange="updateFilters()">
+          <option value="">All POS</option>
+          <option value="noun"${af.pos==='noun'?' selected':''}>noun</option>
+          <option value="verb"${af.pos==='verb'?' selected':''}>verb</option>
+          <option value="adjective"${af.pos==='adjective'?' selected':''}>adjective</option>
+          <option value="adverb"${af.pos==='adverb'?' selected':''}>adverb</option>
+          <option value="other"${af.pos==='other'?' selected':''}>other</option>
+        </select>
+      </div>
+      <div class="flt-row">
+        <label class="flt-lbl">Senses</label>
+        <select class="flt-sel${af.senses ? ' active' : ''}" id="flt-senses" onchange="updateFilters()">
+          <option value="">Any count</option>
+          <option value="1"${af.senses==='1'?' selected':''}>Exactly 1</option>
+          <option value="2+"${af.senses==='2+'?' selected':''}>2 or more</option>
+          <option value="3+"${af.senses==='3+'?' selected':''}>3 or more</option>
+          <option value="5+"${af.senses==='5+'?' selected':''}>5 or more</option>
+        </select>
+      </div>
+      <label class="flt-chk${af.missingSynsetLink ? ' active' : ''}">
+        <input type="checkbox" id="flt-missing-synset"${af.missingSynsetLink ? ' checked' : ''} onchange="updateFilters()">
+        Missing synset link
+      </label>`;
+  } else {
+    flt.innerHTML = `
+      <div class="flt-row">
+        <label class="flt-lbl">POS</label>
+        <select class="flt-sel${af.pos ? ' active' : ''}" id="flt-pos" onchange="updateFilters()">
+          <option value="">All POS</option>
+          <option value="n"${af.pos==='n'?' selected':''}>noun (n)</option>
+          <option value="v"${af.pos==='v'?' selected':''}>verb (v)</option>
+          <option value="a"${af.pos==='a'?' selected':''}>adj (a)</option>
+          <option value="r"${af.pos==='r'?' selected':''}>adverb (r)</option>
+          <option value="s"${af.pos==='s'?' selected':''}>adj-sat (s)</option>
+        </select>
+      </div>
+      <label class="flt-chk${af.missingDutchSynonyms ? ' active' : ''}">
+        <input type="checkbox" id="flt-missing-nl"${af.missingDutchSynonyms ? ' checked' : ''} onchange="updateFilters()">
+        No Dutch synonyms
+      </label>`;
+  }
+}
+
+function updateFilters() {
+  const af = state.activeFilters;
+  af.pos = document.getElementById('flt-pos')?.value || '';
+  if (state.mode === 'entries') {
+    af.senses = document.getElementById('flt-senses')?.value || '';
+    af.missingSynsetLink = !!document.getElementById('flt-missing-synset')?.checked;
+  } else {
+    af.missingDutchSynonyms = !!document.getElementById('flt-missing-nl')?.checked;
+  }
+  // Re-render to update active styling on selects/labels
+  renderFilters();
+  rebuildVS(); renderVS(true);
+}
 
 // =====================================================================
 // COLLECT EDITOR STATE  (DOM → state)
@@ -1169,6 +1302,7 @@ function h(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function sel(opts, cur) { return opts.map(o => `<option value="${h(o)}"${o===cur?' selected':''}>${h(o)||'—'}</option>`).join(''); }
 
 function renderAll() {
+  renderFilters();
   rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
   document.getElementById('tb-name').textContent = state.globalInfo.label || state.filename || '';
 }
