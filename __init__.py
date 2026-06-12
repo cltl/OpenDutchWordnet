@@ -1,6 +1,5 @@
 import os 
 import sys
-import subprocess
 
 cwd             = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(cwd)
@@ -15,7 +14,7 @@ sys.path.append(cwd)
 #    print ('''please first run 'bash install.sh' from the command line \
 #from inside the module and try again''') 
     
-from wn_grid_parser import Wn_grid_parser
+from src.cltl.odwn.wn_grid_parser import Wn_grid_parser
 
 #documentation attributes
 Wn_grid_parser.odwn           = os.path.join(cwd,

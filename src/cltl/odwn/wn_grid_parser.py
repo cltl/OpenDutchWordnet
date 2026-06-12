@@ -19,7 +19,7 @@ from stats import Stats
 from lemma import Lemma
 from clean import Clean
 from orbn import Orbn
-from user_input import User
+from src.cltl.odwn.user_input import User
 
 class Wn_grid_parser(Synsets,
                      Les,
@@ -40,7 +40,7 @@ class Wn_grid_parser(Synsets,
     @ivar  doc: lxml.etree._ElementTree
     @param doc: param path_wn_grid_lmf parsed with etree.parse
     
-    >>> path="resources/odwn/odwn_orbn_gwg-LMF_1.2.xml.gz"
+    >>> path="../../../resources/odwn/odwn_orbn_gwg-LMF_1.2.xml.gz"
     >>> instance = Wn_grid_parser(path_wn_grid_lmf=path)
     
     >>> le_el = instance.les_find_le("havenplaats-n-1")

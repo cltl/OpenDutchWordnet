@@ -1,6 +1,9 @@
 # ODWN LMF Editor
 
 A browser-based editor for lexical resources in [Lexical Markup Framework (LMF)](https://www.iso.org/standard/82429.html) format (ISO 24613). Built for the [Open Dutch WordNet (ODWN)](https://github.com/cltl/OpenDutchWordnet) / ORBN format, and conforming to the `odwn-orbn-lmf.dtd` schema. Also opens generic feat-based LMF files.
+The OpenDutchWordnet uses a rich WordNetLMF DTD that allows to define form and meaning information on each sense of a word as well as Wordnet synsets and synset relations. Likewise, it has a repository of lexical units and a repository of synsets.
+The synsets are based on the Pricenton WordNet3.0 but have been extended with new synsets as well. Most of the synset relations also originate from the Pricneton WordNet but new reltions have also been added.
+The lexical units are linked to synsets as synonyms and vice versa. This editor allows to modify the lexical units, the synsets and the links between them.
 
 ---
 
@@ -10,15 +13,32 @@ A browser-based editor for lexical resources in [Lexical Markup Framework (LMF)]
 
 Allows multiple users to edit the same file simultaneously in real time. This is the primary workflow:
 
+1. Set-up the server:
+
+Copy the latest release of the OpenDutchWordnet to the data folder of the server, wherever it is installed. 
+The latest release can be found on [https://github.com/MartenPostma/OpenDutchWordnet/raw/master/resources/odwn](https://github.com/MartenPostma/OpenDutchWordnet/raw/master/resources/odwn)
+and should be part of this cloned repository.
+
+2. Launch the server from the command line:
+
 ```bash
 python3 server.py
 # with options:
 python3 server.py data/odwn_orbn_gwg-LMF_1.3.xml 8080
 ```
 
+3. Open a client in your browser:
+
 Then open `http://localhost:8080` in each user's browser. The editor detects the server automatically, switches to collaborative mode, and presents a login form.
 
 On first run the server imports the XML into a SQLite database (`.db` file alongside the XML). Subsequent runs load directly from the database — no re-parsing of the large XML.
+
+4. Export the SQLite database regularly to keep an XML copy of the data.
+
+5. Push a stable version of the XML copy to Github
+
+Editors need to login in with their user name and password. These are defined in the "users.json" file. When editing a lexical entry sense or a synset, the data is locked for other users.
+After 
 
 ### Standalone (single user)
 

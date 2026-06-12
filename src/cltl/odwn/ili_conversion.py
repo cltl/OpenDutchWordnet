@@ -104,7 +104,7 @@ reltypes_mapping = {'near_antonym': 'antonym',
 
 rbn_ids = set()
 odwn_ids = {}
-with open('resources/cili/new_synsets_v2.csv') as infile:
+with open('../../../resources/cili/new_synsets_v2.csv') as infile:
     next(infile)
     # rbn ids index 1
     # odwn_ids index 2
@@ -142,8 +142,8 @@ def validate(dtd_path, loaded_xml):
 
 print('start', datetime.now())
 
-dtd_path = 'resources/cili/WN-LMF-1.0.dtd'
-starting_point_path = 'resources/cili/the_starting_point.xml'
+dtd_path = '../../../resources/cili/WN-LMF-1.0.dtd'
+starting_point_path = '../../../resources/cili/the_starting_point.xml'
 old = Wn_grid_parser(Wn_grid_parser.odwn)
 root = old.doc.getroot()
 
@@ -329,7 +329,7 @@ print(succes)
 print(message)
 
 if succes:
-    with open('resources/cili/odwn_cili.xml', "wb") as outfile:
+    with open('../../../resources/cili/odwn_cili.xml', "wb") as outfile:
         new.write(outfile,
                   pretty_print=True,
                   xml_declaration=True,
