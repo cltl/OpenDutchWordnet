@@ -113,14 +113,15 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_sess_exp ON sessions(expires_at);
 CREATE TABLE IF NOT EXISTS entries (
-    id             TEXT PRIMARY KEY,
-    data           TEXT NOT NULL,
-    lemma          TEXT NOT NULL DEFAULT '',
-    mwe_form       TEXT NOT NULL DEFAULT '',
-    part_of_speech TEXT NOT NULL DEFAULT '',
-    is_mwe         INTEGER NOT NULL DEFAULT 0,
-    updated_at     REAL NOT NULL DEFAULT 0,
-    updated_by     TEXT NOT NULL DEFAULT ''
+    id                 TEXT PRIMARY KEY,
+    data               TEXT NOT NULL,
+    lemma              TEXT NOT NULL DEFAULT '',
+    mwe_form           TEXT NOT NULL DEFAULT '',
+    part_of_speech     TEXT NOT NULL DEFAULT '',
+    is_mwe             INTEGER NOT NULL DEFAULT 0,
+    updated_at         REAL NOT NULL DEFAULT 0,
+    updated_by         TEXT NOT NULL DEFAULT '',
+    has_unlinked_sense INTEGER DEFAULT NULL
 );
 CREATE TABLE IF NOT EXISTS synsets (
     id         TEXT PRIMARY KEY,
@@ -161,6 +162,10 @@ CREATE INDEX IF NOT EXISTS idx_sei_synset ON synset_entry_index(synset_id);
 def _init_schema():
     c = _con()
     c.executescript(_SCHEMA)
+    # Migrate: add has_unlinked_sense column to existing databases
+    cols = {r[1] for r in c.execute("PRAGMA table_info(entries)").fetchall()}
+    if 'has_unlinked_sense' not in cols:
+        c.execute("ALTER TABLE entries ADD COLUMN has_unlinked_sense INTEGER DEFAULT NULL")
     c.commit()
 
 # ─────────────────────────────────────────────────────────────────────
@@ -359,6 +364,7 @@ def get_synset(sid):
 def upsert_entry(data, user):
     lemma  = data.get('mweForm', '') if data.get('isMWE') else data.get('lemma', '')
     is_mwe = 1 if data.get('isMWE') else 0
+    has_unlinked = 1 if any(not s.get('synset', '') for s in data.get('senses', [])) else 0
     ts = time.time()
     changes = data.get('_changes', [])
     if not changes or changes[-1].get('user') != user or ts - changes[-1].get('ts', 0) > 300:
@@ -367,12 +373,13 @@ def upsert_entry(data, user):
     with _write_lock:
         c = _con()
         c.execute(
-            'INSERT INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by) VALUES (?,?,?,?,?,?,?,?) '
+            'INSERT INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense) VALUES (?,?,?,?,?,?,?,?,?) '
             'ON CONFLICT(id) DO UPDATE SET data=excluded.data,lemma=excluded.lemma,mwe_form=excluded.mwe_form,'
-            'part_of_speech=excluded.part_of_speech,is_mwe=excluded.is_mwe,updated_at=excluded.updated_at,updated_by=excluded.updated_by',
+            'part_of_speech=excluded.part_of_speech,is_mwe=excluded.is_mwe,updated_at=excluded.updated_at,'
+            'updated_by=excluded.updated_by,has_unlinked_sense=excluded.has_unlinked_sense',
             (data['id'], json.dumps(data, ensure_ascii=False),
              data.get('lemma', ''), data.get('mweForm', ''),
-             data.get('partOfSpeech', ''), is_mwe, ts, user)
+             data.get('partOfSpeech', ''), is_mwe, ts, user, has_unlinked)
         )
         c.execute('DELETE FROM synset_entry_index WHERE entry_id=?', (data['id'],))
         for sense in data.get('senses', []):
@@ -585,25 +592,27 @@ def load_xml(filepath):
             e = parse_entry(eEl)
             lemma  = e['mweForm'] if e['isMWE'] else e['lemma']
             is_mwe = 1 if e['isMWE'] else 0
+            has_unlinked = 1 if any(not s.get('synset','') for s in e.get('senses',[])) else 0
             batch_e.append((e['id'], json.dumps(e, ensure_ascii=False),
                             e.get('lemma',''), e.get('mweForm',''),
-                            e.get('partOfSpeech',''), is_mwe, time.time(), 'import'))
+                            e.get('partOfSpeech',''), is_mwe, time.time(), 'import', has_unlinked))
             for sense in e.get('senses', []):
                 ss_ref = sense.get('synset', '')
                 if ss_ref:
                     batch_sei.append((ss_ref, e['id']))
             entry_index.append({'id': e['id'], 'isMWE': e['isMWE'],
                                  'lemma': lemma, 'partOfSpeech': e['partOfSpeech'],
-                                 'mweForm': e.get('mweForm','')})
+                                 'mweForm': e.get('mweForm',''),
+                                 'hasMissingSynset': bool(has_unlinked)})
             if len(batch_e) >= BATCH:
                 c.executemany(
-                    'INSERT OR REPLACE INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by) VALUES (?,?,?,?,?,?,?,?)',
+                    'INSERT OR REPLACE INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense) VALUES (?,?,?,?,?,?,?,?,?)',
                     batch_e)
                 c.commit()
                 batch_e = []
         if batch_e:
             c.executemany(
-                'INSERT OR REPLACE INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by) VALUES (?,?,?,?,?,?,?,?)',
+                'INSERT OR REPLACE INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense) VALUES (?,?,?,?,?,?,?,?,?)',
                 batch_e)
             c.commit()
         if batch_sei:
@@ -665,12 +674,13 @@ def load_from_db():
         filepath     = meta.get('filepath', '')
         filename     = meta.get('filename', '')
 
-        rows_e = c.execute('SELECT id, lemma, mwe_form, part_of_speech, is_mwe FROM entries').fetchall()
+        rows_e = c.execute('SELECT id, lemma, mwe_form, part_of_speech, is_mwe, has_unlinked_sense FROM entries').fetchall()
         entry_index = [{'id': r['id'],
-                        'lemma':        r['mwe_form'] if r['is_mwe'] else r['lemma'],
-                        'isMWE':        bool(r['is_mwe']),
-                        'partOfSpeech': r['part_of_speech'],
-                        'mweForm':      r['mwe_form']} for r in rows_e]
+                        'lemma':            r['mwe_form'] if r['is_mwe'] else r['lemma'],
+                        'isMWE':            bool(r['is_mwe']),
+                        'partOfSpeech':     r['part_of_speech'],
+                        'mweForm':          r['mwe_form'],
+                        'hasMissingSynset': bool(r['has_unlinked_sense'])} for r in rows_e]
 
         rows_s = c.execute('SELECT id, gloss FROM synsets').fetchall()
         synset_index = [{'id': r['id'], 'gloss': r['gloss']} for r in rows_s]
@@ -691,6 +701,23 @@ def load_from_db():
                               batch_sei[i:i + BATCH])
             c.commit()
             print(f'Synset→entry index built: {len(batch_sei):,} links', flush=True)
+
+        # Backfill has_unlinked_sense if missing (first run after column migration)
+        if c.execute('SELECT COUNT(*) FROM entries WHERE has_unlinked_sense IS NULL').fetchone()[0] > 0:
+            print('Backfilling has_unlinked_sense…', flush=True)
+            updates = []
+            for row in c.execute('SELECT id, data FROM entries WHERE has_unlinked_sense IS NULL').fetchall():
+                entry = json.loads(row['data'])
+                has_unlinked = 1 if any(not s.get('synset','') for s in entry.get('senses',[])) else 0
+                updates.append((has_unlinked, row['id']))
+            c.executemany('UPDATE entries SET has_unlinked_sense=? WHERE id=?', updates)
+            c.commit()
+            # Refresh entry_index with backfilled values
+            rows_e2 = c.execute('SELECT id, has_unlinked_sense FROM entries').fetchall()
+            uls_map = {r['id']: bool(r['has_unlinked_sense']) for r in rows_e2}
+            for stub in entry_index:
+                stub['hasMissingSynset'] = uls_map.get(stub['id'], False)
+            print(f'has_unlinked_sense backfilled for {len(updates):,} entries', flush=True)
 
         with _slock:
             _st['globalInfo']   = global_info
@@ -1204,21 +1231,25 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 upsert_entry(data, user)
                 try_acquire_lock('entry', item_id, user)
                 lemma = data.get('mweForm','') if data.get('isMWE') else data.get('lemma','')
+                has_unlinked = any(not s.get('synset','') for s in data.get('senses',[]))
                 with _slock:
                     _st['entry_index'].insert(0, {
                         'id': data['id'], 'isMWE': data.get('isMWE', False),
                         'lemma': lemma, 'partOfSpeech': data.get('partOfSpeech',''),
                         'mweForm': data.get('mweForm',''),
+                        'hasMissingSynset': has_unlinked,
                     })
             else:
                 upsert_entry(data, user)
                 lemma = data.get('mweForm','') if data.get('isMWE') else data.get('lemma','')
+                has_unlinked = any(not s.get('synset','') for s in data.get('senses',[]))
                 with _slock:
                     for idx in _st['entry_index']:
                         if idx['id'] == item_id:
-                            idx['lemma']        = lemma
-                            idx['partOfSpeech'] = data.get('partOfSpeech','')
-                            idx['mweForm']      = data.get('mweForm','')
+                            idx['lemma']             = lemma
+                            idx['partOfSpeech']      = data.get('partOfSpeech','')
+                            idx['mweForm']           = data.get('mweForm','')
+                            idx['hasMissingSynset']  = has_unlinked
                             break
         else:
             if op == 'delete':

@@ -516,8 +516,12 @@ function rebuildVS() {
         if (af.senses === '3+' && sc < 3)   return false;
         if (af.senses === '5+' && sc < 5)   return false;
       }
-      if (af.missingSynsetLink && !item._indexOnly) {
-        if (!(item.senses || []).some(s => !s.synset)) return false;
+      if (af.missingSynsetLink) {
+        if (item._indexOnly) {
+          if (!item.hasMissingSynset) return false;
+        } else {
+          if (!(item.senses || []).some(s => !s.synset)) return false;
+        }
       }
     } else {
       if (af.pos) {
@@ -2116,7 +2120,7 @@ async function fetchIndex() {
     // Build lightweight index stubs for virtual scrolling
     state.entries = (data.entry_index || []).map(ei => ({
       id: ei.id, lemma: ei.lemma || '', partOfSpeech: ei.partOfSpeech || '',
-      isMWE: !!ei.isMWE, mweForm: ei.mweForm || '', _indexOnly: true,
+      isMWE: !!ei.isMWE, mweForm: ei.mweForm || '', hasMissingSynset: !!ei.hasMissingSynset, _indexOnly: true,
       // stub fields needed by serializer/collectEditorState (never serialized in collab mode)
       wordForms: [], relatedForms: [], senses: [],
       morphology: { morphoType:'', comparisonType:'', declinable:'', separability:'' },
