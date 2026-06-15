@@ -1,9 +1,8 @@
 # ODWN LMF Editor
 
 A browser-based editor for lexical resources in [Lexical Markup Framework (LMF)](https://www.iso.org/standard/82429.html) format (ISO 24613). Built for the [Open Dutch WordNet (ODWN)](https://github.com/cltl/OpenDutchWordnet) / ORBN format, and conforming to the `odwn-orbn-lmf.dtd` schema. Also opens generic feat-based LMF files.
-The OpenDutchWordnet uses a rich WordNetLMF DTD that allows to define form and meaning information on each sense of a word as well as Wordnet synsets and synset relations. Likewise, it has a repository of lexical units and a repository of synsets.
-The synsets are based on the Pricenton WordNet3.0 but have been extended with new synsets as well. Most of the synset relations also originate from the Pricneton WordNet but new reltions have also been added.
-The lexical units are linked to synsets as synonyms and vice versa. This editor allows to modify the lexical units, the synsets and the links between them.
+
+The OpenDutchWordnet uses a rich WordNetLMF DTD that allows defining form and meaning information on each sense of a word as well as WordNet synsets and synset relations. Likewise, it has a repository of lexical units and a repository of synsets. The synsets are based on the Princeton WordNet 3.0 but have been extended with new synsets and relations. The lexical units are linked to synsets as synonyms and vice versa. This editor allows modifying the lexical units, the synsets, and the links between them.
 
 ---
 
@@ -13,36 +12,34 @@ The lexical units are linked to synsets as synonyms and vice versa. This editor 
 
 Allows multiple users to edit the same file simultaneously in real time. This is the primary workflow:
 
-1. Set-up the server:
+1. **Set up the data.** Copy the latest release of the OpenDutchWordnet XML to the `data/` folder. The latest release can be found at [https://github.com/MartenPostma/OpenDutchWordnet/raw/master/resources/odwn](https://github.com/MartenPostma/OpenDutchWordnet/raw/master/resources/odwn) and should already be part of this cloned repository.
 
-Copy the latest release of the OpenDutchWordnet to the data folder of the server, wherever it is installed. 
-The latest release can be found on [https://github.com/MartenPostma/OpenDutchWordnet/raw/master/resources/odwn](https://github.com/MartenPostma/OpenDutchWordnet/raw/master/resources/odwn)
-and should be part of this cloned repository.
-
-2. Launch the server from the command line:
+2. **Launch the server:**
 
 ```bash
+# Auto-discover data files in data/
 python3 server.py
-# with options:
+
+# Explicit XML file and port
 python3 server.py data/odwn_orbn_gwg-LMF_1.3.xml 8080
+
+# Use an existing SQLite database directly (fastest — no XML re-import)
+python3 server.py /path/to/existing.db
 ```
 
-3. Open a client in your browser:
+3. **Open a client.** Open `http://localhost:8080` in each user's browser. The editor detects the server automatically, switches to collaborative mode, and presents a login form.
 
-Then open `http://localhost:8080` in each user's browser. The editor detects the server automatically, switches to collaborative mode, and presents a login form.
+   On first run the server imports the XML into a SQLite database (`.db` file alongside the XML). Subsequent runs load directly from the database — no re-parsing of the large XML.
 
-On first run the server imports the XML into a SQLite database (`.db` file alongside the XML). Subsequent runs load directly from the database — no re-parsing of the large XML.
+4. **Export regularly.** Use **Export XML** in the toolbar to keep an XML backup of the data.
 
-4. Export the SQLite database regularly to keep an XML copy of the data.
+5. **Push stable versions** of the XML to GitHub for version control.
 
-5. Push a stable version of the XML copy to Github
-
-Editors need to login in with their user name and password. These are defined in the "users.json" file. When editing a lexical entry sense or a synset, the data is locked for other users.
-After 
+Editors log in with their username and password defined in `users.json`. When editing a lexical entry or synset, the item is locked for other users until editing stops.
 
 ### Standalone (single user)
 
-Open `index.html` directly in a browser (no server required). Data must be loaded programmatically or pre-loaded into the in-memory state. The collaborative server is recommended for all production use.
+Open `index.html` directly in a browser (no server required). Data must be loaded via the **Open XML** toolbar button. The collaborative server is recommended for all production use.
 
 ---
 
@@ -59,21 +56,41 @@ In collaborative mode the toolbar also shows a green dot with the number of acti
 
 ---
 
+## Layout
+
+The editor uses a **split-pane layout**: the left pane shows entries and the right pane shows synsets. Both panes are always visible side by side so you can browse and edit entries and synsets in parallel without switching views.
+
+**Left pane** — Entry list (top) and entry detail editor (below)  
+**Right pane** — Synset list (top) and synset detail editor (below)
+
+Each pane is independently scrollable. Selecting an entry opens it in the left editor; selecting a synset opens it in the right editor. Both selections are independent.
+
+---
+
 ## Browsing
 
-The left sidebar has two tabs: **Entries** and **Synsets**.
+Each pane contains a list with:
 
-- Each row shows the lemma (or MWE form) and part of speech.
-- The list uses **virtual scrolling** — only the visible rows are rendered in the DOM, so 99 000-entry files scroll without lag.
-- Type in the **search box** to filter by lemma, entry ID, or (for synsets) definition gloss or English synonym in real time.
-- The item count below the search box reflects the current filter.
-- **+ Add Entry** / **+ Add Synset** button at the bottom of the sidebar creates a new item.
+- One row per item showing the lemma (or MWE form) and part of speech (entries) or synset ID and gloss (synsets).
+- **Virtual scrolling** — only the visible rows are rendered in the DOM, so 99 000-entry files scroll without lag.
+- A **search box** to filter by lemma, entry ID, or (for synsets) definition gloss or English synonym in real time.
+- An item count below the search box reflecting the current filter.
+- A **+ Add Entry** / **+ Add Synset** button at the bottom to create a new item.
+
+### Synset filters
+
+The synset search bar has filter toggles:
+
+| Filter | Description |
+|---|---|
+| **No Dutch synonyms** | Shows only synsets that have no Dutch lexical entry linked to them |
+| **POS** (n / v / a / r) | Filters by part of speech derived from the synset ID suffix |
 
 ---
 
 ## Editing entries
 
-Click any entry in the sidebar to open it in the editor. Changes are saved automatically every 1.5 seconds after you stop typing (collaborative mode), or collected when you switch items (standalone mode).
+Click any entry in the left pane to open it in the left editor. In collaborative mode, changes are auto-saved every 1.5 seconds after you stop typing. In standalone mode, changes are collected when you switch items.
 
 When multiple entries share the same lemma, clicking the lemma row shows a **sense overview table** for the whole group. Click any row to open that entry, or click **+ Add sense** in the card header to create a new entry for the same lemma.
 
@@ -106,7 +123,7 @@ Each entry can have one or more senses. Click **+ Add** in the Senses card heade
 | Provenance | Data source (`bing`, `google`, `opus`, `cdb2.2_Auto`, …) |
 | Annotator | Name of the responsible annotator (auto-filled with the logged-in username) |
 
-The **Synset** field has an **↗ Open** button that switches to the Synsets panel and opens the referenced synset directly.
+The **Synset** field has an **↗ Open** button that opens the referenced synset in the right pane.
 
 Each sense block also contains collapsible sections:
 
@@ -185,7 +202,7 @@ Variant spellings and alternate forms:
 - **Save** (collaborative mode) — explicitly saves the current entry and writes a change-log file.
 - **History** — shows a popup with the edit history (user + timestamp) for this entry.
 - **Delete** — removes the entry after confirmation.
-- **+ Add Entry** (sidebar footer) — opens a dialog to create a new entry together with a new synset (see [Creating new entries](#creating-new-entries)).
+- **+ Add Entry** (pane footer) — opens a dialog to create a new entry together with a new synset (see [Creating new entries](#creating-new-entries)).
 
 ---
 
@@ -207,7 +224,7 @@ The sense's Annotator field is pre-filled with the logged-in username. Both item
 
 ## Editing synsets
 
-Click the **Synsets** tab in the sidebar to browse and edit synsets.
+Click any synset in the right pane to open it in the right editor.
 
 ### Synset Identity
 
@@ -225,10 +242,10 @@ Each synset can have multiple definitions with gloss, language code, and provena
 
 A **Dutch synonyms** card lists all entries whose senses point to this synset. Each row shows the lemma and part of speech with:
 
-- **↗ Open** — switches to the Entries panel and opens that entry.
+- **↗ Open** — opens that entry in the left pane.
 - **Unlink** — removes the synset reference from that entry's sense.
 - **+ Link ID** — manually type an entry ID to add as a synonym.
-- **🔍 Find word** — opens a search dialog to locate an entry by lemma:
+- **Find word** — opens a search dialog to locate an entry by lemma:
   - If found: select an existing sense to link, or add a new sense.
   - If not found: create a new entry with sense 1 linked to this synset.
 
@@ -238,7 +255,7 @@ A read-only **English synonyms** card shows the Princeton WordNet 3.0 synonyms f
 
 ### Synset Relations
 
-Relations to other synsets. Each row has a relation type (from a full enumeration including `has_hyperonym`, `has_hyponym`, `near_synonym`, `role_agent`, …), a target synset ID, and provenance. Each row has an **↗** button to jump directly to the target synset.
+Relations to other synsets. Each row has a relation type (from a full enumeration including `has_hyperonym`, `has_hyponym`, `near_synonym`, `role_agent`, …), a target synset ID, and provenance. Each row has an **↗** button to jump directly to the target synset in the right pane.
 
 ### Relation Graph
 
@@ -329,14 +346,22 @@ When `server.py` is running, all users who open `http://localhost:8080` share th
 
 On first run, the server imports the XML file into a **SQLite database** (`.db` file alongside the XML). Subsequent runs load directly from the database — no re-parsing of the large XML. The database can be exported at any time via **Export XML** in the toolbar.
 
+You can also point the server at an existing database from any location:
+
+```bash
+python3 server.py /path/to/existing/odwn.db
+```
+
 | File | Created automatically from |
 |---|---|
 | `data/odwn.db` | `data/odwn.xml` (first run only) |
 | `data/wneng30_synset_synonyms.json` | Princeton WordNet 3.0 LMF file (run once separately) |
 
+The server maintains a `synset_entry_index` table that maps each synset to its linked Dutch entries. This index is rebuilt automatically if missing and updated on every entry save. It powers the **No Dutch synonyms** filter and the Dutch synonyms card in the synset editor.
+
 ### Locking
 
-Each entry and synset is protected by a per-item lock:
+Each entry and synset is protected by a per-item lock. The two editor panes lock independently:
 
 - When a user **opens** an item, the server acquires a lock for them (60-second TTL).
 - Every **auto-save** (every 1.5 s after typing stops) **refreshes** the lock, extending it by another 60 s.
@@ -360,7 +385,8 @@ Each entry and synset is protected by a per-item lock:
 | Green dot + user count (toolbar) | Connected to server; shows number of active users |
 | Username badge (toolbar) | The currently logged-in user |
 | **Sign out** button (toolbar) | Logs out and reloads the page to the login screen |
-| Yellow lock banner (editor top) | Item is locked by another user; shows who and countdown |
+| Yellow lock banner (entry editor) | Entry is locked by another user; shows who and countdown |
+| Yellow lock banner (synset editor) | Synset is locked by another user; shows who and countdown |
 | **Claim when free** button | Re-attempts to acquire the lock (visible while locked by another) |
 | Auto-save status (status bar, bottom right) | `Saving…` → `Saved` after each auto-save |
 | Toast notification (bottom right) | Appears when another user edits, adds, or deletes an item |
@@ -389,7 +415,7 @@ python3 server.py [xmlfile_or_dbfile] [port] [users.json]
 | Argument | Default |
 |---|---|
 | `xmlfile` | `data/odwn_orbn_gwg-LMF_1.3.xml` (auto-discovered) |
-| `dbfile` | Derived from XML path (e.g. `data/odwn.db`); also auto-discovered |
+| `dbfile` | Derived from XML path (e.g. `data/odwn.db`); also auto-discovered; can be any path |
 | `users.json` | `users.json` alongside `server.py` (created if absent) |
 | `port` | `8080` |
 
@@ -456,7 +482,7 @@ The editor also opens standard **feat-based** LMF files and detects the format a
 
 | File | Description |
 |---|---|
-| `data/odwn_orbn_gwg-LMF_1.3.xml` | Open Dutch WordNet (ODWN) combined with ORBN and GWG, LMF 1.3 format (~149 MB, ~99 000 entries, ~135 000 synsets) |
+| `data/odwn_orbn_gwg-LMF_1.3.xml` | Open Dutch WordNet (ODWN) combined with ORBN and GWG, LMF 1.3 format (~149 MB, ~99 000 entries, ~117 000 synsets) |
 | `data/wneng30_synset_synonyms.json` | Princeton WordNet 3.0 synset→synonyms mapping (117 659 synsets), used for English synonym display and search |
 
 ---

@@ -420,6 +420,20 @@ def delete_synset(sid):
         c.execute('DELETE FROM locks WHERE item_type=? AND item_id=?', ('synset', sid))
         c.commit()
 
+def _refresh_synset_nl_flags(synset_ids):
+    """Update hasDutchSynonyms on in-memory synset_index stubs for the given synset IDs."""
+    if not synset_ids:
+        return
+    id_set = set(synset_ids)
+    c = _con()
+    linked = {r[0] for r in c.execute(
+        'SELECT DISTINCT synset_id FROM synset_entry_index WHERE synset_id IN ({})'.format(
+            ','.join('?' * len(id_set))), list(id_set)).fetchall()}
+    with _slock:
+        for stub in _st['synset_index']:
+            if stub['id'] in id_set:
+                stub['hasDutchSynonyms'] = stub['id'] in linked
+
 # ─────────────────────────────────────────────────────────────────────
 # XML Parser  (matches JS data model exactly)
 # ─────────────────────────────────────────────────────────────────────
@@ -643,6 +657,11 @@ def load_xml(filepath):
                 batch_s)
             c.commit()
 
+        # Annotate synset_index with hasDutchSynonyms using the synset_entry_index
+        linked_ss = {r[0] for r in c.execute('SELECT DISTINCT synset_id FROM synset_entry_index').fetchall()}
+        for stub in synset_index:
+            stub['hasDutchSynonyms'] = stub['id'] in linked_ss
+
         with _slock:
             _st['globalInfo']   = global_info
             _st['lexicon']      = lexicon_meta
@@ -718,6 +737,11 @@ def load_from_db():
             for stub in entry_index:
                 stub['hasMissingSynset'] = uls_map.get(stub['id'], False)
             print(f'has_unlinked_sense backfilled for {len(updates):,} entries', flush=True)
+
+        # Annotate synset_index with hasDutchSynonyms using the synset_entry_index
+        linked_ss = {r[0] for r in c.execute('SELECT DISTINCT synset_id FROM synset_entry_index').fetchall()}
+        for stub in synset_index:
+            stub['hasDutchSynonyms'] = stub['id'] in linked_ss
 
         with _slock:
             _st['globalInfo']   = global_info
@@ -1224,9 +1248,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if item_type == 'entry':
             if op == 'delete':
+                # Collect old synset links before deleting so we can refresh their flags
+                old_ss = [r[0] for r in _con().execute(
+                    'SELECT DISTINCT synset_id FROM synset_entry_index WHERE entry_id=?', (item_id,)).fetchall()]
                 delete_entry(item_id)
                 with _slock:
                     _st['entry_index'] = [x for x in _st['entry_index'] if x['id'] != item_id]
+                _refresh_synset_nl_flags(old_ss)
             elif op == 'add':
                 upsert_entry(data, user)
                 try_acquire_lock('entry', item_id, user)
@@ -1239,7 +1267,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         'mweForm': data.get('mweForm',''),
                         'hasMissingSynset': has_unlinked,
                     })
+                # Update hasDutchSynonyms on affected synset stubs
+                _refresh_synset_nl_flags([s.get('synset','') for s in data.get('senses',[]) if s.get('synset','')])
             else:
+                # Collect OLD synset links before overwriting (to refresh removed links too)
+                old_ss = [r[0] for r in _con().execute(
+                    'SELECT DISTINCT synset_id FROM synset_entry_index WHERE entry_id=?', (item_id,)).fetchall()]
                 upsert_entry(data, user)
                 lemma = data.get('mweForm','') if data.get('isMWE') else data.get('lemma','')
                 has_unlinked = any(not s.get('synset','') for s in data.get('senses',[]))
@@ -1251,6 +1284,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                             idx['mweForm']           = data.get('mweForm','')
                             idx['hasMissingSynset']  = has_unlinked
                             break
+                # Refresh both old (possibly removed) and new synset stubs
+                new_ss = [s.get('synset','') for s in data.get('senses',[]) if s.get('synset','')]
+                _refresh_synset_nl_flags(list(set(old_ss + new_ss)))
         else:
             if op == 'delete':
                 delete_synset(item_id)

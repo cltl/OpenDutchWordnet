@@ -24,17 +24,17 @@
     /* Main */
     #main { display: flex; flex: 1; overflow: hidden; }
 
-    /* Sidebar */
-    #sidebar { width: 245px; background: white; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; flex-shrink: 0; }
-    #sb-tabs { display: flex; border-bottom: 1px solid #e0e0e0; }
-    .sbtab { flex: 1; padding: 8px 4px; font-size: 11px; font-weight: 700; text-align: center; cursor: pointer; color: #999; border-bottom: 2px solid transparent; transition: color 0.12s; user-select: none; }
-    .sbtab:hover { color: #555; }
-    .sbtab.active { color: #4f8ef7; border-bottom-color: #4f8ef7; }
-    #sb-search { padding: 8px; border-bottom: 1px solid #eee; }
-    #search { width: 100%; padding: 6px 9px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; }
-    #search:focus { outline: none; border-color: #4f8ef7; }
-    #entry-count { font-size: 11px; color: #aaa; text-align: center; padding: 3px 0 0; }
-    #entry-list { flex: 1; overflow-y: auto; }
+    /* Dual panels */
+    .panel { width: 210px; background: white; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; flex-shrink: 0; }
+    .panel-hd { padding: 6px 10px 5px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: #4f8ef7; border-bottom: 2px solid #4f8ef7; background: #f8fbff; flex-shrink: 0; }
+    .panel-search { padding: 7px 8px; border-bottom: 1px solid #eee; flex-shrink: 0; }
+    .panel-search input[type=text] { width: 100%; padding: 5px 8px; border: 1px solid #ddd; border-radius: 5px; font-size: 12px; font-family: inherit; }
+    .panel-search input[type=text]:focus { outline: none; border-color: #4f8ef7; }
+    .panel-count { font-size: 11px; color: #aaa; text-align: center; padding: 3px 0 0; }
+    .panel-list { flex: 1; overflow-y: auto; }
+    .panel-foot { padding: 7px 8px; border-top: 1px solid #eee; flex-shrink: 0; }
+    .panel-foot button { width: 100%; padding: 6px; background: #4f8ef7; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    .panel-foot button:hover { background: #3a7de8; }
     .ei { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid #f4f4f4; user-select: none; }
     .ei:hover { background: #f5f8ff; }
     .ei.active { background: #eef3ff; border-left: 3px solid #4f8ef7; padding-left: 7px; }
@@ -42,6 +42,8 @@
     .ei-sub  { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ei-sub.mwe { color: #e67e22; font-weight: 700; text-transform: none; }
     .ei-count { display:inline-flex;align-items:center;justify-content:center;background:#4f8ef7;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:18px;height:16px;padding:0 5px;margin-left:5px;vertical-align:middle; }
+    /* Entry/synset item count */
+    #entry-count-e, #entry-count-s { font-size: 11px; color: #aaa; text-align: center; padding: 3px 0 0; }
     .ov-table { width:100%;border-collapse:collapse;font-size:12px; }
     .ov-table th { text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e8e8e8;background:#fafafa; }
     .ov-table td { padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top; }
@@ -51,15 +53,15 @@
     .ov-def { color:#555;max-width:260px; }
     .ov-synlink { color:#4f8ef7;text-decoration:underline dotted;cursor:pointer; }
     .ov-synlink:hover { text-decoration:underline; }
-    #sb-foot { padding: 8px; border-top: 1px solid #eee; }
-    #add-btn { width: 100%; padding: 7px; background: #4f8ef7; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
-    #add-btn:hover { background: #3a7de8; }
+    /* Filter panel (one per side panel) */
 
-    /* Editor */
-    #editor { flex: 1; overflow-y: auto; padding: 20px 24px; }
-    #ed-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #bbb; gap: 10px; }
-    #ed-empty .ico { font-size: 52px; opacity: 0.25; }
-    #ed-content { display: none; }
+    /* Split panes */
+    #left-pane  { display: flex; flex: 1; min-width: 0; border-right: 2px solid #d8dee8; overflow: hidden; }
+    #right-pane { display: flex; flex: 1; min-width: 0; overflow: hidden; }
+    .pane-editor { flex: 1; overflow-y: auto; padding: 18px 20px; background: #f0f2f5; min-width: 0; }
+    .pane-empty  { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #bbb; gap: 10px; }
+    .pane-empty .ico { font-size: 52px; opacity: 0.25; }
+    .pane-content { display: none; }
 
     /* Entry/synset header */
     .ed-hd { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
@@ -174,12 +176,12 @@
     #collab-dot { width: 8px; height: 8px; border-radius: 50%; background: #aaa; flex-shrink: 0; }
 
     /* Lock banner */
-    #lock-banner { display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:9px 14px; margin-bottom:12px; font-size:12px; color:#856404; align-items:center; gap:10px; }
-    #lock-banner .lock-icon { font-size:15px; flex-shrink:0; }
-    #lock-banner .lock-msg  { flex:1; line-height:1.4; }
-    #lock-banner .lock-ttl  { font-weight:700; }
-    #lock-banner button { padding:4px 10px; border:1px solid #ffc107; border-radius:4px; background:#fff; color:#856404; cursor:pointer; font-size:11px; font-weight:700; white-space:nowrap; }
-    #lock-banner button:hover { background:#fff3cd; }
+    .lock-banner { display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:9px 14px; margin-bottom:12px; font-size:12px; color:#856404; align-items:center; gap:10px; }
+    .lock-banner .lock-icon { font-size:15px; flex-shrink:0; }
+    .lock-banner .lock-msg  { flex:1; line-height:1.4; }
+    .lock-banner .lock-ttl  { font-weight:700; }
+    .lock-banner button { padding:4px 10px; border:1px solid #ffc107; border-radius:4px; background:#fff; color:#856404; cursor:pointer; font-size:11px; font-weight:700; white-space:nowrap; }
+    .lock-banner button:hover { background:#fff3cd; }
 
     /* Login overlay */
     #login-overlay { position:fixed; inset:0; background:rgba(15,15,30,0.72); display:none; align-items:center; justify-content:center; z-index:10000; backdrop-filter:blur(3px); }
@@ -226,8 +228,7 @@
     .sg-li   { display:flex; align-items:center; gap:4px; font-size:10px; color:#555; white-space:nowrap; }
     .sg-sw   { width:22px; height:3px; border-radius:2px; flex-shrink:0; }
 
-    /* Filter panel */
-    #sb-filters { padding: 5px 0 2px; border-top: 1px solid #eee; margin-top: 4px; }
+    .panel-filters { padding: 5px 0 2px; border-top: 1px solid #eee; margin-top: 4px; }
     .flt-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
     .flt-lbl { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.3px; width: 46px; flex-shrink: 0; }
     .flt-sel { flex: 1; padding: 3px 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; font-family: inherit; min-width: 0; background: white; color: #333; }
@@ -271,33 +272,57 @@
 </div>
 
 <div id="main">
-  <div id="sidebar">
-    <div id="sb-tabs">
-      <div class="sbtab active" id="tab-entries" onclick="setMode('entries')">Entries</div>
-      <div class="sbtab" id="tab-synsets" onclick="setMode('synsets')">Synsets</div>
+  <div id="left-pane">
+    <div id="panel-e" class="panel">
+      <div class="panel-hd">Entries</div>
+      <div class="panel-search">
+        <input type="text" id="search-e" placeholder="Search entries…" oninput="filterEntries(this.value)">
+        <div id="sb-filters-e" class="panel-filters"></div>
+        <div id="entry-count-e" class="panel-count"></div>
+      </div>
+      <div id="entry-list-e" class="panel-list" onscroll="onVScrollE()"></div>
+      <div class="panel-foot">
+        <button onclick="addEntry()">+ Add Entry</button>
+      </div>
     </div>
-    <div id="sb-search">
-      <input type="text" id="search" placeholder="Search…" oninput="filterList(this.value)">
-      <div id="sb-filters"></div>
-      <div id="entry-count"></div>
-    </div>
-    <div id="entry-list" onscroll="onVScroll()"></div>
-    <div id="sb-foot">
-      <button id="add-btn" onclick="addItem()">+ Add Entry</button>
+    <div id="ed-e" class="pane-editor">
+      <div id="ed-e-empty" class="pane-empty">
+        <div class="ico">&#128218;</div>
+        <p>Select an entry</p>
+      </div>
+      <div id="lock-banner-e" class="lock-banner">
+        <span class="lock-icon">&#128274;</span>
+        <span class="lock-msg">Being edited by <strong class="lock-user"></strong> — <span class="lock-ttl"></span></span>
+        <button onclick="claimLock('entry')">Claim when free</button>
+      </div>
+      <div id="ed-e-content" class="pane-content"></div>
     </div>
   </div>
-
-  <div id="editor">
-    <div id="ed-empty">
-      <div class="ico">&#128218;</div>
-      <p>Select an entry or synset from the sidebar.</p>
+  <div id="right-pane">
+    <div id="panel-s" class="panel">
+      <div class="panel-hd">Synsets</div>
+      <div class="panel-search">
+        <input type="text" id="search-s" placeholder="Search synsets…" oninput="filterSynsets(this.value)">
+        <div id="sb-filters-s" class="panel-filters"></div>
+        <div id="entry-count-s" class="panel-count"></div>
+      </div>
+      <div id="entry-list-s" class="panel-list" onscroll="onVScrollS()"></div>
+      <div class="panel-foot">
+        <button onclick="addSynset()">+ Add Synset</button>
+      </div>
     </div>
-    <div id="lock-banner">
-      <span class="lock-icon">&#128274;</span>
-      <span class="lock-msg">Being edited by <strong id="lock-user"></strong> — <span class="lock-ttl" id="lock-ttl"></span></span>
-      <button onclick="claimLock()">Claim when free</button>
+    <div id="ed-s" class="pane-editor">
+      <div id="ed-s-empty" class="pane-empty">
+        <div class="ico">&#128279;</div>
+        <p>Select a synset</p>
+      </div>
+      <div id="lock-banner-s" class="lock-banner">
+        <span class="lock-icon">&#128274;</span>
+        <span class="lock-msg">Being edited by <strong class="lock-user"></strong> — <span class="lock-ttl"></span></span>
+        <button onclick="claimLock('synset')">Claim when free</button>
+      </div>
+      <div id="ed-s-content" class="pane-content"></div>
     </div>
-    <div id="ed-content"></div>
   </div>
 </div>
 
@@ -427,15 +452,20 @@ let state = {
   lexicon: { language: '', languageCoding: '', label: '', owner: '' },
   entries: [],
   synsets: [],
-  selectedId: null,
+  selectedId: null,       // currently selected entry ID (left pane)
+  selectedSynsetId: null, // currently selected synset ID (right pane)
   selectedGroupIds: null, // array of entry IDs when showing overview; null = editor/empty
-  mode: 'entries',   // 'entries' | 'synsets'
-  filter: '',
-  activeFilters: {
-    pos: '',                   // POS filter (entries: full name; synsets: letter code)
-    senses: '',                // entries only: '', '1', '2+', '3+', '5+'
-    missingSynsetLink: false,  // entries only: show entries with any sense lacking a synset
-    missingDutchSynonyms: false // synsets only: show synsets with no Dutch entries
+  mode: 'entries',   // legacy hint; actual selection tracked by selectedId / selectedSynsetId
+  filterE: '',
+  filterS: '',
+  activeFiltersE: {
+    pos: '',                   // POS filter (full name: noun/verb/adjective/adverb/other)
+    senses: '',                // '', '1', '2+', '3+', '5+'
+    missingSynsetLink: false   // show entries with any sense lacking a synset
+  },
+  activeFiltersS: {
+    pos: '',                   // POS letter code: n/v/a/r/s
+    missingDutchSynonyms: false
   }
 };
 
@@ -475,71 +505,45 @@ function makeSynset() {
 // =====================================================================
 
 const ITEM_H = 52, VS_BUF = 8;
-let vsFiltered = [];
-let vsGroups    = {};  // repId → [indices] — populated when entries filter is active
-let vsEntryGroup = {}; // entryId → repId — reverse lookup
-let vsRaf = false;
+// Entries VS state
+let vsFilteredE = [], vsGroupsE = {}, vsEntryGroupE = {};
+// Synsets VS state
+let vsFilteredS = [];
+let vsRafE = false, vsRafS = false;
 
-function rebuildVS() {
-  const f = state.filter.toLowerCase();
-  const af = state.activeFilters;
-  const list = state.mode === 'entries' ? state.entries : state.synsets;
+function rebuildVSE() {
+  const f = state.filterE.toLowerCase();
+  const af = state.activeFiltersE;
+  vsGroupsE = {}; vsEntryGroupE = {};
+  vsFilteredE = [];
 
-  vsGroups = {}; vsEntryGroup = {};
-  vsFiltered = [];
-
-  // For missingDutchSynonyms: build set of synset IDs that have at least one Dutch entry
-  let synsetNlSet = null;
-  if (state.mode === 'synsets' && af.missingDutchSynonyms) {
-    synsetNlSet = new Set();
-    for (const ss of state.synsets) {
-      if (ss._nl_entries && ss._nl_entries.length > 0) synsetNlSet.add(ss.id);
-    }
-    // Standalone mode: scan all loaded entries
-    for (const e of state.entries) {
-      if (e._indexOnly) continue;
-      for (const s of (e.senses || [])) { if (s.synset) synsetNlSet.add(s.synset); }
-    }
-  }
-
-  const hasAttrFilters = !!(state.mode === 'entries'
-    ? (af.pos || af.senses || af.missingSynsetLink)
-    : (af.pos || af.missingDutchSynonyms));
+  const hasAttrFilters = !!(af.pos || af.senses || af.missingSynsetLink);
 
   function passesAttr(item) {
-    if (state.mode === 'entries') {
-      if (af.pos && item.partOfSpeech !== af.pos) return false;
-      if (af.senses && !item._indexOnly) {
-        const sc = (item.senses || []).length;
-        if (af.senses === '1'  && sc !== 1) return false;
-        if (af.senses === '2+' && sc < 2)   return false;
-        if (af.senses === '3+' && sc < 3)   return false;
-        if (af.senses === '5+' && sc < 5)   return false;
-      }
-      if (af.missingSynsetLink) {
-        if (item._indexOnly) {
-          if (!item.hasMissingSynset) return false;
-        } else {
-          if (!(item.senses || []).some(s => !s.synset)) return false;
-        }
-      }
-    } else {
-      if (af.pos) {
-        const ssPos = item.id.split('-').pop();
-        if (ssPos !== af.pos) return false;
-      }
-      if (af.missingDutchSynonyms && synsetNlSet) {
-        if (synsetNlSet.has(item.id)) return false;
+    if (af.pos && item.partOfSpeech !== af.pos) return false;
+    if (af.senses && !item._indexOnly) {
+      const sc = (item.senses || []).length;
+      if (af.senses === '1'  && sc !== 1) return false;
+      if (af.senses === '2+' && sc < 2)   return false;
+      if (af.senses === '3+' && sc < 3)   return false;
+      if (af.senses === '5+' && sc < 5)   return false;
+    }
+    if (af.missingSynsetLink) {
+      if (item._indexOnly) {
+        if (!item.hasMissingSynset) return false;
+      } else {
+        if (!(item.senses || []).some(s => !s.synset)) return false;
       }
     }
     return true;
   }
 
+  const list = state.entries;
   if (!f) {
     for (let i = 0; i < list.length; i++) {
-      if (passesAttr(list[i])) vsFiltered.push(i);
+      if (passesAttr(list[i])) vsFilteredE.push(i);
     }
-  } else if (state.mode === 'entries') {
+  } else {
     const exactMap = new Map(), subMap = new Map();
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
@@ -551,70 +555,118 @@ function rebuildVS() {
       else if (hay.includes(f)) { if (!subMap.has(key))  subMap.set(key,  []); subMap.get(key).push(i);  }
     }
     for (const [, indices] of [...exactMap, ...subMap]) {
-      const repId = list[indices[0]].id;
-      vsFiltered.push(indices[0]);
+      vsFilteredE.push(indices[0]);
       if (indices.length > 1) {
-        vsGroups[repId] = indices;
-        for (const i of indices) vsEntryGroup[list[i].id] = repId;
+        vsGroupsE[list[indices[0]].id] = indices;
+        for (const i of indices) vsEntryGroupE[list[i].id] = list[indices[0]].id;
       }
-    }
-  } else {
-    for (let i = 0; i < list.length; i++) {
-      const s = list[i];
-      if (!passesAttr(s)) continue;
-      const gloss = s.definitions && s.definitions.length ? s.definitions[0].gloss : '';
-      const hay = s.id + ' ' + gloss + ' ' + (s.enSyns || '');
-      if (hay.toLowerCase().includes(f)) vsFiltered.push(i);
     }
   }
 
-  const total = list.length;
-  document.getElementById('entry-count').textContent =
-    (f || hasAttrFilters) ? `${vsFiltered.length} of ${total}` : `${total} items`;
+  const totalE = state.entries.length;
+  document.getElementById('entry-count-e').textContent =
+    (f || hasAttrFilters) ? `${vsFilteredE.length} of ${totalE}` : `${totalE} items`;
 }
 
-function renderVS(resetScroll) {
-  const list = document.getElementById('entry-list');
+function rebuildVSS() {
+  const f = state.filterS.toLowerCase();
+  const af = state.activeFiltersS;
+  vsFilteredS = [];
+
+  const hasAttrFilters = !!(af.pos || af.missingDutchSynonyms);
+
+  const list = state.synsets;
+  for (let i = 0; i < list.length; i++) {
+    const s = list[i];
+    if (af.pos) { const ssPos = s.id.split('-').pop(); if (ssPos !== af.pos) continue; }
+    if (af.missingDutchSynonyms) {
+      // Use index flag if available (collab mode), fall back to _nl_entries or full entry scan
+      if (s._indexOnly) {
+        if (s.hasDutchSynonyms) continue;
+      } else {
+        const hasNl = (s._nl_entries && s._nl_entries.length > 0) ||
+          state.entries.some(e => !e._indexOnly && (e.senses || []).some(sense => sense.synset === s.id));
+        if (hasNl) continue;
+      }
+    }
+    const gloss = s.definitions && s.definitions.length ? s.definitions[0].gloss : '';
+    const hay = s.id + ' ' + gloss + ' ' + (s.enSyns || '');
+    if (!f || hay.toLowerCase().includes(f)) vsFilteredS.push(i);
+  }
+
+  const totalS = list.length;
+  document.getElementById('entry-count-s').textContent =
+    (f || hasAttrFilters) ? `${vsFilteredS.length} of ${totalS}` : `${totalS} items`;
+}
+
+function rebuildVS() { rebuildVSE(); rebuildVSS(); }
+
+function renderVSE(resetScroll) {
+  const list = document.getElementById('entry-list-e');
+  if (!list) return;
   if (resetScroll) list.scrollTop = 0;
-  _paintVS(list);
+  _paintVSE(list);
 }
 
-function _paintVS(list) {
+function renderVSS(resetScroll) {
+  const list = document.getElementById('entry-list-s');
+  if (!list) return;
+  if (resetScroll) list.scrollTop = 0;
+  _paintVSS(list);
+}
+
+function renderVS(resetScroll) { renderVSE(resetScroll); renderVSS(resetScroll); }
+
+function _paintVSE(list) {
   const top = list.scrollTop, viewH = list.clientHeight || 600;
-  const total = vsFiltered.length;
+  const total = vsFilteredE.length;
   const start = Math.max(0, Math.floor(top / ITEM_H) - VS_BUF);
   const end   = Math.min(total, Math.ceil((top + viewH) / ITEM_H) + VS_BUF);
-  const src   = state.mode === 'entries' ? state.entries : state.synsets;
+  const src   = state.entries;
 
   const parts = [`<div style="height:${start * ITEM_H}px"></div>`];
   for (let i = start; i < end; i++) {
-    const item = src[vsFiltered[i]];
-    const repId = vsEntryGroup[state.selectedId];
-    const act   = (item.id === state.selectedId || item.id === repId ||
-                   (state.selectedGroupIds && state.selectedGroupIds[0] === item.id)) ? ' active' : '';
-    if (state.mode === 'entries') {
-      const e = item;
-      const gc = vsGroups[e.id] ? vsGroups[e.id].length : 0;
-      const badge = gc > 1 ? `<span class="ei-count">${gc}</span>` : '';
-      parts.push(`<div class="ei${act}" onclick="selectItem('${h(e.id)}')">
-        <div class="ei-main">${h(e.isMWE ? (e.mweForm || e.id) : (e.lemma || '(no lemma)'))}${badge}</div>
-        <div class="ei-sub${e.isMWE ? ' mwe' : ''}">${h(e.isMWE ? 'MWE' : (e.partOfSpeech || '—'))}</div>
-      </div>`);
-    } else {
-      const s = item;
-      const gloss = s.definitions.length ? s.definitions[0].gloss : '';
-      parts.push(`<div class="ei${act}" onclick="selectItem('${h(s.id)}')">
-        <div class="ei-main">${h(s.id)}</div>
-        <div class="ei-sub">${h(gloss ? gloss.slice(0, 55) + (gloss.length > 55 ? '…' : '') : '—')}</div>
-      </div>`);
-    }
+    const e = src[vsFilteredE[i]];
+    const repId = vsEntryGroupE[state.selectedId];
+    const act = (e.id === state.selectedId || e.id === repId ||
+                 (state.selectedGroupIds && state.selectedGroupIds[0] === e.id)) ? ' active' : '';
+    const gc = vsGroupsE[e.id] ? vsGroupsE[e.id].length : 0;
+    const badge = gc > 1 ? `<span class="ei-count">${gc}</span>` : '';
+    parts.push(`<div class="ei${act}" onclick="selectItem('${h(e.id)}','entries')">
+      <div class="ei-main">${h(e.isMWE ? (e.mweForm || e.id) : (e.lemma || '(no lemma)'))}${badge}</div>
+      <div class="ei-sub${e.isMWE ? ' mwe' : ''}">${h(e.isMWE ? 'MWE' : (e.partOfSpeech || '—'))}</div>
+    </div>`);
   }
   parts.push(`<div style="height:${Math.max(0, (total - end) * ITEM_H)}px"></div>`);
   list.innerHTML = parts.join('');
 }
 
-function onVScroll() {
-  if (!vsRaf) { vsRaf = true; requestAnimationFrame(() => { vsRaf = false; _paintVS(document.getElementById('entry-list')); }); }
+function _paintVSS(list) {
+  const top = list.scrollTop, viewH = list.clientHeight || 600;
+  const total = vsFilteredS.length;
+  const start = Math.max(0, Math.floor(top / ITEM_H) - VS_BUF);
+  const end   = Math.min(total, Math.ceil((top + viewH) / ITEM_H) + VS_BUF);
+  const src   = state.synsets;
+
+  const parts = [`<div style="height:${start * ITEM_H}px"></div>`];
+  for (let i = start; i < end; i++) {
+    const s = src[vsFilteredS[i]];
+    const act = (s.id === state.selectedSynsetId) ? ' active' : '';
+    const gloss = s.definitions && s.definitions.length ? s.definitions[0].gloss : '';
+    parts.push(`<div class="ei${act}" onclick="selectItem('${h(s.id)}','synsets')">
+      <div class="ei-main">${h(s.id)}</div>
+      <div class="ei-sub">${h(gloss ? gloss.slice(0, 55) + (gloss.length > 55 ? '…' : '') : '—')}</div>
+    </div>`);
+  }
+  parts.push(`<div style="height:${Math.max(0, (total - end) * ITEM_H)}px"></div>`);
+  list.innerHTML = parts.join('');
+}
+
+function onVScrollE() {
+  if (!vsRafE) { vsRafE = true; requestAnimationFrame(() => { vsRafE = false; _paintVSE(document.getElementById('entry-list-e')); }); }
+}
+function onVScrollS() {
+  if (!vsRafS) { vsRafS = true; requestAnimationFrame(() => { vsRafS = false; _paintVSS(document.getElementById('entry-list-s')); }); }
 }
 
 // =====================================================================
@@ -949,8 +1001,9 @@ function serializeODWN(s) {
 
 function newLexicon() {
   if (state.modified && !confirm('Discard unsaved changes?')) return;
-  Object.assign(state, { filename: null, modified: false, format: 'odwn', globalInfo: { label: 'New Lexicon' }, lexicon: { language: 'nl', languageCoding: 'ISO 639-2', label: '', owner: '' }, entries: [], synsets: [], selectedId: null, filter: '' });
-  document.getElementById('search').value = '';
+  Object.assign(state, { filename: null, modified: false, format: 'odwn', globalInfo: { label: 'New Lexicon' }, lexicon: { language: 'nl', languageCoding: 'ISO 639-2', label: '', owner: '' }, entries: [], synsets: [], selectedId: null, selectedSynsetId: null, filterE: '', filterS: '' });
+  document.getElementById('search-e').value = '';
+  document.getElementById('search-s').value = '';
   renderAll();
 }
 
@@ -990,8 +1043,9 @@ function parseAndLoad(text, filename) {
       const err = doc.querySelector('parseerror');
       if (err) throw new Error('XML parse error:\n' + err.textContent.slice(0, 200));
       const parsed = detectAndParse(doc);
-      Object.assign(state, { globalInfo: parsed.globalInfo, lexicon: parsed.lexicon, entries: parsed.entries, synsets: parsed.synsets, filename, modified: false, selectedId: null, filter: '' });
-      document.getElementById('search').value = '';
+      Object.assign(state, { globalInfo: parsed.globalInfo, lexicon: parsed.lexicon, entries: parsed.entries, synsets: parsed.synsets, filename, modified: false, selectedId: null, selectedSynsetId: null, filterE: '', filterS: '' });
+      document.getElementById('search-e').value = '';
+      document.getElementById('search-s').value = '';
       hideLoading();
       renderAll();
     } catch (err) {
@@ -1058,30 +1112,26 @@ function hideLoading()    { document.getElementById('loading').classList.remove(
 // =====================================================================
 
 function setMode(mode) {
-  collectEditorState();
   state.mode = mode;
-  state.selectedId = null;
-  state.selectedGroupIds = null;
-  state.filter = '';
-  state.activeFilters = { pos: '', senses: '', missingSynsetLink: false, missingDutchSynonyms: false };
-  document.getElementById('search').value = '';
-  document.getElementById('tab-entries').classList.toggle('active', mode === 'entries');
-  document.getElementById('tab-synsets').classList.toggle('active', mode === 'synsets');
-  document.getElementById('add-btn').textContent = mode === 'synsets' ? '+ Add Synset' : '+ Add Entry';
-  renderFilters();
-  rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
 }
 
-function addItem() {
+function addEntry() {
   collectEditorState();
-  if (state.mode === 'synsets') {
-    const s = makeSynset(); state.synsets.unshift(s); state.selectedId = s.id;
-    state.modified = true;
-    rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
-    setTimeout(() => { const el = document.getElementById('f-ssid'); if (el) el.focus(); }, 40);
-  } else {
-    openNewEntryDialog();
-  }
+  openNewEntryDialog();
+}
+
+function addSynset() {
+  collectSynsetState();
+  state.mode = 'synsets';
+  const s = makeSynset(); state.synsets.unshift(s); state.selectedSynsetId = s.id;
+  state.modified = true;
+  rebuildVSS(); renderVSS(true); renderSynsetEditor(); updateStatusBar();
+  setTimeout(() => { const el = document.getElementById('f-ssid'); if (el) el.focus(); }, 40);
+}
+
+// Keep addItem for collab override compatibility
+function addItem() {
+  if (state.mode === 'synsets') addSynset(); else addEntry();
 }
 
 function deleteItem(id) {
@@ -1089,12 +1139,15 @@ function deleteItem(id) {
   if (state.mode === 'entries') {
     state.entries = state.entries.filter(e => e.id !== id);
     state.selectedId = state.entries.length ? state.entries[0].id : null;
+    state.selectedGroupIds = null;
+    rebuildVSE(); renderVSE(); renderEntryEditor();
   } else {
     state.synsets = state.synsets.filter(s => s.id !== id);
-    state.selectedId = state.synsets.length ? state.synsets[0].id : null;
+    state.selectedSynsetId = state.synsets.length ? state.synsets[0].id : null;
+    rebuildVSS(); renderVSS(); renderSynsetEditor();
   }
   state.modified = true;
-  rebuildVS(); renderVS(); renderEditor(); updateStatusBar();
+  updateStatusBar();
 }
 
 function duplicateEntry(id) {
@@ -1105,97 +1158,125 @@ function duplicateEntry(id) {
   copy.senses = copy.senses.map(s => ({ ...s, id: uid('s') }));
   state.entries.splice(state.entries.findIndex(e => e.id === id) + 1, 0, copy);
   state.selectedId = copy.id; state.modified = true;
-  rebuildVS(); renderVS(); renderEditor();
+  rebuildVSE(); renderVSE(); renderEntryEditor();
 }
 
-function selectItem(id) {
-  const grp = vsGroups[id];
-  if (grp && state.selectedGroupIds && state.selectedGroupIds[0] === id) return;
-  if (!grp && state.selectedId === id && !state.selectedGroupIds) return;
-  collectEditorState();
-  state.selectedId = id;
-  state.selectedGroupIds = (grp && grp.length > 1)
-    ? grp.map(i => state.entries[i].id)
-    : null;
-  renderVS(); renderEditor();
-  document.getElementById('editor').scrollTop = 0;
+function selectItem(id, type) {
+  if (type === 'synsets') {
+    if (state.selectedSynsetId === id) return;
+    collectSynsetState();
+    state.selectedSynsetId = id;
+    state.mode = 'synsets';
+    renderVSS(); renderSynsetEditor();
+    document.getElementById('ed-s').scrollTop = 0;
+  } else {
+    state.mode = 'entries';
+    const grp = vsGroupsE[id];
+    if (grp && state.selectedGroupIds && state.selectedGroupIds[0] === id) return;
+    if (!grp && state.selectedId === id && !state.selectedGroupIds) return;
+    collectEditorState();
+    state.selectedId = id;
+    state.selectedGroupIds = (grp && grp.length > 1)
+      ? grp.map(i => state.entries[i].id)
+      : null;
+    renderVSE(); renderEntryEditor();
+    document.getElementById('ed-e').scrollTop = 0;
+  }
 }
 
-function filterList(val) { state.filter = val; rebuildVS(); renderVS(true); }
+function filterEntries(val) { state.filterE = val; rebuildVSE(); renderVSE(true); }
+function filterSynsets(val) { state.filterS = val; rebuildVSS(); renderVSS(true); }
+// Legacy alias used in some collab paths
+function filterList(val) { filterEntries(val); }
 
-function renderFilters() {
-  const flt = document.getElementById('sb-filters');
+function renderFilters() { _renderFiltersE(); _renderFiltersS(); }
+
+function _renderFiltersE() {
+  const flt = document.getElementById('sb-filters-e');
   if (!flt) return;
-  const af = state.activeFilters;
-  if (state.mode === 'entries') {
-    flt.innerHTML = `
-      <div class="flt-row">
-        <label class="flt-lbl">POS</label>
-        <select class="flt-sel${af.pos ? ' active' : ''}" id="flt-pos" onchange="updateFilters()">
-          <option value="">All POS</option>
-          <option value="noun"${af.pos==='noun'?' selected':''}>noun</option>
-          <option value="verb"${af.pos==='verb'?' selected':''}>verb</option>
-          <option value="adjective"${af.pos==='adjective'?' selected':''}>adjective</option>
-          <option value="adverb"${af.pos==='adverb'?' selected':''}>adverb</option>
-          <option value="other"${af.pos==='other'?' selected':''}>other</option>
-        </select>
-      </div>
-      <div class="flt-row">
-        <label class="flt-lbl">Senses</label>
-        <select class="flt-sel${af.senses ? ' active' : ''}" id="flt-senses" onchange="updateFilters()">
-          <option value="">Any count</option>
-          <option value="1"${af.senses==='1'?' selected':''}>Exactly 1</option>
-          <option value="2+"${af.senses==='2+'?' selected':''}>2 or more</option>
-          <option value="3+"${af.senses==='3+'?' selected':''}>3 or more</option>
-          <option value="5+"${af.senses==='5+'?' selected':''}>5 or more</option>
-        </select>
-      </div>
-      <label class="flt-chk${af.missingSynsetLink ? ' active' : ''}">
-        <input type="checkbox" id="flt-missing-synset"${af.missingSynsetLink ? ' checked' : ''} onchange="updateFilters()">
-        Missing synset link
-      </label>`;
-  } else {
-    flt.innerHTML = `
-      <div class="flt-row">
-        <label class="flt-lbl">POS</label>
-        <select class="flt-sel${af.pos ? ' active' : ''}" id="flt-pos" onchange="updateFilters()">
-          <option value="">All POS</option>
-          <option value="n"${af.pos==='n'?' selected':''}>noun (n)</option>
-          <option value="v"${af.pos==='v'?' selected':''}>verb (v)</option>
-          <option value="a"${af.pos==='a'?' selected':''}>adj (a)</option>
-          <option value="r"${af.pos==='r'?' selected':''}>adverb (r)</option>
-          <option value="s"${af.pos==='s'?' selected':''}>adj-sat (s)</option>
-        </select>
-      </div>
-      <label class="flt-chk${af.missingDutchSynonyms ? ' active' : ''}">
-        <input type="checkbox" id="flt-missing-nl"${af.missingDutchSynonyms ? ' checked' : ''} onchange="updateFilters()">
-        No Dutch synonyms
-      </label>`;
-  }
+  const af = state.activeFiltersE;
+  flt.innerHTML = `
+    <div class="flt-row">
+      <label class="flt-lbl">POS</label>
+      <select class="flt-sel${af.pos ? ' active' : ''}" id="flt-pos-e" onchange="updateFiltersE()">
+        <option value="">All POS</option>
+        <option value="noun"${af.pos==='noun'?' selected':''}>noun</option>
+        <option value="verb"${af.pos==='verb'?' selected':''}>verb</option>
+        <option value="adjective"${af.pos==='adjective'?' selected':''}>adjective</option>
+        <option value="adverb"${af.pos==='adverb'?' selected':''}>adverb</option>
+        <option value="other"${af.pos==='other'?' selected':''}>other</option>
+      </select>
+    </div>
+    <div class="flt-row">
+      <label class="flt-lbl">Senses</label>
+      <select class="flt-sel${af.senses ? ' active' : ''}" id="flt-senses-e" onchange="updateFiltersE()">
+        <option value="">Any count</option>
+        <option value="1"${af.senses==='1'?' selected':''}>Exactly 1</option>
+        <option value="2+"${af.senses==='2+'?' selected':''}>2 or more</option>
+        <option value="3+"${af.senses==='3+'?' selected':''}>3 or more</option>
+        <option value="5+"${af.senses==='5+'?' selected':''}>5 or more</option>
+      </select>
+    </div>
+    <label class="flt-chk${af.missingSynsetLink ? ' active' : ''}">
+      <input type="checkbox" id="flt-missing-synset-e"${af.missingSynsetLink ? ' checked' : ''} onchange="updateFiltersE()">
+      Missing synset link
+    </label>`;
 }
 
-function updateFilters() {
-  const af = state.activeFilters;
-  af.pos = document.getElementById('flt-pos')?.value || '';
-  if (state.mode === 'entries') {
-    af.senses = document.getElementById('flt-senses')?.value || '';
-    af.missingSynsetLink = !!document.getElementById('flt-missing-synset')?.checked;
-  } else {
-    af.missingDutchSynonyms = !!document.getElementById('flt-missing-nl')?.checked;
-  }
-  // Re-render to update active styling on selects/labels
-  renderFilters();
-  rebuildVS(); renderVS(true);
+function _renderFiltersS() {
+  const flt = document.getElementById('sb-filters-s');
+  if (!flt) return;
+  const af = state.activeFiltersS;
+  flt.innerHTML = `
+    <div class="flt-row">
+      <label class="flt-lbl">POS</label>
+      <select class="flt-sel${af.pos ? ' active' : ''}" id="flt-pos-s" onchange="updateFiltersS()">
+        <option value="">All POS</option>
+        <option value="n"${af.pos==='n'?' selected':''}>noun (n)</option>
+        <option value="v"${af.pos==='v'?' selected':''}>verb (v)</option>
+        <option value="a"${af.pos==='a'?' selected':''}>adj (a)</option>
+        <option value="r"${af.pos==='r'?' selected':''}>adverb (r)</option>
+        <option value="s"${af.pos==='s'?' selected':''}>adj-sat (s)</option>
+      </select>
+    </div>
+    <label class="flt-chk${af.missingDutchSynonyms ? ' active' : ''}">
+      <input type="checkbox" id="flt-missing-nl-s"${af.missingDutchSynonyms ? ' checked' : ''} onchange="updateFiltersS()">
+      No Dutch synonyms
+    </label>`;
 }
+
+function updateFiltersE() {
+  const af = state.activeFiltersE;
+  af.pos = document.getElementById('flt-pos-e')?.value || '';
+  af.senses = document.getElementById('flt-senses-e')?.value || '';
+  af.missingSynsetLink = !!document.getElementById('flt-missing-synset-e')?.checked;
+  _renderFiltersE(); rebuildVSE(); renderVSE(true);
+}
+
+function updateFiltersS() {
+  const af = state.activeFiltersS;
+  af.pos = document.getElementById('flt-pos-s')?.value || '';
+  af.missingDutchSynonyms = !!document.getElementById('flt-missing-nl-s')?.checked;
+  _renderFiltersS(); rebuildVSS(); renderVSS(true);
+}
+
+function updateFilters() { updateFiltersE(); updateFiltersS(); }
 
 // =====================================================================
 // COLLECT EDITOR STATE  (DOM → state)
 // =====================================================================
 
 function collectEditorState() {
-  if (!state.selectedId || state.selectedGroupIds) return;
-  if (state.mode === 'synsets') { collectSynsetState(); return; }
-  const entry = getEntry(state.selectedId); if (!entry) return;
+  // Collect entry pane
+  if (state.selectedId && !state.selectedGroupIds) {
+    const entry = getEntry(state.selectedId);
+    if (entry && !entry._indexOnly) { _collectEntryFields(entry); }
+  }
+  // Collect synset pane
+  collectSynsetState();
+}
+
+function _collectEntryFields(entry) {
 
   const v = id => { const el = document.getElementById(id); return el ? el.value : null; };
   if (v('f-id')    !== null) entry.id           = v('f-id');
@@ -1283,7 +1364,7 @@ function collectEditorState() {
 }
 
 function collectSynsetState() {
-  const ss = getSynset(state.selectedId); if (!ss) return;
+  const ss = getSynset(state.selectedSynsetId); if (!ss) return;
   const v = id => { const el = document.getElementById(id); return el ? el.value : null; };
   if (v('f-ssid')  !== null) ss.id          = v('f-ssid');
   if (v('f-ssili') !== null) ss.ili         = v('f-ssili');
@@ -1311,19 +1392,37 @@ function renderAll() {
   document.getElementById('tb-name').textContent = state.globalInfo.label || state.filename || '';
 }
 
-function renderEditor() {
-  const empty = document.getElementById('ed-empty'), content = document.getElementById('ed-content');
+function renderEntryEditor() {
+  const empty = document.getElementById('ed-e-empty');
+  const content = document.getElementById('ed-e-content');
+  if (!empty || !content) return;
   if (state.selectedGroupIds) {
     empty.style.display = 'none'; content.style.display = 'block';
     content.innerHTML = buildOverviewHTML(state.selectedGroupIds);
     return;
   }
-  const item = state.mode === 'entries' ? getEntry(state.selectedId) : getSynset(state.selectedId);
+  const item = getEntry(state.selectedId);
   if (!item) { empty.style.display = 'flex'; content.style.display = 'none'; return; }
   empty.style.display = 'none'; content.style.display = 'block';
-  content.innerHTML = state.mode === 'entries' ? buildEntryHTML(item) : buildSynsetHTML(item);
-  if (state.mode === 'entries') attachEntryListeners(item);
-  if (state.mode === 'synsets') { _graphExpanded = new Set(); renderSynsetGraph(item.id); }
+  content.innerHTML = buildEntryHTML(item);
+  attachEntryListeners(item);
+}
+
+function renderSynsetEditor() {
+  const empty = document.getElementById('ed-s-empty');
+  const content = document.getElementById('ed-s-content');
+  if (!empty || !content) return;
+  const item = getSynset(state.selectedSynsetId);
+  if (!item) { empty.style.display = 'flex'; content.style.display = 'none'; return; }
+  empty.style.display = 'none'; content.style.display = 'block';
+  content.innerHTML = buildSynsetHTML(item);
+  _graphExpanded = new Set();
+  renderSynsetGraph(item.id);
+}
+
+function renderEditor() {
+  renderEntryEditor();
+  renderSynsetEditor();
 }
 
 // ── Entry editor ──────────────────────────────────────────────────────
@@ -1333,13 +1432,13 @@ function attachEntryListeners(entry) {
   if (fl) fl.addEventListener('input', function() {
     const e = getEntry(state.selectedId); if (e) e.lemma = this.value;
     document.getElementById('eh-title').textContent = this.value || 'New Entry';
-    rebuildVS(); renderVS();
+    rebuildVSE(); renderVSE();
   });
   const fp = document.getElementById('f-pos');
   if (fp) fp.addEventListener('change', function() {
     const e = getEntry(state.selectedId); if (e) e.partOfSpeech = this.value;
     const b = document.getElementById('eh-badge'); b.textContent = this.value; b.style.display = this.value ? '' : 'none';
-    rebuildVS(); renderVS();
+    rebuildVSE(); renderVSE();
   });
 }
 
@@ -1352,7 +1451,7 @@ function buildEntryHTML(entry) {
     ${entry.isMWE ? `<span class="pill pill-orange">MWE</span>` : ''}
     ${entry.formType ? `<span class="pill pill-green">${h(entry.formType)}</span>` : ''}
     <div class="hd-btns">
-      ${collabMode ? `<button class="btn btn-save" id="save-btn" disabled onclick="editorSave()">Save</button>` : ''}
+      ${collabMode ? `<button class="btn btn-save" id="save-btn-e" disabled onclick="editorSave('entry')">Save</button>` : ''}
       <button class="btn btn-sec" onclick="showHistoryPopup(event,'${h(entry.id)}','entry')">&#128336; History</button>
       <button class="btn btn-red" onclick="deleteItem('${h(entry.id)}')">Delete</button>
     </div>
@@ -1720,13 +1819,13 @@ function selectEntry(id) {
     if (e && e._indexOnly) {
       fetch('/api/entry/' + encodeURIComponent(id))
         .then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))
-        .then(full => { const idx = state.entries.findIndex(x => x.id === id); if (idx >= 0) state.entries[idx] = full; renderVS(); renderEditor(); document.getElementById('editor').scrollTop = 0; })
-        .catch(err => { showToast('Could not fetch: ' + err, true); renderVS(); renderEditor(); document.getElementById('editor').scrollTop = 0; });
+        .then(full => { const idx = state.entries.findIndex(x => x.id === id); if (idx >= 0) state.entries[idx] = full; renderVSE(); renderEntryEditor(); document.getElementById('ed-e').scrollTop = 0; })
+        .catch(err => { showToast('Could not fetch: ' + err, true); renderVSE(); renderEntryEditor(); document.getElementById('ed-e').scrollTop = 0; });
       return;
     }
   }
-  renderVS(); renderEditor();
-  document.getElementById('editor').scrollTop = 0;
+  renderVSE(); renderEntryEditor();
+  document.getElementById('ed-e').scrollTop = 0;
 }
 
 // ── Synset editor ─────────────────────────────────────────────────────
@@ -1737,7 +1836,7 @@ function buildSynsetHTML(ss) {
     <h2 id="eh-title">${h(ss.id)}</h2>
     ${ss.ili ? `<span class="pill pill-blue">ILI: ${h(ss.ili)}</span>` : ''}
     <div class="hd-btns">
-      ${collabMode ? `<button class="btn btn-save" id="save-btn" disabled onclick="editorSave()">Save</button>` : ''}
+      ${collabMode ? `<button class="btn btn-save" id="save-btn-s" disabled onclick="editorSave('synset')">Save</button>` : ''}
       <button class="btn btn-sec" onclick="showHistoryPopup(event,'${h(ss.id)}','synset')">&#128336; History</button>
       <button class="btn btn-red" onclick="deleteItem('${h(ss.id)}')">Delete</button>
     </div>
@@ -1910,66 +2009,74 @@ function buildSynonymsCard(ss) {
 
 function jumpToSynset(synsetId) {
   if (!synsetId) return;
-  collectEditorState();
-  state.mode = 'synsets';
-  state.filter = '';
+  collectSynsetState();
   state.selectedGroupIds = null;
-  document.getElementById('search').value = '';
-  document.getElementById('tab-entries').classList.remove('active');
-  document.getElementById('tab-synsets').classList.add('active');
-  document.getElementById('add-btn').textContent = '+ Add Synset';
-  rebuildVS();
+  rebuildVSS();
   const ss = getSynset(synsetId);
-  if (!ss) { showToast('Synset not found: ' + synsetId, true); renderVS(true); renderEditor(); return; }
-  scrollVSToId(synsetId);
+  if (!ss) { showToast('Synset not found: ' + synsetId, true); renderVSS(true); return; }
+  scrollVSToIdS(synsetId);
   updateStatusBar();
   if (collabMode) {
-    // Always fetch full data via selectItem — stub has empty synsetRelations and
-    // rendering it would let collectSynsetState wipe relations from the database.
-    state.selectedId = null; // reset so selectItem doesn't early-return on same id
-    window.selectItem(synsetId);
+    const prev = state.selectedSynsetId;
+    state.selectedSynsetId = null;
+    window.selectItem(synsetId, 'synsets');
   } else {
-    state.selectedId = synsetId;
-    renderVS(true);
-    renderEditor();
+    state.selectedSynsetId = synsetId;
+    renderVSS();
+    renderSynsetEditor();
+    document.getElementById('ed-s').scrollTop = 0;
   }
 }
 
 function jumpToEntry(entryId) {
   if (!entryId) return;
   collectEditorState();
-  state.mode = 'entries';
-  state.filter = '';
-  document.getElementById('search').value = '';
-  document.getElementById('tab-entries').classList.add('active');
-  document.getElementById('tab-synsets').classList.remove('active');
-  document.getElementById('add-btn').textContent = '+ Add Entry';
-  rebuildVS();
+  rebuildVSE();
   const e = getEntry(entryId);
-  if (!e) { showToast('Entry not found: ' + entryId, true); renderVS(true); renderEditor(); return; }
-  scrollVSToId(entryId);
+  if (!e) { showToast('Entry not found: ' + entryId, true); renderVSE(true); return; }
+  scrollVSToIdE(entryId);
   updateStatusBar();
   if (collabMode) {
-    state.selectedId = null; // reset so selectItem doesn't early-return on same id
-    window.selectItem(entryId);
+    state.selectedId = null;
+    window.selectItem(entryId, 'entries');
   } else {
     state.selectedId = entryId;
-    renderVS(true);
-    renderEditor();
+    state.selectedGroupIds = null;
+    renderVSE();
+    renderEntryEditor();
+    document.getElementById('ed-e').scrollTop = 0;
   }
 }
 
-function scrollVSToId(id) {
-  const listEl = document.getElementById('entry-list');
-  const src = state.mode === 'entries' ? state.entries : state.synsets;
-  const vsIdx = vsFiltered.findIndex(i => src[i] && src[i].id === id);
+function scrollVSToIdE(id) {
+  const listEl = document.getElementById('entry-list-e');
+  if (!listEl) return;
+  const vsIdx = vsFilteredE.findIndex(i => state.entries[i] && state.entries[i].id === id);
   if (vsIdx < 0) return;
   const targetY = vsIdx * ITEM_H;
   const viewH = listEl.clientHeight || 600;
   if (targetY < listEl.scrollTop || targetY + ITEM_H > listEl.scrollTop + viewH) {
     listEl.scrollTop = Math.max(0, targetY - viewH / 2 + ITEM_H / 2);
   }
-  _paintVS(listEl);
+  _paintVSE(listEl);
+}
+
+function scrollVSToIdS(id) {
+  const listEl = document.getElementById('entry-list-s');
+  if (!listEl) return;
+  const vsIdx = vsFilteredS.findIndex(i => state.synsets[i] && state.synsets[i].id === id);
+  if (vsIdx < 0) return;
+  const targetY = vsIdx * ITEM_H;
+  const viewH = listEl.clientHeight || 600;
+  if (targetY < listEl.scrollTop || targetY + ITEM_H > listEl.scrollTop + viewH) {
+    listEl.scrollTop = Math.max(0, targetY - viewH / 2 + ITEM_H / 2);
+  }
+  _paintVSS(listEl);
+}
+
+function scrollVSToId(id) {
+  if (state.mode === 'entries') scrollVSToIdE(id);
+  else scrollVSToIdS(id);
 }
 
 // =====================================================================
@@ -1981,8 +2088,11 @@ let collabSeq  = 0;
 let collabUser = '';
 let collabCache = { entries: {}, synsets: {} };
 let collabSaveTimer = null;
-let collabLock = null;        // { user, expires_at, is_mine, item_type, item_id } or null
-let _lockCountdownTimer = null;
+let _lastSavePane = 'entry';     // which pane last had user input
+let collabLockE = null;          // lock on currently-edited entry
+let collabLockS = null;          // lock on currently-edited synset
+let _lockCountdownTimerE = null;
+let _lockCountdownTimerS = null;
 
 // Auth state
 let lmf_token    = localStorage.getItem('lmf_token')    || '';
@@ -2103,8 +2213,12 @@ async function _afterLogin() {
   setInterval(pollChanges, 3000);
   setInterval(sendHeartbeat, 30000);
   sendHeartbeat();
-  document.getElementById('editor').addEventListener('input', scheduleAutosave);
-  document.getElementById('editor').addEventListener('change', scheduleAutosave);
+  document.getElementById('ed-e').addEventListener('focusin', () => _lastSavePane = 'entry');
+  document.getElementById('ed-s').addEventListener('focusin', () => _lastSavePane = 'synset');
+  document.getElementById('ed-e').addEventListener('input',  () => scheduleAutosave('entry'));
+  document.getElementById('ed-e').addEventListener('change', () => scheduleAutosave('entry'));
+  document.getElementById('ed-s').addEventListener('input',  () => scheduleAutosave('synset'));
+  document.getElementById('ed-s').addEventListener('change', () => scheduleAutosave('synset'));
 }
 
 async function fetchIndex() {
@@ -2129,12 +2243,14 @@ async function fetchIndex() {
     }));
     state.synsets = (data.synset_index || []).map(si => ({
       id: si.id, ili: '', baseConcept: '', _indexOnly: true,
+      hasDutchSynonyms: !!si.hasDutchSynonyms,
       definitions: si.gloss ? [{ gloss: si.gloss, language: '', provenance: '' }] : [],
       enSyns: si.enSyns || '',
       synsetRelations: [], monolingualExternalRefs: []
     }));
     state.modified = false;
     state.selectedId = null;
+    state.selectedSynsetId = null;
     hideLoading();
     renderAll();
     showToast('Connected — ' + state.entries.length + ' entries, ' + state.synsets.length + ' synsets');
@@ -2146,100 +2262,136 @@ async function fetchIndex() {
 
 // Override selectItem to fetch full data lazily from server
 const _selectItemOrig = selectItem;
-window.selectItem = async function(id) {
-  if (!collabMode) { _selectItemOrig(id); return; }
-  const grp = vsGroups[id];
-  if (grp && state.selectedGroupIds && state.selectedGroupIds[0] === id) return;
-  if (!grp && state.selectedId === id && !state.selectedGroupIds) return;
+window.selectItem = async function(id, type) {
+  if (!collabMode) { _selectItemOrig(id, type); return; }
 
-  // Release lock on current item before switching
-  if (!state.selectedGroupIds && state.selectedId && collabLock && collabLock.is_mine) {
-    _releaseLock(collabLock.item_type, state.selectedId);
-  }
-  collabLock = null;
-  _updateLockBanner();
+  if (type === 'synsets') {
+    // ── Synset pane ──────────────────────────────────────────────────
+    if (state.selectedSynsetId === id) return;
 
-  // Flush current edits before switching
-  if (!state.selectedGroupIds && state.selectedId) {
-    collectEditorState();
-    await _pushUpdate();
-  }
-  state.selectedId = id;
-  renderVS();
+    // Release previous synset lock
+    if (state.selectedSynsetId && collabLockS && collabLockS.is_mine) {
+      _releaseLock(collabLockS.item_type, state.selectedSynsetId);
+    }
+    collabLockS = null;
+    _updateLockBannerForPane('synset');
 
-  if (grp && grp.length > 1) {
-    const groupIds = grp.map(i => state.entries[i].id);
-    state.selectedGroupIds = groupIds;
-    await Promise.all(groupIds.map(async gid => {
-      const e = getEntry(gid);
-      if (e && e._indexOnly) {
-        try {
-          const r = await _authFetch('/api/entry/' + encodeURIComponent(gid));
-          if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.entries.findIndex(x => x.id === gid); if (idx >= 0) state.entries[idx] = full; }
-        } catch (_) {}
-      }
-    }));
-    renderEditor();
-    document.getElementById('editor').scrollTop = 0;
-    return;
-  }
+    // Flush current synset before switching
+    if (state.selectedSynsetId) {
+      collectSynsetState();
+      await _pushUpdate('update', 'synset', getSynset(state.selectedSynsetId));
+    }
 
-  state.selectedGroupIds = null;
-  const item = state.mode === 'entries' ? getEntry(id) : getSynset(id);
-  const needFetch = item && item._indexOnly;
-  try {
-    const itype = state.mode === 'entries' ? 'entry' : 'synset';
-    const base  = state.mode === 'entries' ? '/api/entry/' : '/api/synset/';
-    const url   = base + encodeURIComponent(id);
-    if (needFetch || true) { // always re-fetch to get fresh lock state
-      const resp = await _authFetch(url);
+    state.selectedSynsetId = id;
+    state.mode = 'synsets';
+    renderVSS();
+
+    try {
+      const resp = await _authFetch('/api/synset/' + encodeURIComponent(id));
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const full = await resp.json();
-      // Extract and store lock info, then remove it from the data object
-      if (full._lock) {
-        collabLock = { ...full._lock, item_type: itype, item_id: id };
-        delete full._lock;
-      }
-      if (state.mode === 'entries') {
-        const idx = state.entries.findIndex(e => e.id === id);
-        if (idx >= 0) state.entries[idx] = full;
-      } else {
-        const idx = state.synsets.findIndex(s => s.id === id);
-        if (idx >= 0) state.synsets[idx] = full;
-      }
+      if (full._lock) { collabLockS = { ...full._lock, item_type: 'synset', item_id: id }; delete full._lock; }
+      const idx = state.synsets.findIndex(s => s.id === id);
+      if (idx >= 0) state.synsets[idx] = full;
+    } catch (err) {
+      showToast('Could not fetch synset: ' + err.message, true);
     }
-  } catch (err) {
-    showToast('Could not fetch item: ' + err.message, true);
+    _updateLockBannerForPane('synset');
+    renderSynsetEditor();
+    document.getElementById('ed-s').scrollTop = 0;
+
+  } else {
+    // ── Entry pane ───────────────────────────────────────────────────
+    state.mode = 'entries';
+    const grp = vsGroupsE[id];
+    if (grp && state.selectedGroupIds && state.selectedGroupIds[0] === id) return;
+    if (!grp && state.selectedId === id && !state.selectedGroupIds) return;
+
+    // Release previous entry lock
+    if (!state.selectedGroupIds && state.selectedId && collabLockE && collabLockE.is_mine) {
+      _releaseLock(collabLockE.item_type, state.selectedId);
+    }
+    collabLockE = null;
+    _updateLockBannerForPane('entry');
+
+    // Flush current entry before switching
+    if (!state.selectedGroupIds && state.selectedId) {
+      collectEditorState();
+      await _pushUpdate('update', 'entry', getEntry(state.selectedId));
+    }
+
+    state.selectedId = id;
+    renderVSE();
+
+    if (grp && grp.length > 1) {
+      const groupIds = grp.map(i => state.entries[i].id);
+      state.selectedGroupIds = groupIds;
+      await Promise.all(groupIds.map(async gid => {
+        const e = getEntry(gid);
+        if (e && e._indexOnly) {
+          try {
+            const r = await _authFetch('/api/entry/' + encodeURIComponent(gid));
+            if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.entries.findIndex(x => x.id === gid); if (idx >= 0) state.entries[idx] = full; }
+          } catch (_) {}
+        }
+      }));
+      renderEntryEditor();
+      document.getElementById('ed-e').scrollTop = 0;
+      return;
+    }
+
+    state.selectedGroupIds = null;
+    try {
+      const resp = await _authFetch('/api/entry/' + encodeURIComponent(id));
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const full = await resp.json();
+      if (full._lock) { collabLockE = { ...full._lock, item_type: 'entry', item_id: id }; delete full._lock; }
+      const idx = state.entries.findIndex(e => e.id === id);
+      if (idx >= 0) state.entries[idx] = full;
+    } catch (err) {
+      showToast('Could not fetch entry: ' + err.message, true);
+    }
+    _updateLockBannerForPane('entry');
+    renderEntryEditor();
+    document.getElementById('ed-e').scrollTop = 0;
   }
-  _updateLockBanner();
-  renderEditor();
-  document.getElementById('editor').scrollTop = 0;
 };
 
-// Override addItem to POST new item to server
+// Override addSynset to POST new synset to server in collab mode
+const _addSynsetOrig = addSynset;
+window.addSynset = async function() {
+  _addSynsetOrig();
+  if (!collabMode) return;
+  const id = state.selectedSynsetId;
+  const data = getSynset(id);
+  if (data) await _pushUpdate('add', 'synset', data);
+};
+
+// Keep addItem override for any residual callers
 const _addItemOrig = addItem;
 window.addItem = async function() {
   if (state.mode === 'entries') { openNewEntryDialog(); return; }
-  _addItemOrig(); // synsets branch only
-  if (!collabMode) return;
-  const id = state.selectedId;
-  const data = getSynset(id);
-  if (data) await _pushUpdate('add', 'synset', data);
+  window.addSynset();
 };
 
 // Override deleteItem to also POST delete to server
 window.deleteItem = async function(id) {
   if (!confirm('Delete?')) return;
-  const itemType = state.mode === 'entries' ? 'entry' : 'synset';
-  if (state.mode === 'entries') {
+  // Determine type by checking which pane this item belongs to
+  const isEntry = !!getEntry(id);
+  const itemType = isEntry ? 'entry' : 'synset';
+  if (isEntry) {
     state.entries = state.entries.filter(e => e.id !== id);
-    state.selectedId = state.entries.length ? state.entries[0].id : null;
+    if (state.selectedId === id) state.selectedId = state.entries.length ? state.entries[0].id : null;
+    state.selectedGroupIds = null;
+    rebuildVSE(); renderVSE(); renderEntryEditor();
   } else {
     state.synsets = state.synsets.filter(s => s.id !== id);
-    state.selectedId = state.synsets.length ? state.synsets[0].id : null;
+    if (state.selectedSynsetId === id) state.selectedSynsetId = state.synsets.length ? state.synsets[0].id : null;
+    rebuildVSS(); renderVSS(); renderSynsetEditor();
   }
   state.modified = true;
-  rebuildVS(); renderVS(); renderEditor(); updateStatusBar();
+  updateStatusBar();
   if (collabMode) await _pushUpdate('delete', itemType, { id });
 };
 
@@ -2254,22 +2406,26 @@ window.duplicateEntry = async function(id) {
 
 
 // Debounced autosave triggered by editor input events
-function scheduleAutosave() {
-  const btn = document.getElementById('save-btn');
+function scheduleAutosave(pane) {
+  pane = pane || _lastSavePane;
+  const btnId = pane === 'synset' ? 'save-btn-s' : 'save-btn-e';
+  const btn = document.getElementById(btnId);
   if (btn) btn.disabled = false;
-  if (!collabMode || !state.selectedId) return;
+  if (!collabMode) return;
+  const selectedId = pane === 'synset' ? state.selectedSynsetId : state.selectedId;
+  if (!selectedId) return;
   clearTimeout(collabSaveTimer);
   setAutosaveStatus('Saving…');
   collabSaveTimer = setTimeout(async () => {
     collectEditorState();
-    await _pushUpdate();
+    await _pushUpdate('update', pane === 'synset' ? 'synset' : 'entry');
   }, 1500);
 }
 
 async function _pushUpdate(op, itemType, data, explicit) {
   op       = op       || 'update';
-  itemType = itemType || (state.mode === 'entries' ? 'entry' : 'synset');
-  if (!data) data = state.mode === 'entries' ? getEntry(state.selectedId) : getSynset(state.selectedId);
+  itemType = itemType || 'entry';
+  if (!data) data = itemType === 'synset' ? getSynset(state.selectedSynsetId) : getEntry(state.selectedId);
   if (!data || data._indexOnly) return;
   try {
     const resp = await _authFetch('/api/update', {
@@ -2283,8 +2439,9 @@ async function _pushUpdate(op, itemType, data, explicit) {
       setAutosaveStatus('Locked by ' + holder, true);
       showToast('Save blocked — ' + holder + ' is editing this item', true);
       if (res.lock) {
-        collabLock = { ...res.lock, item_type: itemType, item_id: data.id, is_mine: false };
-        _updateLockBanner();
+        const lockObj = { ...res.lock, item_type: itemType, item_id: data.id, is_mine: false };
+        if (itemType === 'synset') collabLockS = lockObj; else collabLockE = lockObj;
+        _updateLockBannerForPane(itemType === 'synset' ? 'synset' : 'entry');
       }
       return;
     }
@@ -2313,41 +2470,61 @@ function _releaseLock(itemType, itemId) {
   }
 }
 
-function _updateLockBanner() {
-  clearInterval(_lockCountdownTimer);
-  const banner   = document.getElementById('lock-banner');
-  const lockUser = document.getElementById('lock-user');
-  const lockTtl  = document.getElementById('lock-ttl');
-  const editor   = document.getElementById('ed-content');
+function _updateLockBannerForPane(pane) {
+  const isSynset = pane === 'synset';
+  const bannerId = isSynset ? 'lock-banner-s' : 'lock-banner-e';
+  const contentId = isSynset ? 'ed-s-content' : 'ed-e-content';
+  const lock = isSynset ? collabLockS : collabLockE;
+  const timerVar = isSynset ? '_lockCountdownTimerS' : '_lockCountdownTimerE';
+
+  if (isSynset) { clearInterval(_lockCountdownTimerS); _lockCountdownTimerS = null; }
+  else          { clearInterval(_lockCountdownTimerE); _lockCountdownTimerE = null; }
+
+  const banner = document.getElementById(bannerId);
+  const editor = document.getElementById(contentId);
   if (!banner) return;
 
-  if (!collabLock || collabLock.is_mine) {
+  if (!lock || lock.is_mine) {
     banner.style.display = 'none';
     if (editor) editor.querySelectorAll('input,select,textarea,button.addbtn,.btn-red').forEach(el => el.disabled = false);
     return;
   }
 
   banner.style.display = 'flex';
-  if (lockUser) lockUser.textContent = collabLock.user;
+  const lockUserEl = banner.querySelector('.lock-user');
+  const lockTtlEl  = banner.querySelector('.lock-ttl');
+  if (lockUserEl) lockUserEl.textContent = lock.user;
 
   function updateTtl() {
-    const secs = Math.max(0, Math.round(collabLock.expires_at - Date.now() / 1000));
-    if (lockTtl) lockTtl.textContent = secs > 0 ? `lock expires in ${secs}s` : 'lock expired — click Claim';
+    const secs = Math.max(0, Math.round(lock.expires_at - Date.now() / 1000));
+    if (lockTtlEl) lockTtlEl.textContent = secs > 0 ? `lock expires in ${secs}s` : 'lock expired — click Claim';
     if (editor) editor.querySelectorAll('input,select,textarea').forEach(el => el.disabled = true);
   }
   updateTtl();
-  _lockCountdownTimer = setInterval(() => {
+  const timer = setInterval(() => {
     updateTtl();
-    if (collabLock && Date.now() / 1000 > collabLock.expires_at) clearInterval(_lockCountdownTimer);
+    if (lock && Date.now() / 1000 > lock.expires_at) clearInterval(timer);
   }, 1000);
+  if (isSynset) _lockCountdownTimerS = timer; else _lockCountdownTimerE = timer;
 }
 
-function claimLock() {
-  if (!state.selectedId) return;
-  // Re-fetch the item, which will attempt lock acquisition
-  const id = state.selectedId;
-  state.selectedId = null;  // force re-fetch even though same id
-  window.selectItem(id);
+function _updateLockBanner() {
+  _updateLockBannerForPane('entry');
+  _updateLockBannerForPane('synset');
+}
+
+function claimLock(pane) {
+  if (pane === 'synset') {
+    if (!state.selectedSynsetId) return;
+    const id = state.selectedSynsetId;
+    state.selectedSynsetId = null;
+    window.selectItem(id, 'synsets');
+  } else {
+    if (!state.selectedId) return;
+    const id = state.selectedId;
+    state.selectedId = null;
+    window.selectItem(id, 'entries');
+  }
 }
 
 // Poll for remote changes every 3 seconds
@@ -2371,12 +2548,12 @@ function applyChange(ch) {
   if (itemType === 'entry') {
     if (op === 'delete') {
       state.entries = state.entries.filter(e => e.id !== data.id);
-      if (state.selectedId === data.id) { state.selectedId = null; renderEditor(); }
+      if (state.selectedId === data.id) { state.selectedId = null; renderEntryEditor(); }
     } else {
       const idx = state.entries.findIndex(e => e.id === data.id);
       if (idx >= 0) {
         state.entries[idx] = data;
-        if (state.selectedId === data.id && state.mode === 'entries') renderEditor();
+        if (state.selectedId === data.id) renderEntryEditor();
       } else {
         state.entries.unshift(data);
       }
@@ -2384,12 +2561,12 @@ function applyChange(ch) {
   } else if (itemType === 'synset') {
     if (op === 'delete') {
       state.synsets = state.synsets.filter(s => s.id !== data.id);
-      if (state.selectedId === data.id) { state.selectedId = null; renderEditor(); }
+      if (state.selectedSynsetId === data.id) { state.selectedSynsetId = null; renderSynsetEditor(); }
     } else {
       const idx = state.synsets.findIndex(s => s.id === data.id);
       if (idx >= 0) {
         state.synsets[idx] = data;
-        if (state.selectedId === data.id && state.mode === 'synsets') renderEditor();
+        if (state.selectedSynsetId === data.id) renderSynsetEditor();
       } else {
         state.synsets.unshift(data);
       }
@@ -2400,7 +2577,7 @@ function applyChange(ch) {
     updateStatusBar();
   }
 
-  rebuildVS(); renderVS();
+  rebuildVS(); renderVSE(); renderVSS();
   if (collabMode) _updateLockBanner();
   showToast(ch.user + ' ' + op + 'd a ' + itemType);
 }
@@ -2415,10 +2592,13 @@ async function sendHeartbeat() {
   } catch (_) {}
 }
 
-// Release lock when the page is closed or navigated away
+// Release locks when the page is closed or navigated away
 window.addEventListener('beforeunload', () => {
-  if (collabMode && collabLock && collabLock.is_mine && state.selectedId) {
-    _releaseLock(collabLock.item_type, state.selectedId);
+  if (collabMode) {
+    if (collabLockE && collabLockE.is_mine && state.selectedId)
+      _releaseLock(collabLockE.item_type, state.selectedId);
+    if (collabLockS && collabLockS.is_mine && state.selectedSynsetId)
+      _releaseLock(collabLockS.item_type, state.selectedSynsetId);
   }
 });
 
@@ -2440,12 +2620,14 @@ function setAutosaveStatus(msg, isError) {
 }
 
 // Immediately save the current item to the database
-async function editorSave() {
+async function editorSave(pane) {
   if (!collabMode) return;
+  pane = pane || _lastSavePane;
   collectEditorState();
-  const btn = document.getElementById('save-btn');
+  const btnId = pane === 'synset' ? 'save-btn-s' : 'save-btn-e';
+  const btn = document.getElementById(btnId);
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-  await _pushUpdate('update', null, null, true);
+  await _pushUpdate('update', pane === 'synset' ? 'synset' : 'entry', null, true);
   if (btn) { btn.textContent = 'Save'; }
 }
 
@@ -2790,7 +2972,7 @@ async function _ssmCreateEntry(word) {
   }
   showToast(`Entry "${entryId}" created and linked`);
   closeSynSearch();
-  rebuildVS();
+  rebuildVSE(); rebuildVSS();
   _refreshSynonymsCard(synsetId);
 }
 
@@ -2890,7 +3072,7 @@ async function _createNewEntryWithSynset() {
   state.mode = 'entries';
   state.selectedId = entryId;
   state.selectedGroupIds = null;
-  rebuildVS(); renderVS(true); renderEditor(); updateStatusBar();
+  rebuildVSE(); renderVSE(true); rebuildVSS(); renderVSS(true); renderEditor(); updateStatusBar();
   showToast(`Created "${entryId}" → ${synsetId}`);
 }
 
@@ -3032,7 +3214,7 @@ function _ssrSelectSynset(synsetId) {
 
 // Re-render the Dutch synonyms card in-place after a synonym link/unlink
 function _refreshSynonymsCard(ssId) {
-  const editor = document.getElementById('ed-content');
+  const editor = document.getElementById('ed-s-content');
   if (!editor) return;
   const ss = getSynset(ssId);
   if (!ss) return;
