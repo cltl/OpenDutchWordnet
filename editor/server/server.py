@@ -570,7 +570,8 @@ def load_xml(filepath):
         # Pattern 1: attr="val""/>  →  attr="val"/>  (double-quote before self-close)
         # Pattern 2: <TagName"/>   →  <TagName/>     (bare " after element name, no attrs)
         if '"/>' in _xml_text:
-            _xml_text = _xml_text.replace('""/>', '"/>')  # step 1: ""/> → "/> (double-quote before />)
+            # step 1: attr="val""/> → attr="val"/>  — remove spurious " only when NOT after = (which would be a valid empty attr="")
+            _xml_text = re.sub(r'(?<!=)"("/>)', r'\1', _xml_text)
             _xml_text = re.sub(r'(<[A-Za-z][A-Za-z0-9_:.-]*)"(/>)', r'\1\2', _xml_text)  # step 2: <Tag"/> → <Tag/>
         root = ET.fromstring(_xml_text)
         del _xml_text
