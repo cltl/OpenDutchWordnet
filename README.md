@@ -1,3 +1,19 @@
+# Open Dutch Wordnet
+
+This repository contains the releases of the Open Dutch WordNet. The releases are in XML format following the WordNet-LMF format:
+
+```Vossen, P., Soria, C., & Monachini, M. (2013).
+Wordnet‐LMF: A Standard Representation for Multilingual Wordnets. LMF Lexical Markup Framework, 51-66.
+```
+The Referentie Bestand Nederlands inforamtion is captured in the LMF part as lexical units and the wordnet structure (synsets and synset relations) is capture in the Wordnet part. The releases can be downloaded from [resources odwn](resources/odwn):
+
+Releases:
+- Version 1.4: odwn_orbn_gwg-LMF_1.4.xml.gz
+- Version 1.3: odwn_orbn_gwg-LMF_1.3.xml.gz
+- Version 1.2: odwn_orbn_gwg-LMF_1.2.xml.gz
+- Version 1.1: odwn_orbn_gwg-LMF_1.1.xml.gz
+- Version 0: odwn_orbn_gwg-LMF.xml.gz
+
 #Global WordNet Grid LMF parser
 
 This repo provides a python module to work with Open Dutch WordNet.
