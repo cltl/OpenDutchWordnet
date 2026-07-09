@@ -21,7 +21,7 @@ Postma, M., Van Miltenburg, E., Segers, R., Schoen, A., & Vossen, P. (2016, Janu
 Open dutch wordnet. In Proceedings of the 8th Global WordNet Conference (GWC) (pp. 302-310).
 ```
 
-# Global WordNet Grid LMF parser
+## Global WordNet Grid LMF parser
 
 This repo also provides a python module to work with the Open Dutch WordNet XML.
 Please first check the [Issues](https://github.com/MartenPostma/OpenDutchWordnet/issues) to see if your question has already
@@ -98,5 +98,5 @@ python
 'eng-30-00322847-v'
 
 ```	                  
-##Contact
+## Contact
 * Piek Vossen (piek.vossen@vu.nl)
