@@ -151,6 +151,10 @@ CREATE TABLE IF NOT EXISTS en_synonyms (
     synset_id TEXT PRIMARY KEY,
     words     TEXT NOT NULL DEFAULT '[]'
 );
+CREATE TABLE IF NOT EXISTS en_examples (
+    synset_id TEXT PRIMARY KEY,
+    examples  TEXT NOT NULL DEFAULT '[]'
+);
 CREATE TABLE IF NOT EXISTS synset_entry_index (
     synset_id TEXT NOT NULL,
     entry_id  TEXT NOT NULL,
@@ -420,19 +424,58 @@ def delete_synset(sid):
         c.execute('DELETE FROM locks WHERE item_type=? AND item_id=?', ('synset', sid))
         c.commit()
 
+def _compute_nl_synset_fields(c, synset_ids=None):
+    """Return {synset_id: {'lemmas': [...], 'examples': [...]}} by scanning the
+    Dutch entries linked (via synset_entry_index) to each synset. Restricting
+    to `synset_ids` (an iterable) limits the entry scan to just those synsets'
+    linked entries; pass None to scan the whole lexicon."""
+    if synset_ids is not None:
+        id_set = set(synset_ids)
+        if not id_set:
+            return {}
+        placeholders = ','.join('?' * len(id_set))
+        entry_ids = {r[0] for r in c.execute(
+            'SELECT DISTINCT entry_id FROM synset_entry_index WHERE synset_id IN ({})'.format(placeholders),
+            list(id_set)).fetchall()}
+    else:
+        id_set = None
+        entry_ids = {r[0] for r in c.execute('SELECT DISTINCT entry_id FROM synset_entry_index').fetchall()}
+    if not entry_ids:
+        return {}
+    placeholders = ','.join('?' * len(entry_ids))
+    rows = c.execute('SELECT id, data FROM entries WHERE id IN ({})'.format(placeholders),
+                      list(entry_ids)).fetchall()
+    result = {}
+    for r in rows:
+        entry = json.loads(r['data'])
+        lemma = entry.get('mweForm', '') if entry.get('isMWE') else entry.get('lemma', '')
+        for sense in entry.get('senses', []):
+            sid = sense.get('synset', '')
+            if not sid or (id_set is not None and sid not in id_set):
+                continue
+            bucket = result.setdefault(sid, {'lemmas': [], 'examples': []})
+            if lemma:
+                bucket['lemmas'].append(lemma)
+            for ex in sense.get('examples', []):
+                text = ex.get('textualForm', '')
+                if text:
+                    bucket['examples'].append(text)
+    return result
+
 def _refresh_synset_nl_flags(synset_ids):
-    """Update hasDutchSynonyms on in-memory synset_index stubs for the given synset IDs."""
+    """Update hasDutchSynonyms/nlSyns/nlExamples on in-memory synset_index stubs
+    for the given synset IDs."""
     if not synset_ids:
         return
     id_set = set(synset_ids)
-    c = _con()
-    linked = {r[0] for r in c.execute(
-        'SELECT DISTINCT synset_id FROM synset_entry_index WHERE synset_id IN ({})'.format(
-            ','.join('?' * len(id_set))), list(id_set)).fetchall()}
+    fields = _compute_nl_synset_fields(_con(), id_set)
     with _slock:
         for stub in _st['synset_index']:
             if stub['id'] in id_set:
-                stub['hasDutchSynonyms'] = stub['id'] in linked
+                info = fields.get(stub['id'], {'lemmas': [], 'examples': []})
+                stub['hasDutchSynonyms'] = bool(info['lemmas'])
+                stub['nlSyns']     = ' '.join(info['lemmas'])
+                stub['nlExamples'] = ' '.join(info['examples'])
 
 # ─────────────────────────────────────────────────────────────────────
 # XML Parser  (matches JS data model exactly)
@@ -445,6 +488,7 @@ def parse_entry(eEl):
     e = {
         'id': _g(eEl, 'id'), 'partOfSpeech': _g(eEl, 'partOfSpeech'),
         'formType': _g(eEl, 'formType'),
+        'status': _g(eEl, 'status'), 'comment': _g(eEl, 'comment'),
         'isMWE': False, 'lemma': '', 'lemmaMode': '',
         'mweForm': '', 'mweExpressionType': '',
         'wordForms': [], 'relatedForms': [],
@@ -548,7 +592,7 @@ def parse_entry(eEl):
 
 
 def parse_synset(ssEl):
-    ss = {k: _g(ssEl,k) for k in ['id','ili','baseConcept']}
+    ss = {k: _g(ssEl,k) for k in ['id','ili','baseConcept','status','comment']}
     ss['definitions'] = [{'gloss': _g(d,'gloss'), 'language': _g(d,'language'), 'provenance': _g(d,'provenance')} for d in ssEl.findall('Definitions/Definition')]
     ss['synsetRelations'] = [{'relType': _g(r,'relType'), 'target': _g(r,'target'), 'provenance': _g(r,'provenance')} for r in ssEl.findall('SynsetRelations/SynsetRelation')]
     ss['monolingualExternalRefs'] = [{'externalReference': _g(m,'externalReference'), 'externalSystem': _g(m,'externalSystem'), 'relType': _g(m,'relType')} for m in ssEl.findall('MonolingualExternalRefs/MonolingualExternalRef')]
@@ -658,10 +702,13 @@ def load_xml(filepath):
                 batch_s)
             c.commit()
 
-        # Annotate synset_index with hasDutchSynonyms using the synset_entry_index
-        linked_ss = {r[0] for r in c.execute('SELECT DISTINCT synset_id FROM synset_entry_index').fetchall()}
+        # Annotate synset_index with hasDutchSynonyms/nlSyns/nlExamples using the synset_entry_index
+        nl_fields = _compute_nl_synset_fields(c)
         for stub in synset_index:
-            stub['hasDutchSynonyms'] = stub['id'] in linked_ss
+            info = nl_fields.get(stub['id'], {'lemmas': [], 'examples': []})
+            stub['hasDutchSynonyms'] = bool(info['lemmas'])
+            stub['nlSyns']     = ' '.join(info['lemmas'])
+            stub['nlExamples'] = ' '.join(info['examples'])
 
         with _slock:
             _st['globalInfo']   = global_info
@@ -674,6 +721,7 @@ def load_xml(filepath):
             _st['loading_msg']  = ''
         print(f'Ready: {len(entry_index):,} entries, {len(synset_index):,} synsets', flush=True)
         _load_en_synonyms()
+        _load_en_examples()
     except Exception as ex:
         with _slock: _st['loading_msg'] = f'Error: {ex}'
         print(f'Load error: {ex}', flush=True)
@@ -739,10 +787,13 @@ def load_from_db():
                 stub['hasMissingSynset'] = uls_map.get(stub['id'], False)
             print(f'has_unlinked_sense backfilled for {len(updates):,} entries', flush=True)
 
-        # Annotate synset_index with hasDutchSynonyms using the synset_entry_index
-        linked_ss = {r[0] for r in c.execute('SELECT DISTINCT synset_id FROM synset_entry_index').fetchall()}
+        # Annotate synset_index with hasDutchSynonyms/nlSyns/nlExamples using the synset_entry_index
+        nl_fields = _compute_nl_synset_fields(c)
         for stub in synset_index:
-            stub['hasDutchSynonyms'] = stub['id'] in linked_ss
+            info = nl_fields.get(stub['id'], {'lemmas': [], 'examples': []})
+            stub['hasDutchSynonyms'] = bool(info['lemmas'])
+            stub['nlSyns']     = ' '.join(info['lemmas'])
+            stub['nlExamples'] = ' '.join(info['examples'])
 
         with _slock:
             _st['globalInfo']   = global_info
@@ -755,6 +806,7 @@ def load_from_db():
             _st['loading_msg']  = ''
         print(f'Ready: {len(entry_index):,} entries, {len(synset_index):,} synsets', flush=True)
         _load_en_synonyms()
+        _load_en_examples()
     except Exception as ex:
         with _slock: _st['loading_msg'] = f'Error: {ex}'
         print(f'Load error: {ex}', flush=True)
@@ -801,6 +853,34 @@ def _load_en_synonyms():
                 enriched += 1
     print(f'Enriched {enriched:,} synset stubs with EN synonyms', flush=True)
 
+_EN_EX_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            'data', 'wneng30_synset_examples.json')
+
+def _load_en_examples():
+    """Load Princeton WordNet 3.0 usage-example mapping (synset ID -> example
+    sentences) from JSON into the DB. Examples are only shown when a synset is
+    individually opened, so unlike EN synonyms they aren't mirrored onto the
+    lightweight synset_index stubs used for search."""
+    c = _con()
+    count = c.execute('SELECT COUNT(*) FROM en_examples').fetchone()[0]
+    if count > 0:
+        print(f'EN examples already in DB: {count:,}', flush=True)
+        return
+    if not os.path.isfile(_EN_EX_FILE):
+        print(f'EN examples file not found, skipping: {_EN_EX_FILE}', flush=True)
+        return
+    print('Loading English usage examples into database…', flush=True)
+    with open(_EN_EX_FILE, encoding='utf-8') as f:
+        data = json.load(f)
+    items = [(ss_id, json.dumps(exs, ensure_ascii=False)) for ss_id, exs in data.items()]
+    BATCH = 5000
+    with _write_lock:
+        for i in range(0, len(items), BATCH):
+            c.executemany('INSERT OR REPLACE INTO en_examples (synset_id, examples) VALUES (?,?)',
+                          items[i:i + BATCH])
+            c.commit()
+    print(f'Loaded {len(items):,} English usage-example sets', flush=True)
+
 # ─────────────────────────────────────────────────────────────────────
 # XML Serializer
 # ─────────────────────────────────────────────────────────────────────
@@ -814,7 +894,7 @@ def _at(n, v):
 def _entry_to_xml_lines(e):
     """Return XML lines for a single LexicalEntry dict (4-space indent at top level)."""
     L = []
-    L.append(f'    <LexicalEntry id="{_xe(e["id"])}"{_at("partOfSpeech",e.get("partOfSpeech",""))}{_at("formType",e.get("formType",""))}>')
+    L.append(f'    <LexicalEntry id="{_xe(e["id"])}"{_at("partOfSpeech",e.get("partOfSpeech",""))}{_at("formType",e.get("formType",""))}{_at("status",e.get("status",""))}{_at("comment",e.get("comment",""))}>')
     if e.get('isMWE'):
         L.append(f'      <MultiwordExpression writtenForm="{_xe(e.get("mweForm",""))}"{_at("expressionType",e.get("mweExpressionType",""))}/>')
     else:
@@ -931,7 +1011,7 @@ def _entry_to_xml_lines(e):
 def _synset_to_xml_lines(ss):
     """Return XML lines for a single Synset dict (4-space indent at top level)."""
     L = []
-    ss_a = f' id="{_xe(ss["id"])}"{_at("ili",ss.get("ili",""))}{_at("baseConcept",ss.get("baseConcept",""))}'
+    ss_a = f' id="{_xe(ss["id"])}"{_at("ili",ss.get("ili",""))}{_at("baseConcept",ss.get("baseConcept",""))}{_at("status",ss.get("status",""))}{_at("comment",ss.get("comment",""))}'
     defs = ss.get('definitions', [])
     rels = ss.get('synsetRelations', [])
     mers = ss.get('monolingualExternalRefs', [])
@@ -1121,16 +1201,33 @@ class Handler(http.server.BaseHTTPRequestHandler):
             en_row = c.execute('SELECT words FROM en_synonyms WHERE synset_id=?', (sid,)).fetchone()
             if en_row:
                 ss['_en_synonyms'] = json.loads(en_row['words'])
+            # Princeton WordNet 3.0 usage examples
+            ex_row = c.execute('SELECT examples FROM en_examples WHERE synset_id=?', (sid,)).fetchone()
+            if ex_row:
+                ss['_en_examples'] = json.loads(ex_row['examples'])
             # Dutch entry synonyms from index
             nl_rows = c.execute(
                 'SELECT e.id, e.lemma, e.mwe_form, e.is_mwe, e.part_of_speech '
                 'FROM synset_entry_index sei JOIN entries e ON sei.entry_id = e.id '
                 'WHERE sei.synset_id = ?', (sid,)
             ).fetchall()
+            # Example sentences per entry, from the sense linked to this synset
+            examples_by_entry = {}
+            entry_ids = [r['id'] for r in nl_rows]
+            if entry_ids:
+                eph = ','.join('?' * len(entry_ids))
+                for dr in c.execute('SELECT id, data FROM entries WHERE id IN ({})'.format(eph), entry_ids).fetchall():
+                    entry = json.loads(dr['data'])
+                    exs = []
+                    for sense in entry.get('senses', []):
+                        if sense.get('synset') == sid:
+                            exs.extend(ex['textualForm'] for ex in sense.get('examples', []) if ex.get('textualForm'))
+                    examples_by_entry[dr['id']] = exs
             ss['_nl_entries'] = [
                 {'id': r['id'],
                  'lemma': r['mwe_form'] if r['is_mwe'] else r['lemma'],
-                 'partOfSpeech': r['part_of_speech']}
+                 'partOfSpeech': r['part_of_speech'],
+                 'examples': examples_by_entry.get(r['id'], [])}
                 for r in nl_rows
             ]
             ok, lock = try_acquire_lock('synset', sid, user)

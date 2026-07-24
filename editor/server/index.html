@@ -71,6 +71,8 @@
     .pill-orange { background: #fef0e6; color: #e67e22; }
     .pill-green { background: #eafaf1; color: #27ae60; }
     .hd-btns { margin-left: auto; display: flex; gap: 6px; }
+    .statusbtn { background: none; border: 1px solid #ccc; color: #888; border-radius: 4px; padding: 4px 11px; font-size: 11px; cursor: pointer; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+    .statusbtn:hover { opacity: 0.75; }
 
     /* Cards */
     .card { background: white; border-radius: 8px; padding: 15px 18px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
@@ -403,6 +405,14 @@ const GRAM_TENSE_OPTS  = ['', 'pastTense', 'pastParticiple'];
 const COMPARISON_OPTS  = ['', 'comparative', 'superlative'];
 const VARIANT_TYPE_OPTS = ['', 'formVariant', 'spellingVariant'];
 
+const STATUS_OPTS = ['OK', 'ISSUE', 'WRONG', 'DEPRECATED'];
+const STATUS_STYLE = {
+  OK:         { bg: '#eafaf1', fg: '#27ae60' },
+  ISSUE:      { bg: '#fef0e6', fg: '#e67e22' },
+  WRONG:      { bg: '#fbeaea', fg: '#c0392b' },
+  DEPRECATED: { bg: '#ecf0f1', fg: '#7f8c8d' }
+};
+
 const SR_TYPE_OPTS  = ['co-annotation', 'co-hyponyms', 'co-synonyms', 'co-relations'];
 const PHRASE_OPTS   = ['', 'sentence', 'np', 'vp', 'ap', 'pp'];
 const POLARITY_OPTS = ['', 'negative', 'positive'];
@@ -465,7 +475,9 @@ let state = {
   },
   activeFiltersS: {
     pos: '',                   // POS letter code: n/v/a/r/s
-    missingDutchSynonyms: false
+    missingDutchSynonyms: false,
+    searchDefsExamples: false, // also match search text against definitions/examples
+    substringSynonyms: false   // match search text as a substring of a synonym, not just exact
   }
 };
 
@@ -482,7 +494,8 @@ function makeEntry() {
     morphology:  { morphoType: '', comparisonType: '', declinable: '', separability: '' },
     morphoSyntax: { pronominalAndGrammaticalGender: '', adverbialUsage: '', position: '', reflexivity: '', auxiliaries: [] },
     syntacticBehaviour: { valency: '', transitivity: '', complementations: [], subcatFrames: [] },
-    senses: [makeSense()]
+    senses: [makeSense()],
+    status: '', comment: ''
   };
 }
 
@@ -497,7 +510,7 @@ function makeSense() {
 }
 
 function makeSynset() {
-  return { id: uid('ss'), ili: '', baseConcept: '', definitions: [], synsetRelations: [], monolingualExternalRefs: [] };
+  return { id: uid('ss'), ili: '', baseConcept: '', definitions: [], synsetRelations: [], monolingualExternalRefs: [], status: '', comment: '' };
 }
 
 // =====================================================================
@@ -519,10 +532,23 @@ function rebuildVSE() {
 
   const hasAttrFilters = !!(af.pos || af.senses || af.missingSynsetLink);
 
+  // Each LexicalEntry is a single sense; entries sharing the same written
+  // form (lemma/MWE form) are the senses of that headword. Count occurrences
+  // per headword so the "N or more senses" filter reflects that grouping.
+  const headword = e => (e.isMWE ? e.mweForm : e.lemma) || e.id;
+  let lemmaSenseCounts = null;
+  if (af.senses) {
+    lemmaSenseCounts = new Map();
+    for (const item of state.entries) {
+      const key = headword(item);
+      lemmaSenseCounts.set(key, (lemmaSenseCounts.get(key) || 0) + 1);
+    }
+  }
+
   function passesAttr(item) {
     if (af.pos && item.partOfSpeech !== af.pos) return false;
-    if (af.senses && !item._indexOnly) {
-      const sc = (item.senses || []).length;
+    if (af.senses) {
+      const sc = lemmaSenseCounts.get(headword(item)) || 0;
       if (af.senses === '1'  && sc !== 1) return false;
       if (af.senses === '2+' && sc < 2)   return false;
       if (af.senses === '3+' && sc < 3)   return false;
@@ -540,8 +566,31 @@ function rebuildVSE() {
 
   const list = state.entries;
   if (!f) {
-    for (let i = 0; i < list.length; i++) {
-      if (passesAttr(list[i])) vsFilteredE.push(i);
+    if (af.senses) {
+      // Group by headword so each row represents a lemma, with a badge
+      // showing how many LexicalEntries (senses) share that written form.
+      const groupMap = new Map();
+      for (let i = 0; i < list.length; i++) {
+        const e = list[i];
+        if (!passesAttr(e)) continue;
+        const key = headword(e);
+        if (!groupMap.has(key)) groupMap.set(key, []);
+        groupMap.get(key).push(i);
+      }
+      // Sort by sense frequency (most senses first); tie-break alphabetically.
+      const groups = [...groupMap.entries()].sort((a, b) =>
+        b[1].length - a[1].length || a[0].localeCompare(b[0]));
+      for (const [, indices] of groups) {
+        vsFilteredE.push(indices[0]);
+        if (indices.length > 1) {
+          vsGroupsE[list[indices[0]].id] = indices;
+          for (const i of indices) vsEntryGroupE[list[i].id] = list[indices[0]].id;
+        }
+      }
+    } else {
+      for (let i = 0; i < list.length; i++) {
+        if (passesAttr(list[i])) vsFilteredE.push(i);
+      }
     }
   } else {
     const exactMap = new Map(), subMap = new Map();
@@ -568,12 +617,56 @@ function rebuildVSE() {
     (f || hasAttrFilters) ? `${vsFilteredE.length} of ${totalE}` : `${totalE} items`;
 }
 
+// English/Dutch synonym word lists for a synset, from stub fields (index-only)
+// or from fully-loaded data (_en_synonyms / _nl_entries / live entry scan).
+function _synTokens(s) {
+  if (s._indexOnly) {
+    return {
+      en: (s.enSyns || '').split(' ').filter(Boolean),
+      nl: (s.nlSyns || '').split(' ').filter(Boolean)
+    };
+  }
+  const en = s._en_synonyms || [];
+  const nl = (s._nl_entries ? s._nl_entries.map(e => e.lemma) : getSynonymEntries(s.id).map(e => e.lemma))
+    .filter(Boolean);
+  return { en, nl };
+}
+
+// Dutch example sentences for a synset's senses, space-joined for substring search.
+function _synExamplesText(s) {
+  if (s._indexOnly) return s.nlExamples || '';
+  const entries = s._nl_entries || getSynonymEntries(s.id);
+  return entries.map(e => (e.examples || []).join(' ')).join(' ');
+}
+
 function rebuildVSS() {
   const f = state.filterS.toLowerCase();
   const af = state.activeFiltersS;
   vsFilteredS = [];
 
   const hasAttrFilters = !!(af.pos || af.missingDutchSynonyms);
+
+  // Match only against synonyms (English or Dutch) by default, and only an
+  // exact synonym (not a substring) — the search box shouldn't surface every
+  // synset whose gloss, or some unrelated longer synonym, happens to contain
+  // the text. "Substring matches" broadens synonym matching to substrings;
+  // "Search definitions/examples" widens the match to gloss text and Dutch
+  // example sentences too.
+  function passesSearch(s) {
+    if (!f) return true;
+    if (s.id.toLowerCase().includes(f)) return true;
+    const { en, nl } = _synTokens(s);
+    const synMatch = af.substringSynonyms
+      ? w => w.toLowerCase().includes(f)
+      : w => w.replace(/_/g, ' ').toLowerCase() === f;
+    if (en.some(synMatch) || nl.some(synMatch)) return true;
+    if (af.searchDefsExamples) {
+      const gloss = (s.definitions || []).map(d => d.gloss || '').join(' ');
+      const text = (gloss + ' ' + _synExamplesText(s)).toLowerCase();
+      if (text.includes(f)) return true;
+    }
+    return false;
+  }
 
   const list = state.synsets;
   for (let i = 0; i < list.length; i++) {
@@ -589,9 +682,8 @@ function rebuildVSS() {
         if (hasNl) continue;
       }
     }
-    const gloss = s.definitions && s.definitions.length ? s.definitions[0].gloss : '';
-    const hay = s.id + ' ' + gloss + ' ' + (s.enSyns || '');
-    if (!f || hay.toLowerCase().includes(f)) vsFilteredS.push(i);
+    if (!passesSearch(s)) continue;
+    vsFilteredS.push(i);
   }
 
   const totalS = list.length;
@@ -698,7 +790,9 @@ function parseODWN(doc) {
       morphology:  { morphoType: '', comparisonType: '', declinable: '', separability: '' },
       morphoSyntax: { pronominalAndGrammaticalGender: '', adverbialUsage: '', position: '', reflexivity: '', auxiliaries: [] },
       syntacticBehaviour: { valency: '', transitivity: '', complementations: [], subcatFrames: [] },
-      senses: []
+      senses: [],
+      status:  eEl.getAttribute('status')  || '',
+      comment: eEl.getAttribute('comment') || ''
     };
 
     const lemmaEl = eEl.querySelector(':scope > Lemma');
@@ -799,7 +893,7 @@ function parseODWN(doc) {
   // ── Synsets ──
   const synsets = [];
   for (const ssEl of lex.querySelectorAll(':scope > Synset')) {
-    const synset = { id: ssEl.getAttribute('id') || uid('ss'), ili: ssEl.getAttribute('ili') || '', baseConcept: ssEl.getAttribute('baseConcept') || '', definitions: [], synsetRelations: [], monolingualExternalRefs: [] };
+    const synset = { id: ssEl.getAttribute('id') || uid('ss'), ili: ssEl.getAttribute('ili') || '', baseConcept: ssEl.getAttribute('baseConcept') || '', definitions: [], synsetRelations: [], monolingualExternalRefs: [], status: ssEl.getAttribute('status') || '', comment: ssEl.getAttribute('comment') || '' };
     for (const dEl of ssEl.querySelectorAll('Definitions > Definition'))
       synset.definitions.push({ gloss: dEl.getAttribute('gloss') || '', language: dEl.getAttribute('language') || '', provenance: dEl.getAttribute('provenance') || '' });
     for (const rEl of ssEl.querySelectorAll('SynsetRelations > SynsetRelation'))
@@ -825,7 +919,7 @@ function parseLMF(doc) {
   const lexicon = { language: getFeat(lex, 'language'), languageCoding: getFeat(lex, 'languageCoding'), label: getFeat(lex, 'label'), owner: '' };
   const entries = [];
   for (const eEl of lex.querySelectorAll(':scope > LexicalEntry')) {
-    const entry = { id: eEl.getAttribute('id') || uid('e'), partOfSpeech: getFeat(eEl, 'partOfSpeech'), formType: '', isMWE: false, lemma: '', lemmaMode: '', mweForm: '', mweExpressionType: '', wordForms: [], relatedForms: [], morphology: { morphoType: '', comparisonType: '', declinable: '', separability: '' }, morphoSyntax: { pronominalAndGrammaticalGender: '', adverbialUsage: '', position: '', reflexivity: '', auxiliaries: [] }, syntacticBehaviour: { valency: '', transitivity: '', complementations: [], subcatFrames: [] }, senses: [] };
+    const entry = { id: eEl.getAttribute('id') || uid('e'), partOfSpeech: getFeat(eEl, 'partOfSpeech'), formType: '', isMWE: false, lemma: '', lemmaMode: '', mweForm: '', mweExpressionType: '', wordForms: [], relatedForms: [], morphology: { morphoType: '', comparisonType: '', declinable: '', separability: '' }, morphoSyntax: { pronominalAndGrammaticalGender: '', adverbialUsage: '', position: '', reflexivity: '', auxiliaries: [] }, syntacticBehaviour: { valency: '', transitivity: '', complementations: [], subcatFrames: [] }, senses: [], status: eEl.getAttribute('status') || '', comment: eEl.getAttribute('comment') || '' };
     const lemmaEl = eEl.querySelector(':scope > Lemma');
     if (lemmaEl) entry.lemma = getFeat(lemmaEl, 'writtenForm');
     for (const sEl of eEl.querySelectorAll(':scope > Sense')) {
@@ -859,7 +953,7 @@ function serializeODWN(s) {
     `  <Lexicon${at('languageCoding',s.lexicon.languageCoding)}${at('label',s.lexicon.label)}${at('language',s.lexicon.language)}${at('owner',s.lexicon.owner)}>`];
 
   for (const entry of s.entries) {
-    L.push(`    <LexicalEntry id="${xe(entry.id)}"${at('partOfSpeech',entry.partOfSpeech)}${at('formType',entry.formType)}>`);
+    L.push(`    <LexicalEntry id="${xe(entry.id)}"${at('partOfSpeech',entry.partOfSpeech)}${at('formType',entry.formType)}${at('status',entry.status)}${at('comment',entry.comment)}>`);
     if (entry.isMWE) {
       L.push(`      <MultiwordExpression writtenForm="${xe(entry.mweForm)}"${at('expressionType',entry.mweExpressionType)}/>`);
     } else {
@@ -969,7 +1063,7 @@ function serializeODWN(s) {
   }
 
   for (const ss of s.synsets) {
-    const ssAttrs = ` id="${xe(ss.id)}"${at('ili',ss.ili)}${at('baseConcept',ss.baseConcept)}`;
+    const ssAttrs = ` id="${xe(ss.id)}"${at('ili',ss.ili)}${at('baseConcept',ss.baseConcept)}${at('status',ss.status)}${at('comment',ss.comment)}`;
     const hasContent = ss.definitions.length || ss.synsetRelations.length || ss.monolingualExternalRefs.length;
     if (!hasContent) { L.push(`    <Synset${ssAttrs}/>`); continue; }
     L.push(`    <Synset${ssAttrs}>`);
@@ -1242,6 +1336,14 @@ function _renderFiltersS() {
     <label class="flt-chk${af.missingDutchSynonyms ? ' active' : ''}">
       <input type="checkbox" id="flt-missing-nl-s"${af.missingDutchSynonyms ? ' checked' : ''} onchange="updateFiltersS()">
       No Dutch synonyms
+    </label>
+    <label class="flt-chk${af.substringSynonyms ? ' active' : ''}">
+      <input type="checkbox" id="flt-substring-syn-s"${af.substringSynonyms ? ' checked' : ''} onchange="updateFiltersS()">
+      Substring matches (broaden synonym search)
+    </label>
+    <label class="flt-chk${af.searchDefsExamples ? ' active' : ''}">
+      <input type="checkbox" id="flt-search-defs-s"${af.searchDefsExamples ? ' checked' : ''} onchange="updateFiltersS()">
+      Also search definitions/examples
     </label>`;
 }
 
@@ -1257,6 +1359,8 @@ function updateFiltersS() {
   const af = state.activeFiltersS;
   af.pos = document.getElementById('flt-pos-s')?.value || '';
   af.missingDutchSynonyms = !!document.getElementById('flt-missing-nl-s')?.checked;
+  af.substringSynonyms = !!document.getElementById('flt-substring-syn-s')?.checked;
+  af.searchDefsExamples = !!document.getElementById('flt-search-defs-s')?.checked;
   _renderFiltersS(); rebuildVSS(); renderVSS(true);
 }
 
@@ -1285,6 +1389,7 @@ function _collectEntryFields(entry) {
   if (v('f-formtype') !== null) entry.formType  = v('f-formtype');
   if (v('f-lemmamode') !== null) entry.lemmaMode = v('f-lemmamode');
   if (v('f-mwe-form')  !== null) { entry.mweForm = v('f-mwe-form'); entry.mweExpressionType = v('f-mwe-type') || ''; }
+  if (v('f-e-comment') !== null) entry.comment  = v('f-e-comment');
 
   entry.wordForms = [];
   document.querySelectorAll('.wf-row').forEach(r => {
@@ -1369,6 +1474,7 @@ function collectSynsetState() {
   if (v('f-ssid')  !== null) ss.id          = v('f-ssid');
   if (v('f-ssili') !== null) ss.ili         = v('f-ssili');
   if (v('f-ssbc')  !== null) ss.baseConcept = v('f-ssbc');
+  if (v('f-s-comment') !== null) ss.comment = v('f-s-comment');
 
   ss.definitions = [];
   document.querySelectorAll('.def-row').forEach(r => { const g = r.querySelector('.def-gloss').value; if (g) ss.definitions.push({ gloss: g, language: r.querySelector('.def-lang').value, provenance: r.querySelector('.def-prov').value }); });
@@ -1385,6 +1491,42 @@ function collectSynsetState() {
 
 function h(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function sel(opts, cur) { return opts.map(o => `<option value="${h(o)}"${o===cur?' selected':''}>${h(o)||'—'}</option>`).join(''); }
+
+// Manual review status pill shown next to an entry/synset title
+function buildStatusPill(status) {
+  if (!status || !STATUS_STYLE[status]) return '';
+  const c = STATUS_STYLE[status];
+  return `<span class="pill" style="background:${c.bg};color:${c.fg}">${h(status)}</span>`;
+}
+
+// Manual review status buttons + comment field, shown at the top of an entry/synset editor
+function buildStatusRow(item, itemType) {
+  const prefix = itemType === 'entry' ? 'e' : 's';
+  const buttons = STATUS_OPTS.map(st => {
+    const active = item.status === st;
+    const c = STATUS_STYLE[st];
+    const style = active ? `background:${c.fg};color:#fff;border-color:${c.fg}` : `color:${c.fg};border-color:${c.fg}`;
+    return `<button type="button" class="statusbtn" style="${style}" onclick="setItemStatus('${itemType}','${st}')">${h(st)}</button>`;
+  }).join('');
+  return `<div class="card" style="padding:10px 14px">
+    <div class="irow" style="gap:8px;flex-wrap:wrap;margin-bottom:0">
+      ${buttons}
+      <input type="text" id="f-${prefix}-comment" class="grow" placeholder="Comment…" value="${h(item.comment)}" style="min-width:160px">
+    </div>
+  </div>`;
+}
+
+// Set (or, clicking the active one again, clear) the manual review status of the
+// currently selected entry or synset, then re-render its editor pane and autosave.
+function setItemStatus(itemType, status) {
+  const item = itemType === 'entry' ? getEntry(state.selectedId) : getSynset(state.selectedSynsetId);
+  if (!item) return;
+  item.status = (item.status === status) ? '' : status;
+  state.modified = true;
+  if (itemType === 'entry') renderEntryEditor(); else renderSynsetEditor();
+  updateStatusBar();
+  scheduleAutosave(itemType);
+}
 
 function renderAll() {
   renderFilters();
@@ -1450,12 +1592,14 @@ function buildEntryHTML(entry) {
     ${entry.partOfSpeech && !entry.isMWE ? `<span class="pill pill-blue" id="eh-badge">${h(entry.partOfSpeech)}</span>` : `<span class="pill pill-blue" id="eh-badge" style="display:none"></span>`}
     ${entry.isMWE ? `<span class="pill pill-orange">MWE</span>` : ''}
     ${entry.formType ? `<span class="pill pill-green">${h(entry.formType)}</span>` : ''}
+    ${buildStatusPill(entry.status)}
     <div class="hd-btns">
       ${collabMode ? `<button class="btn btn-save" id="save-btn-e" disabled onclick="editorSave('entry')">Save</button>` : ''}
       <button class="btn btn-sec" onclick="showHistoryPopup(event,'${h(entry.id)}','entry')">&#128336; History</button>
       <button class="btn btn-red" onclick="deleteItem('${h(entry.id)}')">Delete</button>
     </div>
   </div>
+  ${buildStatusRow(entry, 'entry')}
 
   <div class="card">
     <div class="card-hd">Lemma &amp; Identity</div>
@@ -1773,12 +1917,13 @@ function buildOverviewHTML(entryIds) {
     // All sense definitions joined with ";"
     const defText = senses.map(x => x.definition).filter(Boolean).join('; ') || '—';
 
-    // Synset from first sense; English-only glosses joined with ";"
+    // Synset from first sense; prefer English-tagged glosses, else fall back
+    // to any available gloss (e.g. an unfetched stub synset's raw gloss).
     const ss = (s && s.synset) ? getSynset(s.synset) : null;
-    const enGlosses = ss && ss.definitions
-      ? ss.definitions.filter(d => (d.language || '').toLowerCase().startsWith('en')).map(d => d.gloss).filter(Boolean)
-      : [];
-    const glossText = enGlosses.length ? enGlosses.join('; ') : '';
+    const allGlosses = (ss && ss.definitions ? ss.definitions : []).map(d => d.gloss).filter(Boolean);
+    const enGlosses = (ss && ss.definitions ? ss.definitions : [])
+      .filter(d => (d.language || '').toLowerCase().startsWith('en')).map(d => d.gloss).filter(Boolean);
+    const glossText = (enGlosses.length ? enGlosses : allGlosses).join('; ');
 
     const synCell = (s && s.synset)
       ? `<span class="ov-synlink" onclick="event.stopPropagation();jumpToSynset('${h(s.synset)}')">${h(s.synset)}</span>`
@@ -1835,12 +1980,14 @@ function buildSynsetHTML(ss) {
   <div class="ed-hd">
     <h2 id="eh-title">${h(ss.id)}</h2>
     ${ss.ili ? `<span class="pill pill-blue">ILI: ${h(ss.ili)}</span>` : ''}
+    ${buildStatusPill(ss.status)}
     <div class="hd-btns">
       ${collabMode ? `<button class="btn btn-save" id="save-btn-s" disabled onclick="editorSave('synset')">Save</button>` : ''}
       <button class="btn btn-sec" onclick="showHistoryPopup(event,'${h(ss.id)}','synset')">&#128336; History</button>
       <button class="btn btn-red" onclick="deleteItem('${h(ss.id)}')">Delete</button>
     </div>
   </div>
+  ${buildStatusRow(ss, 'synset')}
 
   <div class="card">
     <div class="card-hd">Synset Identity</div>
@@ -1946,14 +2093,15 @@ window.addEventListener('beforeunload', e => { if (state.modified) { e.preventDe
 // CROSS-PANEL NAVIGATION
 // =====================================================================
 
-// Build a synsetId → [{id, lemma, partOfSpeech, isMWE}] map from loaded entries
+// Build a synsetId → [{id, lemma, partOfSpeech, isMWE, examples}] map from loaded entries
 function getSynonymEntries(synsetId) {
   const results = [];
   for (const e of state.entries) {
     if (e._indexOnly) continue; // not yet fetched in collab mode
     for (const s of (e.senses || [])) {
       if (s.synset === synsetId) {
-        results.push({ id: e.id, lemma: e.isMWE ? e.mweForm : e.lemma, partOfSpeech: e.partOfSpeech, isMWE: e.isMWE });
+        results.push({ id: e.id, lemma: e.isMWE ? e.mweForm : e.lemma, partOfSpeech: e.partOfSpeech, isMWE: e.isMWE,
+                       examples: (s.examples || []).map(x => x.textualForm).filter(Boolean) });
         break;
       }
     }
@@ -1967,9 +2115,14 @@ function buildEnSynonymsCard(ss) {
   const pills = words.map(w =>
     `<span class="en-syn-pill">${h(w.replace(/_/g, ' '))}</span>`
   ).join('');
+  const examples = ss._en_examples;
+  const examplesHtml = (examples && examples.length)
+    ? `<div style="margin-top:8px;font-size:12px;color:#777;font-style:italic">${examples.map(x => '"' + h(x) + '"').join('; ')}</div>`
+    : '';
   return `<div class="card">
     <div class="card-hd">English synonyms <span style="font-weight:400;font-size:11px;color:#aaa">(read-only · Princeton WordNet 3.0)</span></div>
     <div class="en-syns-list">${pills}</div>
+    ${examplesHtml}
   </div>`;
 }
 
@@ -1982,7 +2135,8 @@ function buildSynonymsCard(ss) {
     syns = ss._nl_entries;
   } else {
     syns = getSynonymEntries(ssId).map(e => ({
-      id: e.id, lemma: e.isMWE ? (e.mweForm || e.id) : (e.lemma || e.id), partOfSpeech: e.partOfSpeech || ''
+      id: e.id, lemma: e.isMWE ? (e.mweForm || e.id) : (e.lemma || e.id), partOfSpeech: e.partOfSpeech || '',
+      examples: e.examples || []
     }));
   }
   const note = (!ss._nl_entries && collabMode && syns.length === 0)
@@ -1991,10 +2145,11 @@ function buildSynonymsCard(ss) {
   return `<div class="card">
     <div class="card-hd">Dutch synonyms <span>${syns.length ? syns.length + ' entr' + (syns.length === 1 ? 'y' : 'ies') : ''}</span></div>
     ${note}
-    ${syns.map(e => `<div class="irow" style="padding:4px 0;border-bottom:1px solid #f4f4f4">
+    ${syns.map(e => `<div class="irow" style="padding:4px 0;border-bottom:1px solid #f4f4f4;flex-wrap:wrap">
       <div style="flex:1;min-width:0">
         <span style="font-weight:600;font-size:13px">${h(e.lemma)}</span>
         <span style="font-size:11px;color:#999;margin-left:6px;text-transform:uppercase">${h(e.partOfSpeech)}</span>
+        ${(e.examples && e.examples.length) ? `<div style="font-size:12px;color:#777;font-style:italic;margin-top:2px">${e.examples.map(x => '"' + h(x) + '"').join('; ')}</div>` : ''}
       </div>
       <button class="addbtn" onclick="jumpToEntry('${h(e.id)}')" title="Open in Entries panel">&#x2197; Open</button>
       <button class="addbtn" style="border-color:#e74c3c;color:#e74c3c" onclick="unlinkSynonym('${h(e.id)}','${h(ssId)}')" title="Remove synset link">Unlink</button>
@@ -2245,7 +2400,7 @@ async function fetchIndex() {
       id: si.id, ili: '', baseConcept: '', _indexOnly: true,
       hasDutchSynonyms: !!si.hasDutchSynonyms,
       definitions: si.gloss ? [{ gloss: si.gloss, language: '', provenance: '' }] : [],
-      enSyns: si.enSyns || '',
+      enSyns: si.enSyns || '', nlSyns: si.nlSyns || '', nlExamples: si.nlExamples || '',
       synsetRelations: [], monolingualExternalRefs: []
     }));
     state.modified = false;
@@ -2332,6 +2487,22 @@ window.selectItem = async function(id, type) {
           try {
             const r = await _authFetch('/api/entry/' + encodeURIComponent(gid));
             if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.entries.findIndex(x => x.id === gid); if (idx >= 0) state.entries[idx] = full; }
+          } catch (_) {}
+        }
+      }));
+      // Also fetch full synset data for linked synsets, so the overview's
+      // synset gloss column isn't blank (stub synsets carry no language-tagged
+      // definitions, only a raw truncated gloss).
+      const synsetIds = new Set();
+      for (const gid of groupIds) {
+        for (const s of (getEntry(gid)?.senses || [])) if (s.synset) synsetIds.add(s.synset);
+      }
+      await Promise.all([...synsetIds].map(async sid => {
+        const ss = getSynset(sid);
+        if (ss && ss._indexOnly) {
+          try {
+            const r = await _authFetch('/api/synset/' + encodeURIComponent(sid));
+            if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.synsets.findIndex(x => x.id === sid); if (idx >= 0) state.synsets[idx] = full; }
           } catch (_) {}
         }
       }));
@@ -2658,6 +2829,31 @@ async function _fetchFullEntry(entryId) {
   return entry;
 }
 
+// Fetch a full synset (handles stub _indexOnly synsets in collab mode, or looks up in state).
+// Pass force=true to bypass the cache and re-GET from the server (collab mode only) — used
+// when the caller needs an up-to-date _nl_entries list after just having changed sense links.
+async function _fetchFullSynset(id, force) {
+  let ss = getSynset(id);
+  if (ss && !ss._indexOnly && !force) return ss;
+  if (!collabMode) {
+    if (!ss) throw new Error('Synset not found: ' + id);
+    return ss;
+  }
+  const r = await _authFetch('/api/synset/' + encodeURIComponent(id));
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  ss = await r.json();
+  delete ss._lock;
+  const idx = state.synsets.findIndex(s => s.id === id);
+  if (idx >= 0) state.synsets[idx] = ss; else state.synsets.push(ss);
+  return ss;
+}
+
+// IDs of Dutch entries currently linked to a synset — from the server-computed
+// _nl_entries list in collab mode, or by scanning loaded entries in standalone mode.
+function _synonymIdsOf(ss, ssId) {
+  return (ss && ss._nl_entries) ? ss._nl_entries.map(e => e.id) : getSynonymEntries(ssId).map(e => e.id);
+}
+
 // Clear the synset field of the sense whose Unlink button was clicked
 function unlinkSense(btn) {
   const input = btn.closest('.field').querySelector('.s-synset');
@@ -2876,11 +3072,75 @@ function _ssmShowSenses() {
 async function _ssmLinkSense(senseIdx) {
   const { entry, synsetId } = _ssmState;
   const sense = entry.senses[senseIdx];
+  let oldSynsetId = '';
   if (sense.synset && sense.synset !== synsetId) {
     if (!confirm(`This sense is already linked to\n${sense.synset}\n\nReplace with ${synsetId}?`)) return;
+    oldSynsetId = sense.synset;
   }
   sense.synset = synsetId;
   await _ssmSaveEntry(entry);
+  if (oldSynsetId.startsWith('odwn')) await _maybeMergeOdwnSynset(oldSynsetId, synsetId);
+}
+
+// When a Dutch synonym is relinked away from an "odwn-" synset (onto e.g. an "eng-30-"
+// synset), that odwn synset is being merged away. Walk the editor through retiring it:
+// move any remaining synonyms across, offer to carry over its synset relations, and if
+// nothing links to it anymore, mark it deprecated.
+async function _maybeMergeOdwnSynset(oldId, newId) {
+  if (!oldId || !oldId.startsWith('odwn') || oldId === newId) return;
+  let oldSs;
+  try { oldSs = await _fetchFullSynset(oldId, true); }
+  catch (err) { showToast('Could not load ' + oldId + ': ' + err.message, true); return; }
+
+  let others = _synonymIdsOf(oldSs, oldId);
+  if (others.length && confirm(
+      `${oldId} still has ${others.length} other Dutch synonym${others.length === 1 ? '' : 's'} linked to it:\n${others.join(', ')}\n\n` +
+      `Move ${others.length === 1 ? 'it' : 'them'} to ${newId} as well?`)) {
+    for (const eid of others) {
+      let e;
+      try { e = await _fetchFullEntry(eid); } catch (_) { continue; }
+      let changed = false;
+      for (const s of e.senses || []) if (s.synset === oldId) { s.synset = newId; changed = true; }
+      if (!changed) continue;
+      if (collabMode) await _pushUpdate('update', 'entry', e, true);
+      state.modified = true;
+      const nss = getSynset(newId);
+      if (nss && nss._nl_entries && !nss._nl_entries.some(x => x.id === e.id)) {
+        nss._nl_entries.push({ id: e.id, lemma: e.isMWE ? (e.mweForm || e.id) : (e.lemma || e.id), partOfSpeech: e.partOfSpeech || '', examples: [] });
+      }
+    }
+    _refreshSynonymsCard(newId);
+    try { oldSs = await _fetchFullSynset(oldId, true); } catch (_) {}
+    others = _synonymIdsOf(oldSs, oldId);
+    showToast('Moved synonym(s) to ' + newId);
+  }
+
+  const rels = (oldSs.synsetRelations || []).filter(r => r.target && r.target !== newId);
+  if (rels.length && confirm(`Transfer the ${rels.length} synset relation(s) of ${oldId} to ${newId}?`)) {
+    collectEditorState();
+    const newSs = getSynset(newId);
+    if (newSs) {
+      let added = 0;
+      for (const r of rels) {
+        const dup = newSs.synsetRelations.some(x => x.relType === r.relType && x.target === r.target);
+        if (!dup) { newSs.synsetRelations.push({ relType: r.relType, target: r.target, provenance: r.provenance || '' }); added++; }
+      }
+      state.modified = true;
+      if (state.selectedSynsetId === newId) renderSynsetEditor();
+      if (collabMode) await _pushUpdate('update', 'synset', newSs, true);
+      showToast(added ? `Transferred ${added} relation(s) to ${newId}` : 'No new relations to transfer');
+    }
+  }
+
+  if (!others.length && oldSs.status !== 'DEPRECATED' && confirm(
+      `${oldId} now has no Dutch synonyms left.\n\nMark it as deprecated (merged into ${newId})?`)) {
+    oldSs.status = 'DEPRECATED';
+    oldSs.comment = (oldSs.comment ? oldSs.comment + '; ' : '') + `merged into ${newId}`;
+    state.modified = true;
+    if (collabMode) await _pushUpdate('update', 'synset', oldSs, true);
+    if (state.selectedSynsetId === oldId) renderSynsetEditor();
+    showToast(oldId + ' marked as deprecated');
+  }
 }
 
 async function _ssmAddNewSense() {
@@ -2951,7 +3211,7 @@ async function _ssmCreateEntry(word) {
   const entry = {
     id: entryId, lemma: word, partOfSpeech: pos,
     isMWE: false, mweForm: '', mweExpressionType: '', lemmaMode: '', formType: '',
-    wordForms: [], relatedForms: [], senses: [ns],
+    wordForms: [], relatedForms: [], senses: [ns], status: '', comment: '',
     morphology: { morphoType:'', comparisonType:'', declinable:'', separability:'' },
     morphoSyntax: { pronominalAndGrammaticalGender:'', adverbialUsage:'', position:'', reflexivity:'', auxiliaries:[] },
     syntacticBehaviour: { valency:'', transitivity:'', complementations:[], subcatFrames:[] }
@@ -3038,7 +3298,7 @@ async function _createNewEntryWithSynset() {
   const entry = {
     id: entryId, lemma: word, partOfSpeech: pos,
     isMWE: false, mweForm: '', mweExpressionType: '', lemmaMode: '', formType: '',
-    wordForms: [], relatedForms: [], senses: [ns],
+    wordForms: [], relatedForms: [], senses: [ns], status: '', comment: '',
     morphology: { morphoType:'', comparisonType:'', declinable:'', separability:'' },
     morphoSyntax: { pronominalAndGrammaticalGender:'', adverbialUsage:'', position:'', reflexivity:'', auxiliaries:[] },
     syntacticBehaviour: { valency:'', transitivity:'', complementations:[], subcatFrames:[] }
@@ -3046,7 +3306,7 @@ async function _createNewEntryWithSynset() {
 
   const synset = {
     id: synsetId, ili: '', baseConcept: '', definitions: [], synsetRelations: [],
-    monolingualExternalRefs: [],
+    monolingualExternalRefs: [], status: '', comment: '',
     _nl_entries: [{ id: entryId, lemma: word, partOfSpeech: pos }]
   };
 
