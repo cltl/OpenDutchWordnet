@@ -1,0 +1,7 @@
+log/
+users.json
+*.db
+*.xml
+*.db-shm
+*.db-wal
+
