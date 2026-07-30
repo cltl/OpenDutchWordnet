@@ -20,7 +20,7 @@ Locking:
     Other users see locked items as read-only until the lock expires or is released.
 """
 
-import http.server, json, threading, time, os, sys, sqlite3, hashlib, secrets, re
+import http.server, json, threading, time, os, sys, sqlite3, hashlib, secrets, re, zipfile, gzip
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, parse_qs
 
@@ -121,7 +121,9 @@ CREATE TABLE IF NOT EXISTS entries (
     is_mwe             INTEGER NOT NULL DEFAULT 0,
     updated_at         REAL NOT NULL DEFAULT 0,
     updated_by         TEXT NOT NULL DEFAULT '',
-    has_unlinked_sense INTEGER DEFAULT NULL
+    has_unlinked_sense INTEGER DEFAULT NULL,
+    has_autohyponymy   INTEGER DEFAULT NULL,
+    sense_id           TEXT DEFAULT NULL
 );
 CREATE TABLE IF NOT EXISTS synsets (
     id         TEXT PRIMARY KEY,
@@ -170,6 +172,10 @@ def _init_schema():
     cols = {r[1] for r in c.execute("PRAGMA table_info(entries)").fetchall()}
     if 'has_unlinked_sense' not in cols:
         c.execute("ALTER TABLE entries ADD COLUMN has_unlinked_sense INTEGER DEFAULT NULL")
+    if 'has_autohyponymy' not in cols:
+        c.execute("ALTER TABLE entries ADD COLUMN has_autohyponymy INTEGER DEFAULT NULL")
+    if 'sense_id' not in cols:
+        c.execute("ALTER TABLE entries ADD COLUMN sense_id TEXT DEFAULT NULL")
     c.commit()
 
 # ─────────────────────────────────────────────────────────────────────
@@ -369,6 +375,7 @@ def upsert_entry(data, user):
     lemma  = data.get('mweForm', '') if data.get('isMWE') else data.get('lemma', '')
     is_mwe = 1 if data.get('isMWE') else 0
     has_unlinked = 1 if any(not s.get('synset', '') for s in data.get('senses', [])) else 0
+    sense_id = data['senses'][0].get('senseId', '') if data.get('senses') else ''
     ts = time.time()
     changes = data.get('_changes', [])
     if not changes or changes[-1].get('user') != user or ts - changes[-1].get('ts', 0) > 300:
@@ -377,13 +384,13 @@ def upsert_entry(data, user):
     with _write_lock:
         c = _con()
         c.execute(
-            'INSERT INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense) VALUES (?,?,?,?,?,?,?,?,?) '
+            'INSERT INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense,sense_id) VALUES (?,?,?,?,?,?,?,?,?,?) '
             'ON CONFLICT(id) DO UPDATE SET data=excluded.data,lemma=excluded.lemma,mwe_form=excluded.mwe_form,'
             'part_of_speech=excluded.part_of_speech,is_mwe=excluded.is_mwe,updated_at=excluded.updated_at,'
-            'updated_by=excluded.updated_by,has_unlinked_sense=excluded.has_unlinked_sense',
+            'updated_by=excluded.updated_by,has_unlinked_sense=excluded.has_unlinked_sense,sense_id=excluded.sense_id',
             (data['id'], json.dumps(data, ensure_ascii=False),
              data.get('lemma', ''), data.get('mweForm', ''),
-             data.get('partOfSpeech', ''), is_mwe, ts, user, has_unlinked)
+             data.get('partOfSpeech', ''), is_mwe, ts, user, has_unlinked, sense_id)
         )
         c.execute('DELETE FROM synset_entry_index WHERE entry_id=?', (data['id'],))
         for sense in data.get('senses', []):
@@ -476,6 +483,101 @@ def _refresh_synset_nl_flags(synset_ids):
                 stub['hasDutchSynonyms'] = bool(info['lemmas'])
                 stub['nlSyns']     = ' '.join(info['lemmas'])
                 stub['nlExamples'] = ' '.join(info['examples'])
+
+_HYPERONYM_RELTYPES = ('has_hyperonym', 'has_xpos_hyperonym')
+
+def _compute_autohyponymy(c, entry_ids=None):
+    """Return {entry_id: bool} — True if the entry has a sense whose synset holds a
+    has_hyperonym/has_xpos_hyperonym relation to another sense's synset of the same
+    headword (lemma, or MWE form) — i.e. the entry is a hyponym of a sibling sense of
+    the same word. Pass entry_ids to restrict the scan to just the headword groups
+    containing those entries (their full sibling groups are still included in the
+    result, since an edit to one sibling can flip another's flag); pass None to scan
+    the whole lexicon."""
+    if entry_ids is not None:
+        id_set = set(entry_ids)
+        if not id_set:
+            return {}
+        placeholders = ','.join('?' * len(id_set))
+        seed_rows = c.execute(
+            'SELECT id, lemma, mwe_form, is_mwe FROM entries WHERE id IN ({})'.format(placeholders),
+            list(id_set)).fetchall()
+        headwords = {(r['mwe_form'] if r['is_mwe'] else r['lemma']) for r in seed_rows}
+        headwords.discard('')
+        group_rows = []
+        if headwords:
+            hw_list = list(headwords)
+            ph = ','.join('?' * len(hw_list))
+            group_rows = c.execute(
+                'SELECT id, data FROM entries WHERE (is_mwe=0 AND lemma IN ({0})) OR (is_mwe=1 AND mwe_form IN ({0}))'.format(ph),
+                hw_list + hw_list).fetchall()
+        # Entries with no lemma/mweForm at all can't belong to a headword group,
+        # but they still need an explicit False result — otherwise their
+        # has_autohyponymy column stays NULL forever and gets "backfilled" again
+        # (uselessly re-scanning the whole lexicon) on every server restart.
+        covered_ids = {r['id'] for r in group_rows}
+        missing_ids = id_set - covered_ids
+        if missing_ids:
+            ph = ','.join('?' * len(missing_ids))
+            group_rows = list(group_rows) + c.execute(
+                'SELECT id, data FROM entries WHERE id IN ({})'.format(ph), list(missing_ids)).fetchall()
+    else:
+        group_rows = c.execute('SELECT id, data FROM entries').fetchall()
+
+    groups = {}          # headword -> [entry_id, ...]
+    entry_synsets = {}    # entry_id -> [synset_id, ...]
+    result = {}
+    for r in group_rows:
+        entry = json.loads(r['data'])
+        headword = entry.get('mweForm', '') if entry.get('isMWE') else entry.get('lemma', '')
+        entry_synsets[r['id']] = [s.get('synset', '') for s in entry.get('senses', []) if s.get('synset', '')]
+        result[r['id']] = False
+        if headword:
+            groups.setdefault(headword, []).append(r['id'])
+
+    all_synset_ids = {sid for syns in entry_synsets.values() for sid in syns}
+    if not all_synset_ids:
+        return result
+
+    ph = ','.join('?' * len(all_synset_ids))
+    synset_rows = c.execute('SELECT id, data FROM synsets WHERE id IN ({})'.format(ph),
+                             list(all_synset_ids)).fetchall()
+    hypernyms = {}  # synset_id -> set(target synset ids of hyperonym-type relations)
+    for r in synset_rows:
+        ss = json.loads(r['data'])
+        hypernyms[r['id']] = {rel.get('target', '') for rel in ss.get('synsetRelations', [])
+                               if rel.get('relType') in _HYPERONYM_RELTYPES}
+
+    for eids in groups.values():
+        if len(eids) < 2:
+            continue
+        group_synset_ids = set()
+        for eid in eids:
+            group_synset_ids.update(entry_synsets.get(eid, []))
+        for eid in eids:
+            for sid in entry_synsets.get(eid, []):
+                if hypernyms.get(sid, set()) & (group_synset_ids - {sid}):
+                    result[eid] = True
+                    break
+    return result
+
+def _refresh_autohyponymy_flags(entry_ids):
+    """Recompute has_autohyponymy for the headword groups containing the given entry
+    IDs (their sibling entries included), then patch both the DB column and the
+    in-memory entry_index stubs."""
+    if not entry_ids:
+        return
+    c = _con()
+    flags = _compute_autohyponymy(c, entry_ids)
+    if not flags:
+        return
+    c.executemany('UPDATE entries SET has_autohyponymy=? WHERE id=?',
+                   [(1 if v else 0, eid) for eid, v in flags.items()])
+    c.commit()
+    with _slock:
+        for stub in _st['entry_index']:
+            if stub['id'] in flags:
+                stub['hasAutohyponymy'] = flags[stub['id']]
 
 # ─────────────────────────────────────────────────────────────────────
 # XML Parser  (matches JS data model exactly)
@@ -579,9 +681,28 @@ def parse_entry(eEl):
         if exsEl is not None:
             for exEl in exsEl.findall('SenseExample'):
                 tfEl = exEl.find('textualForm')
+                cfEl = exEl.find('canonicalForm')
+                sxEl = exEl.find('Syntax_ex')
+                smEl = exEl.find('Semantics_ex')
+                epEl = exEl.find('Pragmatics')
                 sense['examples'].append({'id': _g(exEl,'id'),
                     'textualForm': _g(tfEl,'textualform') if tfEl is not None else '',
-                    'phraseType':  _g(tfEl,'phraseType')  if tfEl is not None else ''})
+                    'phraseType':  _g(tfEl,'phraseType')  if tfEl is not None else '',
+                    'canonicalForm': {
+                        'text': _g(cfEl,'canonicalform') if cfEl is not None else '',
+                        'phraseType': _g(cfEl,'phraseType') if cfEl is not None else '',
+                        'expressionType': _g(cfEl,'expressionType') if cfEl is not None else ''},
+                    'combiWords': [{'lemma': _g(cw,'lemma'), 'partOfSpeech': _g(cw,'partOfSpeech')} for cw in sxEl.findall('combiWord')] if sxEl is not None else [],
+                    'semanticsEx': {
+                        'gracolComplem':  _g(smEl,'gracol-complem')  if smEl is not None else '',
+                        'gracolGramword': _g(smEl,'gracol-gramword') if smEl is not None else '',
+                        'definition':     _g(smEl,'definition')      if smEl is not None else ''},
+                    'pragmaticsEx': {
+                        'chronology':  _g(epEl,'chronology')  if epEl is not None else '',
+                        'connotation': _g(epEl,'connotation') if epEl is not None else '',
+                        'geography':   _g(epEl,'geography')   if epEl is not None else '',
+                        'register':    _g(epEl,'register')    if epEl is not None else '',
+                        'domains': [_g(d,'domain') for d in epEl.findall('Domains') if _g(d,'domain')] if epEl is not None else []}})
 
         sentEl = sEl.find('Sentiment')
         if sentEl is not None:
@@ -608,8 +729,20 @@ def load_xml(filepath):
         with _slock:
             _st['loading_msg'] = f'Reading {os.path.basename(filepath)}…'
         print(f'Loading {filepath}…', flush=True)
-        with open(filepath, encoding='utf-8', errors='replace') as _f:
-            _xml_text = _f.read()
+        if filepath.endswith('.zip'):
+            with zipfile.ZipFile(filepath) as _zf:
+                xml_members = [n for n in _zf.namelist() if n.endswith('.xml')]
+                if not xml_members:
+                    with _slock: _st['loading_msg'] = 'Error: no .xml file found inside zip'
+                    return
+                with _zf.open(xml_members[0]) as _f:
+                    _xml_text = _f.read().decode('utf-8', errors='replace')
+        elif filepath.endswith('.gz'):
+            with gzip.open(filepath, 'rt', encoding='utf-8', errors='replace') as _f:
+                _xml_text = _f.read()
+        else:
+            with open(filepath, encoding='utf-8', errors='replace') as _f:
+                _xml_text = _f.read()
         # Fix spurious " before /> generated by older versions of this serializer.
         # Pattern 1: attr="val""/>  →  attr="val"/>  (double-quote before self-close)
         # Pattern 2: <TagName"/>   →  <TagName/>     (bare " after element name, no attrs)
@@ -652,9 +785,10 @@ def load_xml(filepath):
             lemma  = e['mweForm'] if e['isMWE'] else e['lemma']
             is_mwe = 1 if e['isMWE'] else 0
             has_unlinked = 1 if any(not s.get('synset','') for s in e.get('senses',[])) else 0
+            sense_id = e['senses'][0].get('senseId','') if e.get('senses') else ''
             batch_e.append((e['id'], json.dumps(e, ensure_ascii=False),
                             e.get('lemma',''), e.get('mweForm',''),
-                            e.get('partOfSpeech',''), is_mwe, time.time(), 'import', has_unlinked))
+                            e.get('partOfSpeech',''), is_mwe, time.time(), 'import', has_unlinked, sense_id))
             for sense in e.get('senses', []):
                 ss_ref = sense.get('synset', '')
                 if ss_ref:
@@ -662,16 +796,17 @@ def load_xml(filepath):
             entry_index.append({'id': e['id'], 'isMWE': e['isMWE'],
                                  'lemma': lemma, 'partOfSpeech': e['partOfSpeech'],
                                  'mweForm': e.get('mweForm',''),
-                                 'hasMissingSynset': bool(has_unlinked)})
+                                 'hasMissingSynset': bool(has_unlinked),
+                                 'senseId': sense_id})
             if len(batch_e) >= BATCH:
                 c.executemany(
-                    'INSERT OR REPLACE INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense) VALUES (?,?,?,?,?,?,?,?,?)',
+                    'INSERT OR REPLACE INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense,sense_id) VALUES (?,?,?,?,?,?,?,?,?,?)',
                     batch_e)
                 c.commit()
                 batch_e = []
         if batch_e:
             c.executemany(
-                'INSERT OR REPLACE INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense) VALUES (?,?,?,?,?,?,?,?,?)',
+                'INSERT OR REPLACE INTO entries (id,data,lemma,mwe_form,part_of_speech,is_mwe,updated_at,updated_by,has_unlinked_sense,sense_id) VALUES (?,?,?,?,?,?,?,?,?,?)',
                 batch_e)
             c.commit()
         if batch_sei:
@@ -710,6 +845,15 @@ def load_xml(filepath):
             stub['nlSyns']     = ' '.join(info['lemmas'])
             stub['nlExamples'] = ' '.join(info['examples'])
 
+        # Compute auto-hyponymy per entry (needs synsets, so runs after both are loaded)
+        with _slock: _st['loading_msg'] = 'Computing auto-hyponymy…'
+        autohyp = _compute_autohyponymy(c)
+        c.executemany('UPDATE entries SET has_autohyponymy=? WHERE id=?',
+                      [(1 if v else 0, eid) for eid, v in autohyp.items()])
+        c.commit()
+        for stub in entry_index:
+            stub['hasAutohyponymy'] = autohyp.get(stub['id'], False)
+
         with _slock:
             _st['globalInfo']   = global_info
             _st['lexicon']      = lexicon_meta
@@ -742,13 +886,15 @@ def load_from_db():
         filepath     = meta.get('filepath', '')
         filename     = meta.get('filename', '')
 
-        rows_e = c.execute('SELECT id, lemma, mwe_form, part_of_speech, is_mwe, has_unlinked_sense FROM entries').fetchall()
+        rows_e = c.execute('SELECT id, lemma, mwe_form, part_of_speech, is_mwe, has_unlinked_sense, has_autohyponymy, sense_id FROM entries').fetchall()
         entry_index = [{'id': r['id'],
                         'lemma':            r['mwe_form'] if r['is_mwe'] else r['lemma'],
                         'isMWE':            bool(r['is_mwe']),
                         'partOfSpeech':     r['part_of_speech'],
                         'mweForm':          r['mwe_form'],
-                        'hasMissingSynset': bool(r['has_unlinked_sense'])} for r in rows_e]
+                        'hasMissingSynset': bool(r['has_unlinked_sense']),
+                        'hasAutohyponymy':  bool(r['has_autohyponymy']),
+                        'senseId':          r['sense_id'] or ''} for r in rows_e]
 
         rows_s = c.execute('SELECT id, gloss FROM synsets').fetchall()
         synset_index = [{'id': r['id'], 'gloss': r['gloss']} for r in rows_s]
@@ -786,6 +932,33 @@ def load_from_db():
             for stub in entry_index:
                 stub['hasMissingSynset'] = uls_map.get(stub['id'], False)
             print(f'has_unlinked_sense backfilled for {len(updates):,} entries', flush=True)
+
+        # Backfill has_autohyponymy if missing (first run after column migration)
+        if c.execute('SELECT COUNT(*) FROM entries WHERE has_autohyponymy IS NULL').fetchone()[0] > 0:
+            print('Computing auto-hyponymy…', flush=True)
+            autohyp = _compute_autohyponymy(c)
+            c.executemany('UPDATE entries SET has_autohyponymy=? WHERE id=?',
+                          [(1 if v else 0, eid) for eid, v in autohyp.items()])
+            c.commit()
+            for stub in entry_index:
+                stub['hasAutohyponymy'] = autohyp.get(stub['id'], False)
+            print(f'has_autohyponymy computed for {len(autohyp):,} entries', flush=True)
+
+        # Backfill sense_id if missing (first run after column migration)
+        if c.execute('SELECT COUNT(*) FROM entries WHERE sense_id IS NULL').fetchone()[0] > 0:
+            print('Backfilling sense_id…', flush=True)
+            updates = []
+            for row in c.execute('SELECT id, data FROM entries WHERE sense_id IS NULL').fetchall():
+                entry = json.loads(row['data'])
+                sid = entry['senses'][0].get('senseId', '') if entry.get('senses') else ''
+                updates.append((sid, row['id']))
+            c.executemany('UPDATE entries SET sense_id=? WHERE id=?', updates)
+            c.commit()
+            sid_map = {eid: sid for sid, eid in updates}
+            for stub in entry_index:
+                if stub['id'] in sid_map:
+                    stub['senseId'] = sid_map[stub['id']]
+            print(f'sense_id backfilled for {len(updates):,} entries', flush=True)
 
         # Annotate synset_index with hasDutchSynonyms/nlSyns/nlExamples using the synset_entry_index
         nl_fields = _compute_nl_synset_fields(c)
@@ -998,7 +1171,26 @@ def _entry_to_xml_lines(e):
             for ex in exs:
                 L.append(f'          <SenseExample id="{_xe(ex["id"])}">')
                 L.append(f'            <textualForm textualform="{_xe(ex["textualForm"])}"{_at("phraseType",ex.get("phraseType",""))}/>')
-                L.append('            <Semantics_ex/><Pragmatics/>')
+                cf = ex.get('canonicalForm', {})
+                if cf.get('text') or cf.get('phraseType') or cf.get('expressionType'):
+                    L.append(f'            <canonicalForm{_at("phraseType",cf.get("phraseType",""))}{_at("canonicalform",cf.get("text",""))}{_at("expressionType",cf.get("expressionType",""))}/>')
+                cws = ex.get('combiWords', [])
+                if cws:
+                    L.append('            <Syntax_ex>')
+                    for cw in cws: L.append(f'              <combiWord{_at("lemma",cw.get("lemma",""))}{_at("partOfSpeech",cw.get("partOfSpeech",""))}/>')
+                    L.append('            </Syntax_ex>')
+                sm = ex.get('semanticsEx', {})
+                sm_a = f'{_at("gracol-complem",sm.get("gracolComplem",""))}{_at("gracol-gramword",sm.get("gracolGramword",""))}{_at("definition",sm.get("definition",""))}'
+                L.append(f'            <Semantics_ex{sm_a}/>')
+                ep = ex.get('pragmaticsEx', {})
+                ep_a = f'{_at("chronology",ep.get("chronology",""))}{_at("connotation",ep.get("connotation",""))}{_at("geography",ep.get("geography",""))}{_at("register",ep.get("register",""))}'
+                ep_doms = ep.get('domains', [])
+                if ep_doms:
+                    L.append(f'            <Pragmatics{ep_a}>')
+                    for d in ep_doms: L.append(f'              <Domains domain="{_xe(d)}"/>')
+                    L.append('            </Pragmatics>')
+                else:
+                    L.append(f'            <Pragmatics{ep_a}/>')
                 L.append('          </SenseExample>')
             L.append('        </SenseExamples>')
         sent = sense.get('sentiment')
@@ -1187,6 +1379,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             e   = get_entry(eid)
             if e is None:
                 self._json({'error': 'not found'}, 404); return
+            row = _con().execute('SELECT has_autohyponymy FROM entries WHERE id=?', (eid,)).fetchone()
+            e['hasAutohyponymy'] = bool(row['has_autohyponymy']) if row else False
             ok, lock = try_acquire_lock('entry', eid, user)
             e['_lock'] = {**lock, 'is_mine': ok}
             self._json(e)
@@ -1346,27 +1540,40 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if item_type == 'entry':
             if op == 'delete':
-                # Collect old synset links before deleting so we can refresh their flags
+                # Collect old synset links + headword before deleting so we can refresh their flags
                 old_ss = [r[0] for r in _con().execute(
                     'SELECT DISTINCT synset_id FROM synset_entry_index WHERE entry_id=?', (item_id,)).fetchall()]
+                old_row = _con().execute('SELECT lemma, mwe_form, is_mwe FROM entries WHERE id=?', (item_id,)).fetchone()
+                sibling_ids = []
+                if old_row:
+                    headword = old_row['mwe_form'] if old_row['is_mwe'] else old_row['lemma']
+                    if headword:
+                        sibling_ids = [r[0] for r in _con().execute(
+                            'SELECT id FROM entries WHERE ((is_mwe=0 AND lemma=?) OR (is_mwe=1 AND mwe_form=?)) AND id!=?',
+                            (headword, headword, item_id)).fetchall()]
                 delete_entry(item_id)
                 with _slock:
                     _st['entry_index'] = [x for x in _st['entry_index'] if x['id'] != item_id]
                 _refresh_synset_nl_flags(old_ss)
+                _refresh_autohyponymy_flags(sibling_ids)
             elif op == 'add':
                 upsert_entry(data, user)
                 try_acquire_lock('entry', item_id, user)
                 lemma = data.get('mweForm','') if data.get('isMWE') else data.get('lemma','')
                 has_unlinked = any(not s.get('synset','') for s in data.get('senses',[]))
+                sense_id = data['senses'][0].get('senseId','') if data.get('senses') else ''
                 with _slock:
                     _st['entry_index'].insert(0, {
                         'id': data['id'], 'isMWE': data.get('isMWE', False),
                         'lemma': lemma, 'partOfSpeech': data.get('partOfSpeech',''),
                         'mweForm': data.get('mweForm',''),
                         'hasMissingSynset': has_unlinked,
+                        'hasAutohyponymy': False,
+                        'senseId': sense_id,
                     })
                 # Update hasDutchSynonyms on affected synset stubs
                 _refresh_synset_nl_flags([s.get('synset','') for s in data.get('senses',[]) if s.get('synset','')])
+                _refresh_autohyponymy_flags([item_id])
             else:
                 # Collect OLD synset links before overwriting (to refresh removed links too)
                 old_ss = [r[0] for r in _con().execute(
@@ -1374,6 +1581,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 upsert_entry(data, user)
                 lemma = data.get('mweForm','') if data.get('isMWE') else data.get('lemma','')
                 has_unlinked = any(not s.get('synset','') for s in data.get('senses',[]))
+                sense_id = data['senses'][0].get('senseId','') if data.get('senses') else ''
                 with _slock:
                     for idx in _st['entry_index']:
                         if idx['id'] == item_id:
@@ -1381,15 +1589,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
                             idx['partOfSpeech']      = data.get('partOfSpeech','')
                             idx['mweForm']           = data.get('mweForm','')
                             idx['hasMissingSynset']  = has_unlinked
+                            idx['senseId']           = sense_id
                             break
                 # Refresh both old (possibly removed) and new synset stubs
                 new_ss = [s.get('synset','') for s in data.get('senses',[]) if s.get('synset','')]
                 _refresh_synset_nl_flags(list(set(old_ss + new_ss)))
+                _refresh_autohyponymy_flags([item_id])
         else:
             if op == 'delete':
+                linked_entries = [r[0] for r in _con().execute(
+                    'SELECT DISTINCT entry_id FROM synset_entry_index WHERE synset_id=?', (item_id,)).fetchall()]
                 delete_synset(item_id)
                 with _slock:
                     _st['synset_index'] = [x for x in _st['synset_index'] if x['id'] != item_id]
+                _refresh_autohyponymy_flags(linked_entries)
             elif op == 'add':
                 upsert_synset(data, user)
                 try_acquire_lock('synset', item_id, user)
@@ -1404,6 +1617,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         if idx['id'] == item_id:
                             idx['gloss'] = gloss
                             break
+                # This synset's own relations may have changed (e.g. hyperonym edits) —
+                # refresh auto-hyponymy for every entry linked to it.
+                linked_entries = [r[0] for r in _con().execute(
+                    'SELECT DISTINCT entry_id FROM synset_entry_index WHERE synset_id=?', (item_id,)).fetchall()]
+                _refresh_autohyponymy_flags(linked_entries)
 
         with _slock:
             _st['modified'] = True
@@ -1512,7 +1730,7 @@ if __name__ == '__main__':
             port = int(arg)
         elif arg.endswith('.db'):
             db_file = arg
-        elif arg.endswith('.xml') or arg.endswith('.xml.gz'):
+        elif arg.endswith('.xml') or arg.endswith('.xml.gz') or arg.endswith('.xml.zip'):
             xml_file = arg
         elif arg.endswith('.json'):
             users_file = arg
@@ -1526,6 +1744,7 @@ if __name__ == '__main__':
             ('data/odwn_orbn_gwg-LMF_1.2.db',  'data/odwn_orbn_gwg-LMF_1.2.xml'),
         ]
         for cdb, cxml in candidates:
+            cxml_actual = next((p for p in (cxml, cxml + '.gz', cxml + '.zip') if os.path.isfile(p)), None)
             if os.path.isfile(cdb):
                 _db_has_data = False
                 try:
@@ -1534,18 +1753,18 @@ if __name__ == '__main__':
                     pass
                 if _db_has_data:
                     db_file = cdb; break
-                elif os.path.isfile(cxml):
-                    print(f'Database {cdb} exists but is empty — will re-import from {cxml}.')
-                    xml_file = cxml; break
-            elif os.path.isfile(cxml):
-                xml_file = cxml; break
+                elif cxml_actual:
+                    print(f'Database {cdb} exists but is empty — will re-import from {cxml_actual}.')
+                    xml_file = cxml_actual; break
+            elif cxml_actual:
+                xml_file = cxml_actual; break
 
     # Derive DB path from XML path if needed
     if db_file:
         DB_PATH = db_file
     elif xml_file:
         base = xml_file
-        for suffix in ('.xml.gz', '.xml'):
+        for suffix in ('.xml.gz', '.xml.zip', '.xml'):
             if base.endswith(suffix):
                 base = base[:-len(suffix)]; break
         DB_PATH = base + '.db'

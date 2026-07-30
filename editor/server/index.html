@@ -42,6 +42,7 @@
     .ei-sub  { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .ei-sub.mwe { color: #e67e22; font-weight: 700; text-transform: none; }
     .ei-count { display:inline-flex;align-items:center;justify-content:center;background:#4f8ef7;color:#fff;font-size:10px;font-weight:700;border-radius:10px;min-width:18px;height:16px;padding:0 5px;margin-left:5px;vertical-align:middle; }
+    .ei-senseid { display:inline-flex;align-items:center;justify-content:center;background:#eee;color:#666;font-size:10px;font-weight:700;border-radius:10px;min-width:18px;height:16px;padding:0 5px;margin-left:5px;vertical-align:middle; }
     /* Entry/synset item count */
     #entry-count-e, #entry-count-s { font-size: 11px; color: #aaa; text-align: center; padding: 3px 0 0; }
     .ov-table { width:100%;border-collapse:collapse;font-size:12px; }
@@ -224,6 +225,9 @@
     .sg-tt-gloss { font-size:12px; color:rgba(255,255,255,.78); font-style:italic; }
     .sg-bar  { display:flex; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid #dce8f0; background:#eef3ff; font-size:11px; color:#888; }
     .sg-bar strong { color:#555; }
+    .sg-zoom-btn { width:22px; height:22px; line-height:20px; padding:0; border:1px solid #c0cce0; border-radius:4px; background:#fff; color:#555; font-size:14px; font-weight:700; cursor:pointer; text-align:center; }
+    .sg-zoom-btn:hover { background:#eef3ff; border-color:#4f8ef7; color:#4f8ef7; }
+    #sg-zoom-pct { font-variant-numeric:tabular-nums; min-width:34px; text-align:center; color:#666; }
     #sg-svg  { display:block; width:100%; cursor:grab; user-select:none; }
     #sg-svg:active { cursor:grabbing; }
     .sg-legend { display:flex; flex-wrap:wrap; gap:5px 14px; padding:7px 10px; border-top:1px solid #dce8f0; }
@@ -439,6 +443,12 @@ const DOMAIN_OPTS = ['', 'accoustics', 'administration', 'aeronautics', 'agricul
   'publishing', 'railway', 'religion', 'school', 'science', 'sculpture', 'sexuality', 'soccer', 'sociology',
   'sport', 'state', 'swimming', 'telecommunication', 'tennis', 'theatre', 'theology', 'transport', 'zoology'];
 
+const COMBIWORD_POS_OPTS = ['', 'adjective', 'adverb', 'article', 'conjunction', 'noun', 'numeral', 'preposition', 'pronoun', 'verb'];
+const EXPRESSIONTYPE_OPTS = ['', 'freeCombination', 'slogan', 'properName', 'term', 'lexicalCollocation', 'grammaticalCollocation', 'pragmaticFormula'];
+const GRACOL_GRAMWORD_OPTS = ['', 'expletive', 'object', 'material', 'subject-matter', 'condition', 'relation', 'source', 'cause',
+  'circumstance', 'direction', 'goal', 'location', 'manner', 'means', 'measure', 'modality', 'origin', 'place', 'purpose',
+  'reason', 'restriction', 'result', 'time'];
+
 const SSR_TYPE_OPTS = ['has_hyperonym', 'has_hyponym', 'has_holonym', 'has_meronym', 'near_synonym', 'near_antonym',
   'xpos_near_synonym', 'xpos_near_antonym', 'xpos_fuzzynym', 'fuzzynym', 'instance', 'has_xpos_hyperonym',
   'has_xpos_hyponym', 'be_in_state', 'causes', 'role', 'role_agent', 'role_patient', 'role_instrument',
@@ -470,8 +480,9 @@ let state = {
   filterS: '',
   activeFiltersE: {
     pos: '',                   // POS filter (full name: noun/verb/adjective/adverb/other)
-    senses: '',                // '', '1', '2+', '3+', '5+'
-    missingSynsetLink: false   // show entries with any sense lacking a synset
+    senses: '',                // '', '1', '2', '3', '4', '5+'
+    missingSynsetLink: false,  // show entries with any sense lacking a synset
+    autohyponymy: false        // show entries flagged auto-hyponym of a sibling sense
   },
   activeFiltersS: {
     pos: '',                   // POS letter code: n/v/a/r/s
@@ -520,6 +531,7 @@ function makeSynset() {
 const ITEM_H = 52, VS_BUF = 8;
 // Entries VS state
 let vsFilteredE = [], vsGroupsE = {}, vsEntryGroupE = {};
+let vsHeadwordCounts = new Map(); // headword -> number of sibling entries (senses) sharing it
 // Synsets VS state
 let vsFilteredS = [];
 let vsRafE = false, vsRafS = false;
@@ -530,57 +542,74 @@ function rebuildVSE() {
   vsGroupsE = {}; vsEntryGroupE = {};
   vsFilteredE = [];
 
-  const hasAttrFilters = !!(af.pos || af.senses || af.missingSynsetLink);
+  const hasAttrFilters = !!(af.pos || af.senses || af.missingSynsetLink || af.autohyponymy);
 
   // Each LexicalEntry is a single sense; entries sharing the same written
   // form (lemma/MWE form) are the senses of that headword. Count occurrences
-  // per headword so the "N or more senses" filter reflects that grouping.
+  // per headword — used by the "N senses" filter, and always kept around so
+  // the sidebar row can show a sense-id badge for polysemous entries.
   const headword = e => (e.isMWE ? e.mweForm : e.lemma) || e.id;
-  let lemmaSenseCounts = null;
-  if (af.senses) {
-    lemmaSenseCounts = new Map();
-    for (const item of state.entries) {
-      const key = headword(item);
-      lemmaSenseCounts.set(key, (lemmaSenseCounts.get(key) || 0) + 1);
-    }
+  vsHeadwordCounts = new Map();
+  for (const item of state.entries) {
+    const key = headword(item);
+    vsHeadwordCounts.set(key, (vsHeadwordCounts.get(key) || 0) + 1);
+  }
+  const lemmaSenseCounts = vsHeadwordCounts;
+
+  function entryHasMissingSynset(item) {
+    return item._indexOnly ? !!item.hasMissingSynset : (item.senses || []).some(s => !s.synset);
+  }
+
+  function matchesSenseCount(sc) {
+    if (af.senses === '1'  && sc !== 1) return false;
+    if (af.senses === '2'  && sc !== 2) return false;
+    if (af.senses === '3'  && sc !== 3) return false;
+    if (af.senses === '4'  && sc !== 4) return false;
+    if (af.senses === '5+' && sc < 5)   return false;
+    return true;
   }
 
   function passesAttr(item) {
     if (af.pos && item.partOfSpeech !== af.pos) return false;
-    if (af.senses) {
-      const sc = lemmaSenseCounts.get(headword(item)) || 0;
-      if (af.senses === '1'  && sc !== 1) return false;
-      if (af.senses === '2+' && sc < 2)   return false;
-      if (af.senses === '3+' && sc < 3)   return false;
-      if (af.senses === '5+' && sc < 5)   return false;
-    }
-    if (af.missingSynsetLink) {
-      if (item._indexOnly) {
-        if (!item.hasMissingSynset) return false;
-      } else {
-        if (!(item.senses || []).some(s => !s.synset)) return false;
-      }
-    }
+    if (af.senses && !matchesSenseCount(lemmaSenseCounts.get(headword(item)) || 0)) return false;
+    if (af.missingSynsetLink && !entryHasMissingSynset(item)) return false;
+    // Auto-hyponymy is a cross-entry (sibling) property computed server-side, since
+    // stub entries carry no sense/synset data locally to derive it from — always use
+    // the server-computed flag, whether the entry is still a stub or fully hydrated.
+    if (af.autohyponymy && !item.hasAutohyponymy) return false;
     return true;
   }
 
+  // Group a set of {headword -> entry indices} maps into a sorted [key, indices][]
+  // list, applying the senses-count / auto-hyponymy filters at the WHOLE-GROUP level
+  // (not per member) — so e.g. filtering to auto-hyponymy still shows every sense of
+  // a matching word (correct sense count badge, full "Senses" overview on click),
+  // restricted to words that have at least one auto-hyponymous sense.
+  function filterAndSortGroups(groupMap) {
+    let groups = [...groupMap.entries()];
+    if (af.senses)       groups = groups.filter(([, indices]) => matchesSenseCount(indices.length));
+    if (af.autohyponymy) groups = groups.filter(([, indices]) => indices.some(i => list[i].hasAutohyponymy));
+    return groups.sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  }
+
   const list = state.entries;
+  const useGrouping = af.senses || af.autohyponymy;
   if (!f) {
-    if (af.senses) {
-      // Group by headword so each row represents a lemma, with a badge
-      // showing how many LexicalEntries (senses) share that written form.
+    if (useGrouping) {
+      // Group by headword so each row represents a lemma, with a badge showing how
+      // many LexicalEntries (senses) share that written form. pos/missingSynsetLink
+      // still narrow group membership per entry; senses-count/auto-hyponymy are
+      // evaluated across the whole group (see filterAndSortGroups).
       const groupMap = new Map();
       for (let i = 0; i < list.length; i++) {
         const e = list[i];
-        if (!passesAttr(e)) continue;
+        if (af.pos && e.partOfSpeech !== af.pos) continue;
+        if (af.missingSynsetLink && !entryHasMissingSynset(e)) continue;
         const key = headword(e);
         if (!groupMap.has(key)) groupMap.set(key, []);
         groupMap.get(key).push(i);
       }
-      // Sort by sense frequency (most senses first); tie-break alphabetically.
-      const groups = [...groupMap.entries()].sort((a, b) =>
-        b[1].length - a[1].length || a[0].localeCompare(b[0]));
-      for (const [, indices] of groups) {
+      for (const [, indices] of filterAndSortGroups(groupMap)) {
         vsFilteredE.push(indices[0]);
         if (indices.length > 1) {
           vsGroupsE[list[indices[0]].id] = indices;
@@ -596,14 +625,15 @@ function rebuildVSE() {
     const exactMap = new Map(), subMap = new Map();
     for (let i = 0; i < list.length; i++) {
       const e = list[i];
-      if (!passesAttr(e)) continue;
+      if (af.pos && e.partOfSpeech !== af.pos) continue;
+      if (af.missingSynsetLink && !entryHasMissingSynset(e)) continue;
       const key = (e.isMWE ? e.mweForm : e.lemma) || e.id;
       const kl  = key.toLowerCase();
       const hay = (kl + ' ' + e.id + ' ' + (e.mweForm || '')).toLowerCase();
       if (kl === f)             { if (!exactMap.has(key)) exactMap.set(key, []); exactMap.get(key).push(i); }
       else if (hay.includes(f)) { if (!subMap.has(key))  subMap.set(key,  []); subMap.get(key).push(i);  }
     }
-    for (const [, indices] of [...exactMap, ...subMap]) {
+    for (const [, indices] of [...filterAndSortGroups(exactMap), ...filterAndSortGroups(subMap)]) {
       vsFilteredE.push(indices[0]);
       if (indices.length > 1) {
         vsGroupsE[list[indices[0]].id] = indices;
@@ -724,8 +754,15 @@ function _paintVSE(list) {
                  (state.selectedGroupIds && state.selectedGroupIds[0] === e.id)) ? ' active' : '';
     const gc = vsGroupsE[e.id] ? vsGroupsE[e.id].length : 0;
     const badge = gc > 1 ? `<span class="ei-count">${gc}</span>` : '';
+    // Polysemous entries (headword shared by more than one LexicalEntry/sense) show
+    // their own sense id, since the lemma text alone can't tell them apart — e.g. two
+    // filtered rows both labeled "hoofddoek" may be entirely different senses.
+    const hw = (e.isMWE ? e.mweForm : e.lemma) || e.id;
+    const isPoly = (vsHeadwordCounts.get(hw) || 0) > 1;
+    const senseId = e._indexOnly ? e.stubSenseId : ((e.senses && e.senses[0]) ? e.senses[0].senseId : '');
+    const senseIdLabel = (isPoly && senseId) ? `<span class="ei-senseid">#${h(senseId)}</span>` : '';
     parts.push(`<div class="ei${act}" onclick="selectItem('${h(e.id)}','entries')">
-      <div class="ei-main">${h(e.isMWE ? (e.mweForm || e.id) : (e.lemma || '(no lemma)'))}${badge}</div>
+      <div class="ei-main">${h(e.isMWE ? (e.mweForm || e.id) : (e.lemma || '(no lemma)'))}${badge}${senseIdLabel}</div>
       <div class="ei-sub${e.isMWE ? ' mwe' : ''}">${h(e.isMWE ? 'MWE' : (e.partOfSpeech || '—'))}</div>
     </div>`);
   }
@@ -878,7 +915,33 @@ function parseODWN(doc) {
       const exsEl = sEl.querySelector(':scope > SenseExamples');
       if (exsEl) for (const exEl of exsEl.querySelectorAll('SenseExample')) {
         const tfEl = exEl.querySelector('textualForm');
-        sense.examples.push({ id: exEl.getAttribute('id') || uid('ex'), textualForm: tfEl ? (tfEl.getAttribute('textualform') || '') : '', phraseType: tfEl ? (tfEl.getAttribute('phraseType') || '') : '' });
+        const cfEl = exEl.querySelector('canonicalForm');
+        const sxEl = exEl.querySelector('Syntax_ex');
+        const smEl = exEl.querySelector('Semantics_ex');
+        const epEl = exEl.querySelector('Pragmatics');
+        sense.examples.push({
+          id: exEl.getAttribute('id') || uid('ex'),
+          textualForm: tfEl ? (tfEl.getAttribute('textualform') || '') : '',
+          phraseType: tfEl ? (tfEl.getAttribute('phraseType') || '') : '',
+          canonicalForm: {
+            text:           cfEl ? (cfEl.getAttribute('canonicalform')  || '') : '',
+            phraseType:     cfEl ? (cfEl.getAttribute('phraseType')     || '') : '',
+            expressionType: cfEl ? (cfEl.getAttribute('expressionType') || '') : ''
+          },
+          combiWords: sxEl ? Array.from(sxEl.querySelectorAll('combiWord')).map(cw => ({ lemma: cw.getAttribute('lemma') || '', partOfSpeech: cw.getAttribute('partOfSpeech') || '' })) : [],
+          semanticsEx: {
+            gracolComplem:  smEl ? (smEl.getAttribute('gracol-complem')  || '') : '',
+            gracolGramword: smEl ? (smEl.getAttribute('gracol-gramword') || '') : '',
+            definition:     smEl ? (smEl.getAttribute('definition')      || '') : ''
+          },
+          pragmaticsEx: {
+            chronology:  epEl ? (epEl.getAttribute('chronology')  || '') : '',
+            connotation: epEl ? (epEl.getAttribute('connotation') || '') : '',
+            geography:   epEl ? (epEl.getAttribute('geography')   || '') : '',
+            register:    epEl ? (epEl.getAttribute('register')    || '') : '',
+            domains: epEl ? Array.from(epEl.querySelectorAll('Domains')).map(d => d.getAttribute('domain')).filter(Boolean) : []
+          }
+        });
       }
 
       const sentEl = sEl.querySelector(':scope > Sentiment');
@@ -1048,8 +1111,27 @@ function serializeODWN(s) {
         for (const ex of sense.examples) {
           L.push(`          <SenseExample id="${xe(ex.id)}">`);
           L.push(`            <textualForm textualform="${xe(ex.textualForm)}"${at('phraseType',ex.phraseType)}/>`);
-          L.push(`            <Semantics_ex/>`);
-          L.push(`            <Pragmatics/>`);
+          const cf = ex.canonicalForm || {};
+          if (cf.text || cf.phraseType || cf.expressionType) L.push(`            <canonicalForm${at('phraseType',cf.phraseType)}${at('canonicalform',cf.text)}${at('expressionType',cf.expressionType)}/>`);
+          const cws = ex.combiWords || [];
+          if (cws.length) {
+            L.push(`            <Syntax_ex>`);
+            for (const cw of cws) L.push(`              <combiWord${at('lemma',cw.lemma)}${at('partOfSpeech',cw.partOfSpeech)}/>`);
+            L.push(`            </Syntax_ex>`);
+          }
+          const sm = ex.semanticsEx || {};
+          const smAttrs = `${at('gracol-complem',sm.gracolComplem)}${at('gracol-gramword',sm.gracolGramword)}${at('definition',sm.definition)}`;
+          L.push(`            <Semantics_ex${smAttrs}/>`);
+          const pr = ex.pragmaticsEx || {};
+          const prAttrs = `${at('chronology',pr.chronology)}${at('connotation',pr.connotation)}${at('geography',pr.geography)}${at('register',pr.register)}`;
+          const prDoms = pr.domains || [];
+          if (prDoms.length) {
+            L.push(`            <Pragmatics${prAttrs}>`);
+            for (const d of prDoms) L.push(`              <Domains domain="${xe(d)}"/>`);
+            L.push(`            </Pragmatics>`);
+          } else {
+            L.push(`            <Pragmatics${prAttrs}/>`);
+          }
           L.push(`          </SenseExample>`);
         }
         L.push(`        </SenseExamples>`);
@@ -1306,14 +1388,19 @@ function _renderFiltersE() {
       <select class="flt-sel${af.senses ? ' active' : ''}" id="flt-senses-e" onchange="updateFiltersE()">
         <option value="">Any count</option>
         <option value="1"${af.senses==='1'?' selected':''}>Exactly 1</option>
-        <option value="2+"${af.senses==='2+'?' selected':''}>2 or more</option>
-        <option value="3+"${af.senses==='3+'?' selected':''}>3 or more</option>
+        <option value="2"${af.senses==='2'?' selected':''}>Exactly 2</option>
+        <option value="3"${af.senses==='3'?' selected':''}>Exactly 3</option>
+        <option value="4"${af.senses==='4'?' selected':''}>Exactly 4</option>
         <option value="5+"${af.senses==='5+'?' selected':''}>5 or more</option>
       </select>
     </div>
     <label class="flt-chk${af.missingSynsetLink ? ' active' : ''}">
       <input type="checkbox" id="flt-missing-synset-e"${af.missingSynsetLink ? ' checked' : ''} onchange="updateFiltersE()">
       Missing synset link
+    </label>
+    <label class="flt-chk${af.autohyponymy ? ' active' : ''}">
+      <input type="checkbox" id="flt-autohyponymy-e"${af.autohyponymy ? ' checked' : ''} onchange="updateFiltersE()">
+      Auto-hyponymy
     </label>`;
 }
 
@@ -1352,6 +1439,7 @@ function updateFiltersE() {
   af.pos = document.getElementById('flt-pos-e')?.value || '';
   af.senses = document.getElementById('flt-senses-e')?.value || '';
   af.missingSynsetLink = !!document.getElementById('flt-missing-synset-e')?.checked;
+  af.autohyponymy = !!document.getElementById('flt-autohyponymy-e')?.checked;
   _renderFiltersE(); rebuildVSE(); renderVSE(true);
 }
 
@@ -1457,7 +1545,41 @@ function _collectEntryFields(entry) {
     sense.pragmatics.geography   = (block.querySelector('.prag-geo')   ||{}).value || '';
     sense.pragmatics.register    = (block.querySelector('.prag-reg')   ||{}).value || '';
 
-    block.querySelectorAll('.ex-row').forEach(r => { const tf = r.querySelector('.ex-tf').value; if (tf) sense.examples.push({ id: r.dataset.exid || uid('ex'), textualForm: tf, phraseType: r.querySelector('.ex-pt').value }); });
+    block.querySelectorAll('.ex-row').forEach(r => {
+      const tf = r.querySelector('.ex-tf').value;
+      const combiWords = []; r.querySelectorAll('.ex-cw-row').forEach(cr => { const lemma = cr.querySelector('.ex-cw-lemma').value; if (lemma) combiWords.push({ lemma, partOfSpeech: cr.querySelector('.ex-cw-pos').value }); });
+      const domains = []; r.querySelectorAll('.ex-dom-sel').forEach(el => { if (el.value) domains.push(el.value); });
+      const canonicalForm = {
+        text:           (r.querySelector('.ex-cf-text') || {}).value || '',
+        phraseType:     (r.querySelector('.ex-cf-pt')   || {}).value || '',
+        expressionType: (r.querySelector('.ex-cf-et')   || {}).value || ''
+      };
+      const semanticsEx = {
+        gracolComplem:  (r.querySelector('.ex-sm-complem')  || {}).value || '',
+        gracolGramword: (r.querySelector('.ex-sm-gramword') || {}).value || '',
+        definition:     (r.querySelector('.ex-sm-def')      || {}).value || ''
+      };
+      const pragmaticsEx = {
+        chronology:  (r.querySelector('.ex-pr-chron') || {}).value || '',
+        connotation: (r.querySelector('.ex-pr-conn')  || {}).value || '',
+        geography:   (r.querySelector('.ex-pr-geo')   || {}).value || '',
+        register:    (r.querySelector('.ex-pr-reg')   || {}).value || '',
+        domains
+      };
+      const hasContent = tf || canonicalForm.text || canonicalForm.phraseType || canonicalForm.expressionType || combiWords.length
+        || semanticsEx.gracolComplem || semanticsEx.gracolGramword || semanticsEx.definition
+        || pragmaticsEx.chronology || pragmaticsEx.connotation || pragmaticsEx.geography || pragmaticsEx.register || domains.length;
+      if (!hasContent) return;
+      sense.examples.push({
+        id: r.dataset.exid || uid('ex'),
+        textualForm: tf,
+        phraseType: r.querySelector('.ex-pt').value,
+        canonicalForm,
+        combiWords,
+        semanticsEx,
+        pragmaticsEx
+      });
+    });
 
     const sentPol = block.querySelector('.sent-pol');
     if (sentPol) sense.sentiment = { polarity: sentPol.value, externalReference: (block.querySelector('.sent-ref')||{}).value || '' };
@@ -1524,6 +1646,9 @@ function setItemStatus(itemType, status) {
   item.status = (item.status === status) ? '' : status;
   state.modified = true;
   if (itemType === 'entry') renderEntryEditor(); else renderSynsetEditor();
+  // A synset's status also shows up as a column in the "Senses" overview table, which
+  // lives in the entry pane and is otherwise never told to re-render on a synset edit.
+  if (itemType === 'synset' && state.selectedGroupIds) renderEntryEditor();
   updateStatusBar();
   scheduleAutosave(itemType);
 }
@@ -1559,6 +1684,7 @@ function renderSynsetEditor() {
   empty.style.display = 'none'; content.style.display = 'block';
   content.innerHTML = buildSynsetHTML(item);
   _graphExpanded = new Set();
+  _graphView = { x: 0, y: 0, scale: 1 };
   renderSynsetGraph(item.id);
 }
 
@@ -1825,11 +1951,58 @@ function buildDomainRow(d) {
 }
 
 function buildExRow(ex) {
-  return `<div class="irow ex-row" data-exid="${h(ex.id)}">
-    <input type="text" class="ex-tf grow" value="${h(ex.textualForm)}" placeholder="Example text…">
-    <select class="ex-pt" style="min-width:80px">${sel(PHRASE_OPTS, ex.phraseType)}</select>
-    <button class="delbtn" onclick="this.closest('.ex-row').remove()">&#x2715;</button>
+  const cf = ex.canonicalForm || { text:'', phraseType:'', expressionType:'' };
+  const sm = ex.semanticsEx || { gracolComplem:'', gracolGramword:'', definition:'' };
+  const pr = ex.pragmaticsEx || { chronology:'', connotation:'', geography:'', register:'', domains:[] };
+  const cws = ex.combiWords || [];
+  const hasExtra = !!(cf.phraseType || cf.expressionType || cws.length || sm.gracolComplem || sm.gracolGramword || sm.definition
+    || pr.chronology || pr.connotation || pr.geography || pr.register || (pr.domains && pr.domains.length));
+  return `<div class="ex-row" data-exid="${h(ex.id)}" style="border:1px solid var(--border,#444);border-radius:6px;padding:8px;margin-bottom:8px">
+    <div class="irow" style="margin-bottom:4px">
+      <span class="sid-tag" title="SenseExample id">${h(ex.id)}</span>
+      <input type="text" class="ex-tf grow" value="${h(ex.textualForm)}" placeholder="Example text (textualForm)…">
+      <select class="ex-pt" style="min-width:80px">${sel(PHRASE_OPTS, ex.phraseType)}</select>
+      <button class="delbtn" onclick="this.closest('.ex-row').remove()">&#x2715;</button>
+    </div>
+    <div class="irow" style="margin-bottom:0">
+      <span style="font-size:10px;color:#999;min-width:0" title="canonicalForm">canonical</span>
+      <input type="text" class="ex-cf-text grow" value="${h(cf.text)}" placeholder="Canonical form (canonicalform)…">
+    </div>
+    <details${hasExtra ? ' open' : ''}>
+      <summary style="font-size:11px;color:#999">Canonical form details / Syntax / Semantics / Pragmatics</summary>
+      <div class="row" style="padding-top:6px">
+        <div class="field"><label>Canonical form &ndash; phrase type</label><select class="ex-cf-pt">${sel(PHRASE_OPTS, cf.phraseType)}</select></div>
+        <div class="field"><label>Canonical form &ndash; expression type</label><select class="ex-cf-et">${sel(EXPRESSIONTYPE_OPTS, cf.expressionType)}</select></div>
+      </div>
+      <div class="sublabel">Syntax (combiWords) <button class="addbtn" onclick="addExCombiWord(this)">+ Add</button></div>
+      <div class="ex-cw-list">${cws.map(cw => buildExCombiWordRow(cw)).join('') || '<div class="empty-msg ex-cw-empty">None.</div>'}</div>
+      <div class="row" style="padding-top:6px">
+        <div class="field"><label>Semantics &ndash; gracol-complem</label><input type="text" class="ex-sm-complem" value="${h(sm.gracolComplem)}"></div>
+        <div class="field"><label>Semantics &ndash; gracol-gramword</label><select class="ex-sm-gramword">${sel(GRACOL_GRAMWORD_OPTS, sm.gracolGramword)}</select></div>
+        <div class="field"><label>Semantics &ndash; definition</label><input type="text" class="ex-sm-def" value="${h(sm.definition)}"></div>
+      </div>
+      <div class="row" style="padding-top:6px">
+        <div class="field"><label>Pragmatics &ndash; Chronology</label><select class="ex-pr-chron">${sel(CHRONOLOGY_OPTS, pr.chronology)}</select></div>
+        <div class="field"><label>Pragmatics &ndash; Connotation</label><select class="ex-pr-conn">${sel(CONNOTATION_OPTS, pr.connotation)}</select></div>
+        <div class="field"><label>Pragmatics &ndash; Geography</label><select class="ex-pr-geo">${sel(GEOGRAPHY_OPTS, pr.geography)}</select></div>
+        <div class="field"><label>Pragmatics &ndash; Register</label><select class="ex-pr-reg">${sel(REGISTER_OPTS, pr.register)}</select></div>
+      </div>
+      <div class="sublabel">Pragmatics &ndash; Domains <button class="addbtn" onclick="addExDomain(this)">+ Add</button></div>
+      <div class="ex-dom-list">${(pr.domains||[]).map(d => buildExDomainRow(d)).join('') || '<div class="empty-msg ex-dom-empty">None.</div>'}</div>
+    </details>
   </div>`;
+}
+
+function buildExCombiWordRow(cw) {
+  return `<div class="irow ex-cw-row">
+    <input type="text" class="ex-cw-lemma grow" value="${h(cw.lemma)}" placeholder="lemma…">
+    <select class="ex-cw-pos" style="min-width:110px">${sel(COMBIWORD_POS_OPTS, cw.partOfSpeech)}</select>
+    <button class="delbtn" onclick="this.closest('.ex-cw-row').remove()">&#x2715;</button>
+  </div>`;
+}
+
+function buildExDomainRow(d) {
+  return `<div class="irow ex-dom-row"><select class="ex-dom-sel">${sel(DOMAIN_OPTS, d)}</select><button class="delbtn" onclick="this.closest('.ex-dom-row').remove()">&#x2715;</button></div>`;
 }
 
 function buildSentimentFields(s) {
@@ -1885,7 +2058,9 @@ function toggleSentiment(btn, add) {
 
 function addSR(btn)       { const l = btn.closest('.sblock').querySelector('.sr-list'); l.querySelector('.sr-empty')?.remove(); l.insertAdjacentHTML('beforeend', `<div class="irow sr-row"><select class="sr-type" style="min-width:120px">${sel(SR_TYPE_OPTS,'co-synonyms')}</select><input type="text" class="sr-tgt grow" placeholder="Target sense ID…"><button class="delbtn" onclick="this.closest('.sr-row').remove()">&#x2715;</button></div>`); }
 function addDomain(btn)   { const l = btn.closest('.sblock').querySelector('.dom-list'); l.querySelector('.dom-empty')?.remove(); l.insertAdjacentHTML('beforeend', buildDomainRow('')); }
-function addExample(btn)  { const l = btn.closest('.sblock').querySelector('.ex-list'); l.querySelector('.ex-empty')?.remove(); l.insertAdjacentHTML('beforeend', buildExRow({ id: uid('ex'), textualForm:'', phraseType:'' })); }
+function addExample(btn)  { const l = btn.closest('.sblock').querySelector('.ex-list'); l.querySelector('.ex-empty')?.remove(); l.insertAdjacentHTML('beforeend', buildExRow({ id: uid('ex'), textualForm:'', phraseType:'', canonicalForm:{text:'',phraseType:'',expressionType:''}, combiWords:[], semanticsEx:{gracolComplem:'',gracolGramword:'',definition:''}, pragmaticsEx:{chronology:'',connotation:'',geography:'',register:'',domains:[]} })); }
+function addExCombiWord(btn) { const l = btn.closest('.ex-row').querySelector('.ex-cw-list'); l.querySelector('.ex-cw-empty')?.remove(); l.insertAdjacentHTML('beforeend', buildExCombiWordRow({ lemma:'', partOfSpeech:'' })); }
+function addExDomain(btn)    { const l = btn.closest('.ex-row').querySelector('.ex-dom-list'); l.querySelector('.ex-dom-empty')?.remove(); l.insertAdjacentHTML('beforeend', buildExDomainRow('')); }
 function addSNShift(btn)  { const l = btn.closest('.sblock').querySelector('.snshift-list'); l.querySelector('.empty-msg')?.remove(); l.insertAdjacentHTML('beforeend', `<div class="irow snshift-row"><select class="snshift-type grow">${sel(SN_SEMTYPE_OPTS,'')}</select><button class="delbtn" onclick="this.closest('.snshift-row').remove()">&#x2715;</button></div>`); }
 function addSAShift(btn)  { const l = btn.closest('.sblock').querySelector('.sashift-list'); l.querySelector('.empty-msg')?.remove(); l.insertAdjacentHTML('beforeend', `<div class="irow sashift-row"><select class="sashift-type grow">${sel(SA_SEMTYPE_OPTS,'')}</select><button class="delbtn" onclick="this.closest('.sashift-row').remove()">&#x2715;</button></div>`); }
 function addSVType(btn)   { const l = btn.closest('.sv-section').querySelector('.svtype-list'); l.querySelector('.sv-empty')?.remove(); l.insertAdjacentHTML('beforeend', buildSVTypeRow({ semanticType:'', semanticFeatureSet:'' })); }
@@ -1909,6 +2084,13 @@ function buildOverviewHTML(entryIds) {
     return sa.localeCompare(sb);
   });
 
+  // Every synset used by any sense of this lemma — used to detect auto-hyponymy
+  // (a sense whose synset has a hyperonym relation to another sense's synset of the same word,
+  // i.e. this sense is a hyponym of a sibling sense).
+  const groupSynsetIds = new Set();
+  for (const e of items) for (const sn of (e.senses || [])) if (sn.synset) groupSynsetIds.add(sn.synset);
+  const HYPERONYM_RELTYPES = new Set(['has_hyperonym', 'has_xpos_hyperonym']);
+
   let rows = '';
   for (const e of items) {
     const senses = e.senses && e.senses.length ? e.senses : [];
@@ -1928,13 +2110,29 @@ function buildOverviewHTML(entryIds) {
     const synCell = (s && s.synset)
       ? `<span class="ov-synlink" onclick="event.stopPropagation();jumpToSynset('${h(s.synset)}')">${h(s.synset)}</span>`
       : '—';
+
+    const statusCell = ss ? (buildStatusPill(ss.status) || '—') : '—';
+
+    // Auto-hyponymy: this sense's synset has a hyperonym relation to a sibling sense's synset
+    // in this same lemma group — link to that hypernym rather than just flagging "true".
+    const hypernymTargets = ss && ss.synsetRelations
+      ? [...new Set(ss.synsetRelations
+          .filter(r => HYPERONYM_RELTYPES.has(r.relType) && r.target !== s.synset && groupSynsetIds.has(r.target))
+          .map(r => r.target))]
+      : [];
+    const autoHypCell = hypernymTargets.length
+      ? hypernymTargets.map(t => `<span class="ov-synlink" onclick="event.stopPropagation();jumpToSynset('${h(t)}')">${h(t)}</span>`).join(', ')
+      : '—';
+
     rows += `<tr class="ov-row" onclick="selectEntry('${h(e.id)}')">
       <td>${h(e.isMWE ? e.mweForm : e.lemma)}</td>
-      <td class="ov-id">${h(e.id)}</td>
       <td>${h(e.partOfSpeech || '—')}</td>
       <td class="ov-id">${s ? h(s.senseId || '—') : '—'}</td>
+      <td class="ov-id">${s ? h(s.id || '—') : '—'}</td>
       <td class="ov-def">${h(defText)}</td>
       <td class="ov-id">${synCell}</td>
+      <td class="ov-id">${statusCell}</td>
+      <td class="ov-id">${autoHypCell}</td>
       <td class="ov-def">${h(glossText) || '—'}</td>
     </tr>`;
   }
@@ -1948,7 +2146,7 @@ function buildOverviewHTML(entryIds) {
     <div class="card-hd">Senses <button class="addbtn" onclick="openNewEntryDialog(${JSON.stringify(rawLemma)})">+ Add sense</button></div>
     <div style="overflow-x:auto">
       <table class="ov-table">
-        <thead><tr><th>Form</th><th>Entry ID</th><th>POS</th><th>Sense ID</th><th>Definition</th><th>Synset</th><th>Synset gloss</th></tr></thead>
+        <thead><tr><th>Form</th><th>POS</th><th>Sense Nr</th><th>Sense ID</th><th>Definition</th><th>Synset</th><th>Status</th><th>Auto-hyponymy</th><th>Synset gloss</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
@@ -2028,7 +2226,7 @@ function buildSynsetHTML(ss) {
 
   <div class="card">
     <div class="card-hd">Relation Graph
-      <span>Click node or edge for options · drag to pan</span>
+      <span>Click node or edge for options</span>
       <button class="addbtn" onclick="resetSynsetGraph('${h(ss.id)}')">Reset</button>
     </div>
     <div class="sg-wrap"><div id="sg-container"><div class="empty-msg" style="padding:12px">Building graph…</div></div></div>
@@ -2389,7 +2587,8 @@ async function fetchIndex() {
     // Build lightweight index stubs for virtual scrolling
     state.entries = (data.entry_index || []).map(ei => ({
       id: ei.id, lemma: ei.lemma || '', partOfSpeech: ei.partOfSpeech || '',
-      isMWE: !!ei.isMWE, mweForm: ei.mweForm || '', hasMissingSynset: !!ei.hasMissingSynset, _indexOnly: true,
+      isMWE: !!ei.isMWE, mweForm: ei.mweForm || '', hasMissingSynset: !!ei.hasMissingSynset,
+      hasAutohyponymy: !!ei.hasAutohyponymy, stubSenseId: ei.senseId || '', _indexOnly: true,
       // stub fields needed by serializer/collectEditorState (never serialized in collab mode)
       wordForms: [], relatedForms: [], senses: [],
       morphology: { morphoType:'', comparisonType:'', declinable:'', separability:'' },
@@ -2481,30 +2680,28 @@ window.selectItem = async function(id, type) {
     if (grp && grp.length > 1) {
       const groupIds = grp.map(i => state.entries[i].id);
       state.selectedGroupIds = groupIds;
+      // Always re-fetch every member fresh from the server (not just still-unhydrated
+      // stubs) so the overview reflects the latest status/relations even when the edit
+      // — this user's own, or a collaborator's — happened after this entry/synset was
+      // first loaded into this tab.
       await Promise.all(groupIds.map(async gid => {
-        const e = getEntry(gid);
-        if (e && e._indexOnly) {
-          try {
-            const r = await _authFetch('/api/entry/' + encodeURIComponent(gid));
-            if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.entries.findIndex(x => x.id === gid); if (idx >= 0) state.entries[idx] = full; }
-          } catch (_) {}
-        }
+        try {
+          const r = await _authFetch('/api/entry/' + encodeURIComponent(gid));
+          if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.entries.findIndex(x => x.id === gid); if (idx >= 0) state.entries[idx] = full; }
+        } catch (_) {}
       }));
-      // Also fetch full synset data for linked synsets, so the overview's
-      // synset gloss column isn't blank (stub synsets carry no language-tagged
+      // Also refresh linked synsets, so the overview's status, auto-hyponymy and
+      // synset gloss columns are current (stub synsets carry no language-tagged
       // definitions, only a raw truncated gloss).
       const synsetIds = new Set();
       for (const gid of groupIds) {
         for (const s of (getEntry(gid)?.senses || [])) if (s.synset) synsetIds.add(s.synset);
       }
       await Promise.all([...synsetIds].map(async sid => {
-        const ss = getSynset(sid);
-        if (ss && ss._indexOnly) {
-          try {
-            const r = await _authFetch('/api/synset/' + encodeURIComponent(sid));
-            if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.synsets.findIndex(x => x.id === sid); if (idx >= 0) state.synsets[idx] = full; }
-          } catch (_) {}
-        }
+        try {
+          const r = await _authFetch('/api/synset/' + encodeURIComponent(sid));
+          if (r.ok) { const full = await r.json(); delete full._lock; const idx = state.synsets.findIndex(x => x.id === sid); if (idx >= 0) state.synsets[idx] = full; }
+        } catch (_) {}
       }));
       renderEntryEditor();
       document.getElementById('ed-e').scrollTop = 0;
@@ -3564,6 +3761,8 @@ const REL_COLOR = (() => {
 
 let _graphExpanded = new Set();
 let _graphNodePositions = new Map();
+let _graphView = { x: 0, y: 0, scale: 1 }; // current pan/zoom of the relation graph
+const GRAPH_ZOOM_MIN = 0.25, GRAPH_ZOOM_MAX = 4;
 
 function _synsetLabel(ssId) {
   const syns = getSynonymEntries(ssId);
@@ -3853,9 +4052,16 @@ function renderSynsetGraph(ssId) {
   ).join('');
 
   container.innerHTML =
-    `<svg id="sg-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px" onclick="dismissNodePopup()">
+    `<div class="sg-bar">
+      <button class="sg-zoom-btn" onclick="graphZoomBy(1.25)" title="Zoom in">+</button>
+      <button class="sg-zoom-btn" onclick="graphZoomBy(0.8)" title="Zoom out">&minus;</button>
+      <span id="sg-zoom-pct">${Math.round(_graphView.scale * 100)}%</span>
+      <span style="flex:1"></span>
+      <span>Scroll/pinch to zoom &middot; drag to pan</span>
+    </div>
+    <svg id="sg-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px" onclick="dismissNodePopup()">
       <defs>${defs}</defs>
-      <g id="sg-pan">
+      <g id="sg-pan" transform="translate(${_graphView.x},${_graphView.y}) scale(${_graphView.scale})">
         <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" style="pointer-events:all"/>
         ${edgesSVG}
         ${nodesSVG}
@@ -3863,27 +4069,73 @@ function renderSynsetGraph(ssId) {
     </svg>
     ${relTypes.length ? `<div class="sg-legend">${legendHTML}</div>` : ''}`;
 
-  _attachGraphPan('sg-svg');
+  _attachGraphPanZoom('sg-svg');
 }
 
-function _attachGraphPan(svgId) {
+// viewBox units per rendered CSS pixel — needed so drag/wheel deltas (in screen
+// pixels) translate to the right amount of movement regardless of how wide the
+// container has actually rendered the (viewBox="0 0 780 480") SVG.
+function _svgViewBoxRatio(svg) {
+  const vb = svg.viewBox && svg.viewBox.baseVal;
+  const rect = svg.getBoundingClientRect();
+  return (vb && rect.width) ? (vb.width / rect.width) : 1;
+}
+
+function _applyGraphTransform() {
+  const g = document.getElementById('sg-pan');
+  if (g) g.setAttribute('transform', `translate(${_graphView.x},${_graphView.y}) scale(${_graphView.scale})`);
+  const pct = document.getElementById('sg-zoom-pct');
+  if (pct) pct.textContent = `${Math.round(_graphView.scale * 100)}%`;
+}
+
+// Zoom by `factor` (>1 in, <1 out) around a fixed point given in viewBox coords
+// (defaults to the SVG's own center, e.g. for the +/- toolbar buttons).
+function _graphZoomAt(svg, factor, atX, atY) {
+  const oldScale = _graphView.scale;
+  const newScale = Math.min(GRAPH_ZOOM_MAX, Math.max(GRAPH_ZOOM_MIN, oldScale * factor));
+  if (newScale === oldScale) return;
+  if (atX === undefined) { const vb = svg.viewBox.baseVal; atX = vb.width / 2; atY = vb.height / 2; }
+  _graphView.x = atX - (newScale / oldScale) * (atX - _graphView.x);
+  _graphView.y = atY - (newScale / oldScale) * (atY - _graphView.y);
+  _graphView.scale = newScale;
+  _applyGraphTransform();
+}
+
+function graphZoomBy(factor) {
+  const svg = document.getElementById('sg-svg');
+  if (svg) _graphZoomAt(svg, factor);
+}
+
+function _attachGraphPanZoom(svgId) {
   const svg = document.getElementById(svgId);
   if (!svg) return;
-  let drag = false, ox = 0, oy = 0, tx = 0, ty = 0;
+  let drag = false, startClientX = 0, startClientY = 0, startX = 0, startY = 0;
   svg.addEventListener('mousedown', e => {
     if (e.target.closest('.sg-node') || e.target.closest('.sg-edge')) return;
     dismissNodePopup();
-    drag = true; ox = e.clientX - tx; oy = e.clientY - ty; svg.style.cursor = 'grabbing';
+    drag = true; startClientX = e.clientX; startClientY = e.clientY;
+    startX = _graphView.x; startY = _graphView.y;
+    svg.style.cursor = 'grabbing';
   });
   const onMove = e => {
     if (!drag) return;
-    tx = e.clientX - ox; ty = e.clientY - oy;
-    const g = document.getElementById('sg-pan');
-    if (g) g.setAttribute('transform', `translate(${tx},${ty})`);
+    const ratio = _svgViewBoxRatio(svg);
+    _graphView.x = startX + (e.clientX - startClientX) * ratio;
+    _graphView.y = startY + (e.clientY - startClientY) * ratio;
+    _applyGraphTransform();
   };
-  const onUp = () => { if (drag) { drag = false; const s = document.getElementById(svgId); if (s) s.style.cursor = 'grab'; } };
+  const onUp = () => { if (drag) { drag = false; svg.style.cursor = 'grab'; } };
   window.addEventListener('mousemove', onMove);
   window.addEventListener('mouseup', onUp);
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const ratio = _svgViewBoxRatio(svg);
+    const rect = svg.getBoundingClientRect();
+    const atX = (e.clientX - rect.left) * ratio;
+    const atY = (e.clientY - rect.top) * ratio;
+    const factor = Math.exp(-e.deltaY * 0.0015);
+    _graphZoomAt(svg, factor, atX, atY);
+  }, { passive: false });
   svg.style.cursor = 'grab';
 }
 
@@ -3899,21 +4151,14 @@ function showNodePopup(event, nodeId, rootId) {
   const pos = _graphNodePositions.get(nodeId);
   if (!pos) return;
 
-  // Read current pan offset
-  const panG = document.getElementById('sg-pan');
-  let panX = 0, panY = 0;
-  if (panG) {
-    const m = (panG.getAttribute('transform') || '').match(/translate\(([^,]+),([^)]+)\)/);
-    if (m) { panX = +m[1]; panY = +m[2]; }
-  }
-
-  // Convert viewBox coords → viewport (fixed) coordinates
+  // Convert this node's local (pre-transform) coords through the current pan/zoom,
+  // then viewBox → viewport (fixed) coordinates.
   const svgRect = svg.getBoundingClientRect();
   const W = 780, H = 480;
   const scaleX = svgRect.width / W, scaleY = svgRect.height / H;
 
-  const screenX = svgRect.left + (pos.x + panX) * scaleX;
-  const screenY = svgRect.top  + (pos.y + panY) * scaleY;
+  const screenX = svgRect.left + (pos.x * _graphView.scale + _graphView.x) * scaleX;
+  const screenY = svgRect.top  + (pos.y * _graphView.scale + _graphView.y) * scaleY;
 
   const isExp = _graphExpanded.has(nodeId);
 
@@ -4027,6 +4272,7 @@ function hideNodeTooltip() {
 
 function resetSynsetGraph(ssId) {
   _graphExpanded.clear();
+  _graphView = { x: 0, y: 0, scale: 1 };
   renderSynsetGraph(ssId);
 }
 
