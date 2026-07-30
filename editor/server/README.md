@@ -73,18 +73,39 @@ Each pane contains a list with:
 
 - One row per item showing the lemma (or MWE form) and part of speech (entries) or synset ID and gloss (synsets).
 - **Virtual scrolling** — only the visible rows are rendered in the DOM, so 99 000-entry files scroll without lag.
-- A **search box** to filter by lemma, entry ID, or (for synsets) definition gloss or English synonym in real time.
+- A **search box** to filter by lemma or entry ID (entries), or by synset ID or an exact Dutch/English synonym (synsets), in real time.
 - An item count below the search box reflecting the current filter.
 - A **+ Add Entry** / **+ Add Synset** button at the bottom to create a new item.
 
-### Synset filters
+### Entry filters
 
-The synset search bar has filter toggles:
+The entry search bar has filter controls:
 
 | Filter | Description |
 |---|---|
-| **No Dutch synonyms** | Shows only synsets that have no Dutch lexical entry linked to them |
+| **POS** | Filters by `noun` / `verb` / `adjective` / `adverb` / `other` |
+| **Senses** | Filters by how many `LexicalEntry` records share the same headword (lemma or MWE form) — each entry in this format is a single sense, so entries with the same written form are the "senses" of that word. Options: exactly 1–4, or 5 or more |
+| **Missing synset link** | Shows only entries that have a sense with no synset reference |
+| **Auto-hyponymy** | Shows only entries whose sense's synset is a hyponym (`has_hyperonym` / `has_xpos_hyperonym`) of another sense's synset from the same headword group — flags likely duplicate or over-fine-grained senses |
+
+When the **Senses** or **Auto-hyponymy** filter is active, the list groups rows by headword (one row per lemma, with a badge showing how many senses share it) and sorts by descending sense count.
+
+### Synset filters
+
+The synset search bar has filter controls:
+
+| Filter | Description |
+|---|---|
 | **POS** (n / v / a / r) | Filters by part of speech derived from the synset ID suffix |
+| **No Dutch synonyms** | Shows only synsets that have no Dutch lexical entry linked to them |
+| **Substring matches** | By default the search box only matches a synonym exactly (case-insensitively, treating `_` as a space); enabling this matches any synonym that merely *contains* the search text |
+| **Also search definitions/examples** | Widens the search to also match the definition gloss and Dutch example sentences from linked senses, not just synonyms and the synset ID |
+
+---
+
+## Manual review status
+
+Every entry and synset editor shows a status row below the header: four buttons — **OK**, **ISSUE**, **WRONG**, **DEPRECATED** — plus a free-text **Comment** field. Click a button to mark the item with that status; click the active button again to clear it. The status also appears as a colored pill next to the item's title (in the editor header, the browsing list, and the sense overview table). This is a manual annotation for review workflows, independent of the linguistic content — stored as `status`/`comment` attributes on the `LexicalEntry`/`Synset` element and saved like any other field (auto-save in collaborative mode).
 
 ---
 
@@ -92,7 +113,7 @@ The synset search bar has filter toggles:
 
 Click any entry in the left pane to open it in the left editor. In collaborative mode, changes are auto-saved every 1.5 seconds after you stop typing. In standalone mode, changes are collected when you switch items.
 
-When multiple entries share the same lemma, clicking the lemma row shows a **sense overview table** for the whole group. Click any row to open that entry, or click **+ Add sense** in the card header to create a new entry for the same lemma.
+When multiple entries share the same lemma, clicking the lemma row shows a **sense overview table** for the whole group, with columns Form, POS, Sense Nr, Sense ID, Definition, Synset, Status (the linked synset's review status pill), Auto-hyponymy (links to any sibling sense's synset that this sense's synset is a hyponym of), and Synset gloss. Click any row to open that entry, or click **+ Add sense** in the card header to create a new entry for the same lemma.
 
 ### Lemma & Identity
 
@@ -240,7 +261,7 @@ Each synset can have multiple definitions with gloss, language code, and provena
 
 ### Dutch synonyms
 
-A **Dutch synonyms** card lists all entries whose senses point to this synset. Each row shows the lemma and part of speech with:
+A **Dutch synonyms** card lists all entries whose senses point to this synset. Each row shows the lemma, part of speech, and (when available) that sense's Dutch example sentences, with:
 
 - **↗ Open** — opens that entry in the left pane.
 - **Unlink** — removes the synset reference from that entry's sense.
@@ -249,9 +270,19 @@ A **Dutch synonyms** card lists all entries whose senses point to this synset. E
   - If found: select an existing sense to link, or add a new sense.
   - If not found: create a new entry with sense 1 linked to this synset.
 
+#### Merging synsets
+
+Linking a sense (via **Find word** → select an existing sense) that is already linked to a different `odwn-`-prefixed synset moves that sense's synonym link onto the current synset, effectively starting a merge of the old synset into this one. After confirming the move, the editor walks through retiring the old synset:
+
+1. If other Dutch synonyms are still linked to the old synset, offers to move them across too.
+2. Offers to transfer the old synset's relations (to synsets other than the new one) onto the new synset, skipping any duplicates.
+3. If the old synset ends up with no Dutch synonyms left, offers to mark it **DEPRECATED** with a comment noting which synset it was merged into.
+
+This only triggers for `odwn-`-prefixed synsets (locally created synsets), not for Princeton WordNet (`eng-30-`) synsets.
+
 ### English synonyms
 
-A read-only **English synonyms** card shows the Princeton WordNet 3.0 synonyms for this synset (sourced from `data/wneng30_synset_synonyms.json`). These cannot be edited. English synonyms are also included in the synset search index.
+A read-only **English synonyms** card shows the Princeton WordNet 3.0 synonyms — and, if available, usage examples (sourced from `data/wneng30_synset_examples.json`) — for this synset (synonyms sourced from `data/wneng30_synset_synonyms.json`). These cannot be edited. English synonyms are also included in the synset search index.
 
 ### Synset Relations
 
@@ -484,6 +515,7 @@ The editor also opens standard **feat-based** LMF files and detects the format a
 |---|---|
 | `data/odwn_orbn_gwg-LMF_1.3.xml` | Open Dutch WordNet (ODWN) combined with ORBN and GWG, LMF 1.3 format (~149 MB, ~99 000 entries, ~117 000 synsets) |
 | `data/wneng30_synset_synonyms.json` | Princeton WordNet 3.0 synset→synonyms mapping (117 659 synsets), used for English synonym display and search |
+| `data/wneng30_synset_examples.json` | Princeton WordNet 3.0 synset→usage-examples mapping, shown in the English synonyms card (optional) |
 
 ---
 
