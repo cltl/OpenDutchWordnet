@@ -1642,8 +1642,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 filepath = _st['filepath']
                 _st['modified'] = False
             if filepath:
-                with open(filepath, 'w', encoding='utf-8') as f:
-                    f.write(xml)
+                if filepath.endswith('.gz'):
+                    with gzip.open(filepath, 'wt', encoding='utf-8') as f:
+                        f.write(xml)
+                else:
+                    with open(filepath, 'w', encoding='utf-8') as f:
+                        f.write(xml)
                 print(f'Saved to {filepath}', flush=True)
                 self._json({'ok': True, 'filename': os.path.basename(filepath)})
             else:
@@ -1656,11 +1660,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._json({'error': 'not ready'}, 503); return
         try:
             xml = serialize_xml()
-            body = xml.encode('utf-8')
             with _slock:
                 fname = os.path.basename(_st['filepath']) if _st['filepath'] else 'lexicon.xml'
+            if fname.endswith('.gz'):
+                body = gzip.compress(xml.encode('utf-8'))
+                content_type = 'application/gzip'
+            else:
+                body = xml.encode('utf-8')
+                content_type = 'application/xml; charset=utf-8'
             self.send_response(200)
-            self.send_header('Content-Type', 'application/xml; charset=utf-8')
+            self.send_header('Content-Type', content_type)
             self.send_header('Content-Disposition', f'attachment; filename="{fname}"')
             self.send_header('Content-Length', len(body))
             self.send_header('Access-Control-Allow-Origin', '*')
