@@ -47,6 +47,8 @@
     #entry-count-e, #entry-count-s { font-size: 11px; color: #aaa; text-align: center; padding: 3px 0 0; }
     .ov-table { width:100%;border-collapse:collapse;font-size:12px; }
     .ov-table th { text-align:left;padding:7px 10px;font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #e8e8e8;background:#fafafa; }
+    .ov-table th.ov-sortable { cursor:pointer;user-select:none;white-space:nowrap; }
+    .ov-table th.ov-sortable:hover { color:#4f8ef7; }
     .ov-table td { padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:top; }
     .ov-row { cursor:pointer; }
     .ov-row:hover td { background:#eef3ff; }
@@ -475,6 +477,7 @@ let state = {
   selectedId: null,       // currently selected entry ID (left pane)
   selectedSynsetId: null, // currently selected synset ID (right pane)
   selectedGroupIds: null, // array of entry IDs when showing overview; null = editor/empty
+  ovSort: { key: 'senseNr', dir: 1 }, // current sort column/direction for the Senses overview table
   mode: 'entries',   // legacy hint; actual selection tracked by selectedId / selectedSynsetId
   filterE: '',
   filterS: '',
@@ -2075,15 +2078,6 @@ function buildOverviewHTML(entryIds) {
   const rawLemma = items[0].isMWE ? items[0].mweForm : items[0].lemma;
   const label = h(rawLemma) || '—';
 
-  // Sort by senseId (numeric if possible, else lexicographic)
-  items.sort((a, b) => {
-    const sa = (a.senses && a.senses.length) ? (a.senses[0].senseId || '') : '';
-    const sb = (b.senses && b.senses.length) ? (b.senses[0].senseId || '') : '';
-    const na = parseFloat(sa), nb = parseFloat(sb);
-    if (!isNaN(na) && !isNaN(nb)) return na - nb;
-    return sa.localeCompare(sb);
-  });
-
   // Every synset used by any sense of this lemma — used to detect auto-hyponymy
   // (a sense whose synset has a hyperonym relation to another sense's synset of the same word,
   // i.e. this sense is a hyponym of a sibling sense).
@@ -2091,8 +2085,9 @@ function buildOverviewHTML(entryIds) {
   for (const e of items) for (const sn of (e.senses || [])) if (sn.synset) groupSynsetIds.add(sn.synset);
   const HYPERONYM_RELTYPES = new Set(['has_hyperonym', 'has_xpos_hyperonym']);
 
-  let rows = '';
-  for (const e of items) {
+  // Build one row-data object per entry (raw sort values alongside rendered HTML cells),
+  // then sort the collection generically by whichever column the user last clicked.
+  const rowData = items.map(e => {
     const senses = e.senses && e.senses.length ? e.senses : [];
     const s = senses[0] || null;
 
@@ -2124,33 +2119,81 @@ function buildOverviewHTML(entryIds) {
       ? hypernymTargets.map(t => `<span class="ov-synlink" onclick="event.stopPropagation();jumpToSynset('${h(t)}')">${h(t)}</span>`).join(', ')
       : '—';
 
-    rows += `<tr class="ov-row" onclick="selectEntry('${h(e.id)}')">
-      <td>${h(e.isMWE ? e.mweForm : e.lemma)}</td>
-      <td>${h(e.partOfSpeech || '—')}</td>
-      <td class="ov-id">${s ? h(s.senseId || '—') : '—'}</td>
-      <td class="ov-id">${s ? h(s.id || '—') : '—'}</td>
-      <td class="ov-def">${h(defText)}</td>
-      <td class="ov-id">${synCell}</td>
-      <td class="ov-id">${statusCell}</td>
-      <td class="ov-id">${autoHypCell}</td>
-      <td class="ov-def">${h(glossText) || '—'}</td>
-    </tr>`;
-  }
+    // Manual review status of the sense itself (i.e. of the entry, which holds one sense
+    // in this table) — distinct from the synset's own status shown in the Synset Status column.
+    const senseStatusCell = buildStatusPill(e.status) || '—';
+
+    return {
+      entryId: e.id,
+      form: e.isMWE ? e.mweForm : e.lemma,
+      pos: e.partOfSpeech || '',
+      senseNr: s ? (s.senseId || '') : '',
+      senseId: s ? (s.id || '') : '',
+      senseStatusCell, senseStatus: e.status || '',
+      defText, synCell,
+      synset: (s && s.synset) || '',
+      statusCell, status: ss ? (ss.status || '') : '',
+      autoHypCell, autoHyp: hypernymTargets.join(', '),
+      glossText
+    };
+  });
+
+  // Numeric-aware compare (falls back to lexicographic) so senseNr sorts 2 before 10.
+  const cmp = (va, vb) => {
+    const na = parseFloat(va), nb = parseFloat(vb);
+    if (va !== '' && vb !== '' && !isNaN(na) && !isNaN(nb)) return na - nb;
+    return String(va).localeCompare(String(vb));
+  };
+  const { key, dir } = state.ovSort;
+  rowData.sort((a, b) => cmp(a[key], b[key]) * dir);
+
+  const rows = rowData.map(r => `<tr class="ov-row" onclick="selectEntry('${h(r.entryId)}')">
+      <td>${h(r.form)}</td>
+      <td>${h(r.pos || '—')}</td>
+      <td class="ov-id">${h(r.senseNr || '—')}</td>
+      <td class="ov-id">${h(r.senseId || '—')}</td>
+      <td class="ov-id">${r.senseStatusCell}</td>
+      <td class="ov-def">${h(r.defText)}</td>
+      <td class="ov-id">${r.synCell}</td>
+      <td class="ov-id">${r.statusCell}</td>
+      <td class="ov-id">${r.autoHypCell}</td>
+      <td class="ov-def">${h(r.glossText) || '—'}</td>
+    </tr>`).join('');
+
+  const OV_COLS = [
+    ['form', 'Form'], ['pos', 'POS'], ['senseNr', 'Sense Nr'], ['senseId', 'Sense ID'],
+    ['senseStatus', 'Sense Status'], ['defText', 'Definition'], ['synset', 'Synset'],
+    ['status', 'Synset Status'], ['autoHyp', 'Auto-hyponymy'], ['glossText', 'Synset gloss']
+  ];
+  const headHtml = OV_COLS.map(([k, label]) => {
+    const arrow = key === k ? (dir === 1 ? ' ▲' : ' ▼') : '';
+    return `<th class="ov-sortable" onclick="sortOverview('${k}')">${h(label)}${arrow}</th>`;
+  }).join('');
+
   return `
   <div class="ed-hd">
     <h2>${label}</h2>
     <span class="pill pill-blue">${items.length} entr${items.length === 1 ? 'y' : 'ies'}</span>
-    <span style="font-size:12px;color:#aaa;margin-left:6px">— click a row to edit</span>
+    <span style="font-size:12px;color:#aaa;margin-left:6px">— click a row to edit, a column header to sort</span>
   </div>
   <div class="card">
     <div class="card-hd">Senses <button class="addbtn" onclick="openNewEntryDialog(${JSON.stringify(rawLemma)})">+ Add sense</button></div>
     <div style="overflow-x:auto">
       <table class="ov-table">
-        <thead><tr><th>Form</th><th>POS</th><th>Sense Nr</th><th>Sense ID</th><th>Definition</th><th>Synset</th><th>Status</th><th>Auto-hyponymy</th><th>Synset gloss</th></tr></thead>
+        <thead><tr>${headHtml}</tr></thead>
         <tbody>${rows}</tbody>
       </table>
     </div>
   </div>`;
+}
+
+// Toggle the Senses-overview sort: clicking the active column reverses direction,
+// clicking a different one sorts ascending on it.
+function sortOverview(key) {
+  const s = state.ovSort;
+  s.dir = (s.key === key) ? -s.dir : 1;
+  s.key = key;
+  renderEntryEditor();
 }
 
 function selectEntry(id) {
