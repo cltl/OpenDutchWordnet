@@ -235,6 +235,9 @@
     .sg-legend { display:flex; flex-wrap:wrap; gap:5px 14px; padding:7px 10px; border-top:1px solid #dce8f0; }
     .sg-li   { display:flex; align-items:center; gap:4px; font-size:10px; color:#555; white-space:nowrap; }
     .sg-sw   { width:22px; height:3px; border-radius:2px; flex-shrink:0; }
+    .sg-chain-info { font-weight:600; color:#4f8ef7; white-space:nowrap; }
+    .sg-chain-info.sg-cycle { color:#e74c3c; }
+    .addbtn.active { background:#4f8ef7; color:#fff; }
 
     .panel-filters { padding: 5px 0 2px; border-top: 1px solid #eee; margin-top: 4px; }
     .flt-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
@@ -1688,6 +1691,8 @@ function renderSynsetEditor() {
   content.innerHTML = buildSynsetHTML(item);
   _graphExpanded = new Set();
   _graphView = { x: 0, y: 0, scale: 1 };
+  _graphMode = 'explore';
+  _graphChainCache = null;
   renderSynsetGraph(item.id);
 }
 
@@ -2270,6 +2275,8 @@ function buildSynsetHTML(ss) {
   <div class="card">
     <div class="card-hd">Relation Graph
       <span>Click node or edge for options</span>
+      <button class="addbtn" id="sg-chain-btn" onclick="toggleHyperonymChain('${h(ss.id)}')"
+        title="Follow has_hyperonym from this synset up to the top of the hierarchy, or to a cycle">Show hyperonym chain</button>
       <button class="addbtn" onclick="resetSynsetGraph('${h(ss.id)}')">Reset</button>
     </div>
     <div class="sg-wrap"><div id="sg-container"><div class="empty-msg" style="padding:12px">Building graph…</div></div></div>
@@ -3807,6 +3814,13 @@ let _graphNodePositions = new Map();
 let _graphView = { x: 0, y: 0, scale: 1 }; // current pan/zoom of the relation graph
 const GRAPH_ZOOM_MIN = 0.25, GRAPH_ZOOM_MAX = 4;
 
+// 'explore' = default force-directed browsing (_buildGraphData); 'hyperonymChain' =
+// follow has_hyperonym from the root synset up to the top of the hierarchy, or to a
+// cycle, via _buildHyperonymChain. _graphChainCache holds the last-built chain so
+// renderSynsetGraph doesn't need to re-fetch on every redraw (pan/zoom/etc).
+let _graphMode = 'explore';
+let _graphChainCache = null; // { rootId, nodes, edges, cycleFound, truncated }
+
 function _synsetLabel(ssId) {
   const syns = getSynonymEntries(ssId);
   if (syns.length) {
@@ -3873,6 +3887,87 @@ function _buildGraphData(rootId) {
 
   const validIds = new Set(nodes.keys());
   return { nodes: [...nodes.values()], edges: edges.filter(e => validIds.has(e.from) && validIds.has(e.to)) };
+}
+
+// Follow has_hyperonym edges from rootId all the way up, fetching each ancestor's
+// full synset data as needed (unlike _buildGraphData, which only walks data already
+// loaded). Stops a branch when a synset has no has_hyperonym relation (the top of
+// the hierarchy) or when a hyperonym points back at one of its own ancestors on the
+// current path (a cycle — malformed data, since hyperonymy should be acyclic).
+// Real WordNet-style data is normally a single chain per synset, but multiple
+// hyperonyms (a DAG, not just a line) are handled too: every hyperonym edge is
+// recorded, while re-walking a synset's own ancestors happens at most once even if
+// it's reached via more than one branch (`processed`), so a diamond doesn't blow up
+// into exponential re-fetching.
+const HYPERONYM_CHAIN_REL = 'has_hyperonym';
+const HYPERONYM_CHAIN_MAX_NODES = 400;
+
+async function _buildHyperonymChain(rootId) {
+  const nodes = new Map();
+  const edges = [];
+  const edgeKeys = new Set();
+  const processed = new Set();
+  let cycleFound = false;
+
+  const addNode = (id, depth, extra) => {
+    if (!nodes.has(id)) nodes.set(id, Object.assign({ id, label: _synsetLabel(id), depth }, extra));
+    else {
+      const n = nodes.get(id);
+      if (depth < n.depth) n.depth = depth;
+      if (extra) Object.assign(n, extra);
+    }
+  };
+  const addEdge = (from, to, isCycle) => {
+    const key = `${from}→${to}`;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push({ from, to, relType: HYPERONYM_CHAIN_REL, isCycle: !!isCycle });
+  };
+
+  addNode(rootId, 0);
+
+  // `path` = ancestors from the root down to and including `id` itself, so a
+  // hyperonym target that reappears in `path` is unambiguously a real cycle
+  // (not just a node also reached via a different, non-ancestor branch).
+  async function walk(id, depth, path) {
+    if (nodes.size > HYPERONYM_CHAIN_MAX_NODES) return;
+    await _ensureSynsetLoaded(id);
+    const ss = getSynset(id);
+    if (!ss) { const n = nodes.get(id); if (n) n.isMissing = true; return; }
+    const rels = !ss._indexOnly ? (ss.synsetRelations || []) : [];
+    const hyperonyms = rels.filter(r => r.relType === HYPERONYM_CHAIN_REL && r.target);
+
+    if (!hyperonyms.length) {
+      const n = nodes.get(id); if (n) n.isChainEnd = true;
+      return;
+    }
+
+    for (const r of hyperonyms) {
+      const target = r.target;
+      if (path.includes(target)) {
+        addEdge(id, target, true);
+        const tn = nodes.get(target); if (tn) tn.isCycleNode = true;
+        const fn = nodes.get(id);     if (fn) fn.isCycleNode = true;
+        cycleFound = true;
+        continue;
+      }
+      addNode(target, depth + 1);
+      addEdge(id, target, false);
+    }
+
+    if (processed.has(id)) return;
+    processed.add(id);
+    for (const r of hyperonyms) {
+      if (path.includes(r.target) || nodes.size > HYPERONYM_CHAIN_MAX_NODES) continue;
+      await walk(r.target, depth + 1, [...path, r.target]);
+    }
+  }
+
+  await walk(rootId, 0, [rootId]);
+  _graphChainCache = {
+    rootId, nodes: [...nodes.values()], edges, cycleFound,
+    truncated: nodes.size > HYPERONYM_CHAIN_MAX_NODES
+  };
 }
 
 function _initPositions(nodes, edges, W, H) {
@@ -3993,7 +4088,9 @@ function renderSynsetGraph(ssId) {
   if (!container) return;
 
   const W = 780, H = 480;
-  const { nodes, edges } = _buildGraphData(ssId);
+  const chain = (_graphMode === 'hyperonymChain' && _graphChainCache && _graphChainCache.rootId === ssId)
+    ? _graphChainCache : null;
+  const { nodes, edges } = chain ? { nodes: chain.nodes, edges: chain.edges } : _buildGraphData(ssId);
 
   if (!nodes.length) { container.innerHTML = '<div class="empty-msg" style="padding:12px">No relations found.</div>'; return; }
 
@@ -4004,10 +4101,11 @@ function renderSynsetGraph(ssId) {
   const relTypes = [...new Set(edges.filter(e => !e.isMore).map(e => e.relType))];
 
   const nodeR = n => n.depth === 0 ? 48 : (n.isMore ? 20 : (n.depth === 1 ? 36 : 24));
-  const nodeFill  = n => n.depth === 0 ? '#1a1a2e' : (n.isMore ? '#c8d6e0' : (n.depth === 1 ? '#4f8ef7' : '#8ab4d4'));
-  const nodeTC    = n => n.depth <= 1 && !n.isMore ? '#fff' : '#333';
-  const nodeSW    = n => _graphExpanded.has(n.id) ? 3 : 2;
-  const nodeSC    = n => _graphExpanded.has(n.id) ? '#f39c12' : '#fff';
+  const nodeFill  = n => n.isCycleNode ? '#e74c3c' : (n.isMissing ? '#aaa' :
+    (n.depth === 0 ? '#1a1a2e' : (n.isMore ? '#c8d6e0' : (n.isChainEnd ? '#1a9150' : (n.depth === 1 ? '#4f8ef7' : '#8ab4d4')))));
+  const nodeTC    = n => n.isMore ? '#333' : ((n.isCycleNode || n.isMissing || n.isChainEnd || n.depth <= 1) ? '#fff' : '#333');
+  const nodeSW    = n => n.isCycleNode ? 3.5 : (_graphExpanded.has(n.id) ? 3 : 2);
+  const nodeSC    = n => n.isCycleNode ? '#fff' : (_graphExpanded.has(n.id) ? '#f39c12' : '#fff');
 
   // SVG marker defs (one per unique relType)
   const encRT = rt => 'a' + rt.replace(/[^a-zA-Z0-9]/g, '_');
@@ -4022,7 +4120,7 @@ function renderSynsetGraph(ssId) {
   for (const e of edges) {
     const src = nodeMap.get(e.from), tgt = nodeMap.get(e.to);
     if (!src || !tgt) continue;
-    const color = e.isMore ? '#bbb' : REL_COLOR(e.relType);
+    const color = e.isMore ? '#bbb' : (e.isCycle ? '#e74c3c' : REL_COLOR(e.relType));
 
     const mx = (src.x + tgt.x) / 2, my = (src.y + tgt.y) / 2;
     const dx = tgt.x - src.x, dy = tgt.y - src.y;
@@ -4042,19 +4140,20 @@ function renderSynsetGraph(ssId) {
     const lx = (1-t)*(1-t)*sx + 2*(1-t)*t*cpx + t*t*tx;
     const ly = (1-t)*(1-t)*sy + 2*(1-t)*t*cpy + t*t*ty - 4;
 
-    const sw = tgt.depth <= 1 ? 1.8 : 1.2;
-    const dash = tgt.depth >= 2 ? '5,3' : 'none';
+    const sw = e.isCycle ? 2.4 : (tgt.depth <= 1 ? 1.8 : 1.2);
+    const dash = e.isCycle ? '3,2' : (tgt.depth >= 2 ? '5,3' : 'none');
     const markerAttr = e.isMore ? '' : `marker-end="url(#${encRT(e.relType)})"`;
     const clickTarget = tgt.isMore ? `graphExpandMore(event,'${h(tgt.parentId)}','${h(ssId)}')` : `event.stopPropagation();graphToggleExpand('${h(tgt.id)}','${h(ssId)}')`;
+    const edgeLabel = e.relType + (e.isCycle ? ' ⟲ cycle' : '');
 
-    edgesSVG += `<g class="sg-edge" onclick="${clickTarget}" style="cursor:pointer" title="${h(e.relType)}: ${h(e.to)}">
+    edgesSVG += `<g class="sg-edge" onclick="${clickTarget}" style="cursor:pointer" title="${h(edgeLabel)}: ${h(e.to)}">
       <path d="M${sx.toFixed(1)},${sy.toFixed(1)} Q${cpx.toFixed(1)},${cpy.toFixed(1)} ${tx.toFixed(1)},${ty.toFixed(1)}"
         fill="none" stroke="${color}" stroke-width="${sw}" stroke-dasharray="${dash}" ${markerAttr}/>
       <path d="M${sx.toFixed(1)},${sy.toFixed(1)} Q${cpx.toFixed(1)},${cpy.toFixed(1)} ${tx.toFixed(1)},${ty.toFixed(1)}"
         fill="none" stroke="transparent" stroke-width="10"/>
       ${e.isMore ? '' : `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-size="8.5"
         fill="${color}" font-weight="500" font-family="system-ui,sans-serif"
-        paint-order="stroke" stroke="#f6f9ff" stroke-width="2.5" style="pointer-events:none">${h(e.relType)}</text>`}
+        paint-order="stroke" stroke="#f6f9ff" stroke-width="2.5" style="pointer-events:none">${h(edgeLabel)}</text>`}
     </g>`;
   }
 
@@ -4094,11 +4193,18 @@ function renderSynsetGraph(ssId) {
     `<div class="sg-li"><div class="sg-sw" style="background:${REL_COLOR(rt)}"></div>${h(rt)}</div>`
   ).join('');
 
+  const chainInfo = chain ? (
+    chain.cycleFound
+      ? `<span class="sg-chain-info sg-cycle">⚠ cycle detected — ${nodes.length} node${nodes.length === 1 ? '' : 's'}</span>`
+      : `<span class="sg-chain-info">hyperonym chain — ${nodes.length} node${nodes.length === 1 ? '' : 's'} to the top</span>`
+  ) + (chain.truncated ? ` <span class="sg-chain-info sg-cycle">(truncated at ${HYPERONYM_CHAIN_MAX_NODES})</span>` : '') : '';
+
   container.innerHTML =
     `<div class="sg-bar">
       <button class="sg-zoom-btn" onclick="graphZoomBy(1.25)" title="Zoom in">+</button>
       <button class="sg-zoom-btn" onclick="graphZoomBy(0.8)" title="Zoom out">&minus;</button>
       <span id="sg-zoom-pct">${Math.round(_graphView.scale * 100)}%</span>
+      ${chainInfo}
       <span style="flex:1"></span>
       <span>Scroll/pinch to zoom &middot; drag to pan</span>
     </div>
@@ -4210,11 +4316,14 @@ function showNodePopup(event, nodeId, rootId) {
   popup.style.left = (screenX - 74) + 'px';
   popup.style.top  = (screenY - 64) + 'px';
 
-  const expBtn = document.createElement('button');
-  expBtn.textContent = isExp ? 'Collapse' : 'Expand';
-  expBtn.style.background = isExp ? '#fff3e0' : '#eef3ff';
-  expBtn.style.color      = isExp ? '#e67e22' : '#4f8ef7';
-  expBtn.onclick = e => { e.stopPropagation(); graphToggleExpand(nodeId, rootId); };
+  if (_graphMode !== 'hyperonymChain') {
+    const expBtn = document.createElement('button');
+    expBtn.textContent = isExp ? 'Collapse' : 'Expand';
+    expBtn.style.background = isExp ? '#fff3e0' : '#eef3ff';
+    expBtn.style.color      = isExp ? '#e67e22' : '#4f8ef7';
+    expBtn.onclick = e => { e.stopPropagation(); graphToggleExpand(nodeId, rootId); };
+    popup.appendChild(expBtn);
+  }
 
   const centerBtn = document.createElement('button');
   centerBtn.textContent = 'Make center';
@@ -4222,7 +4331,6 @@ function showNodePopup(event, nodeId, rootId) {
   centerBtn.style.color      = '#1d8348';
   centerBtn.onclick = e => { e.stopPropagation(); graphMakeCenter(nodeId); };
 
-  popup.appendChild(expBtn);
   popup.appendChild(centerBtn);
   document.body.appendChild(popup);
 }
@@ -4316,6 +4424,41 @@ function hideNodeTooltip() {
 function resetSynsetGraph(ssId) {
   _graphExpanded.clear();
   _graphView = { x: 0, y: 0, scale: 1 };
+  _graphMode = 'explore';
+  _graphChainCache = null;
+  const btn = document.getElementById('sg-chain-btn');
+  if (btn) { btn.textContent = 'Show hyperonym chain'; btn.classList.remove('active'); btn.disabled = false; }
+  renderSynsetGraph(ssId);
+}
+
+// Toggle between the default explorable relation graph and a view that follows
+// has_hyperonym from ssId all the way up (or to a cycle) — see _buildHyperonymChain.
+async function toggleHyperonymChain(ssId) {
+  const btn = document.getElementById('sg-chain-btn');
+  if (_graphMode === 'hyperonymChain') {
+    _graphMode = 'explore';
+    _graphChainCache = null;
+    _graphView = { x: 0, y: 0, scale: 1 };
+    if (btn) { btn.textContent = 'Show hyperonym chain'; btn.classList.remove('active'); }
+    renderSynsetGraph(ssId);
+    return;
+  }
+
+  _graphView = { x: 0, y: 0, scale: 1 };
+  if (btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
+  const container = document.getElementById('sg-container');
+  if (container) container.innerHTML = '<div class="empty-msg" style="padding:12px">Following has_hyperonym chain…</div>';
+
+  try {
+    await _buildHyperonymChain(ssId);
+    _graphMode = 'hyperonymChain';
+    if (btn) { btn.textContent = 'Exit hyperonym chain'; btn.classList.add('active'); }
+  } catch (err) {
+    showToast('Could not build hyperonym chain: ' + err.message, true);
+    if (btn) btn.textContent = 'Show hyperonym chain';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
   renderSynsetGraph(ssId);
 }
 
