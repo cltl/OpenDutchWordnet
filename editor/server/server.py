@@ -20,7 +20,7 @@ Locking:
     Other users see locked items as read-only until the lock expires or is released.
 """
 
-import http.server, json, threading, time, os, sys, sqlite3, hashlib, secrets, re, zipfile, gzip
+import http.server, json, threading, time, os, sys, sqlite3, hashlib, secrets, re, zipfile, gzip, glob
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, parse_qs
 
@@ -1298,6 +1298,27 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass  # suppress per-request logs
 
+    def finish(self):
+        # ThreadingHTTPServer runs one thread per connection, and _con() lazily
+        # opens a WAL-mode sqlite3 connection (3 fds: db/-wal/-shm) the first time
+        # that thread touches the DB, cached in threading.local(). Relying on GC/
+        # thread-teardown to close it is not prompt enough under sustained load —
+        # each leaked connection holds its fds until the process eventually hits
+        # its descriptor limit, at which point sqlite3.connect() starts failing
+        # with "unable to open database file" for brand-new threads. Close it
+        # explicitly here so fds are freed as soon as this connection is done,
+        # not whenever the interpreter happens to collect the thread-local.
+        try:
+            super().finish()
+        finally:
+            c = getattr(_tls, 'c', None)
+            if c is not None:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+                _tls.c = None
+
     def _json(self, data, status=200):
         body = json.dumps(data, ensure_ascii=False).encode('utf-8')
         self.send_response(status)
@@ -1746,27 +1767,52 @@ if __name__ == '__main__':
 
     USERS = load_users_file(users_file)
 
-    # Auto-discover: prefer existing .db over .xml, but only if DB has actual data
+    # Auto-discover: scan data/ for odwn_orbn_gwg-LMF_*.{db,xml,xml.gz,xml.zip} files
+    # instead of picking from a hardcoded, version-specific candidate list — so a
+    # database nobody actively edits any more doesn't quietly shadow the one that
+    # does just because it happened to be listed first.
+    #
+    # Candidates are ranked by genuine content freshness, not file mtime: merely
+    # *viewing* an entry/synset writes a lock row into that same .db file, bumping
+    # its mtime with no relation to which database actually holds newer content.
+    # Instead, use the latest changelog timestamp (real edits) — or, for a database
+    # with no edits yet, the import timestamp recorded on its rows — so a
+    # continuously-edited older export still outranks an unedited newer one.
+    def _db_freshness(path):
+        try:
+            con = sqlite3.connect(path)
+            edit_ts   = con.execute('SELECT MAX(ts) FROM changelog').fetchone()[0] or 0
+            import_ts = con.execute('SELECT MAX(updated_at) FROM entries').fetchone()[0] or 0
+            con.close()
+            return max(edit_ts, import_ts)
+        except Exception:
+            return -1
+
     if xml_file is None and db_file is None:
-        candidates = [
-            ('data/odwn_orbn_gwg-LMF_1.3.db',  'data/odwn_orbn_gwg-LMF_1.3.xml'),
-            ('data/odwn_orbn_gwg-LMF_1.2.db',  'data/odwn_orbn_gwg-LMF_1.2.xml'),
-        ]
-        for cdb, cxml in candidates:
-            cxml_actual = next((p for p in (cxml, cxml + '.gz', cxml + '.zip') if os.path.isfile(p)), None)
-            if os.path.isfile(cdb):
-                _db_has_data = False
-                try:
-                    _db_has_data = sqlite3.connect(cdb).execute('SELECT COUNT(*) FROM entries').fetchone()[0] > 0
-                except Exception:
-                    pass
-                if _db_has_data:
-                    db_file = cdb; break
-                elif cxml_actual:
-                    print(f'Database {cdb} exists but is empty — will re-import from {cxml_actual}.')
-                    xml_file = cxml_actual; break
-            elif cxml_actual:
+        db_candidates  = sorted(glob.glob('data/odwn_orbn_gwg-LMF_*.db'), key=_db_freshness, reverse=True)
+        xml_candidates = sorted(
+            [p for pat in ('data/odwn_orbn_gwg-LMF_*.xml', 'data/odwn_orbn_gwg-LMF_*.xml.gz', 'data/odwn_orbn_gwg-LMF_*.xml.zip')
+             for p in glob.glob(pat)],
+            key=os.path.getmtime, reverse=True)
+
+        def _sibling_xml(db_path):
+            stem = db_path[:-3]  # strip '.db'
+            return next((p for p in (stem + '.xml', stem + '.xml.gz', stem + '.xml.zip') if os.path.isfile(p)), None)
+
+        for cdb in db_candidates:
+            _db_has_data = False
+            try:
+                _db_has_data = sqlite3.connect(cdb).execute('SELECT COUNT(*) FROM entries').fetchone()[0] > 0
+            except Exception:
+                pass
+            if _db_has_data:
+                db_file = cdb; break
+            cxml_actual = _sibling_xml(cdb)
+            if cxml_actual:
+                print(f'Database {cdb} exists but is empty — will re-import from {cxml_actual}.')
                 xml_file = cxml_actual; break
+        if db_file is None and xml_file is None and xml_candidates:
+            xml_file = xml_candidates[0]
 
     # Derive DB path from XML path if needed
     if db_file:
