@@ -683,18 +683,23 @@ function rebuildVSS() {
   const hasAttrFilters = !!(af.pos || af.missingDutchSynonyms);
 
   // Match only against synonyms (English or Dutch) by default, and only an
-  // exact synonym (not a substring) — the search box shouldn't surface every
-  // synset whose gloss, or some unrelated longer synonym, happens to contain
-  // the text. "Substring matches" broadens synonym matching to substrings;
-  // "Search definitions/examples" widens the match to gloss text and Dutch
-  // example sentences too.
+  // exact word within a synonym (not an arbitrary substring) — the search box
+  // shouldn't surface every synset whose gloss, or some unrelated longer
+  // synonym, happens to contain the text. Matching per-word (not the whole
+  // synonym string) matters most for English: Princeton WordNet synonyms are
+  // often multi-word ("clout_nail"), while ODWN's Dutch synonyms are mostly
+  // single words, so a whole-phrase-only match made English synonyms feel
+  // unsearchable in practice even though the underlying data is right there.
+  // "Substring matches" further broadens matching to substrings within a
+  // word; "Search definitions/examples" widens the match to gloss text and
+  // Dutch example sentences too.
   function passesSearch(s) {
     if (!f) return true;
     if (s.id.toLowerCase().includes(f)) return true;
     const { en, nl } = _synTokens(s);
     const synMatch = af.substringSynonyms
       ? w => w.toLowerCase().includes(f)
-      : w => w.replace(/_/g, ' ').toLowerCase() === f;
+      : w => w.replace(/_/g, ' ').toLowerCase().split(' ').includes(f);
     if (en.some(synMatch) || nl.some(synMatch)) return true;
     if (af.searchDefsExamples) {
       const gloss = (s.definitions || []).map(d => d.gloss || '').join(' ');
@@ -3872,7 +3877,7 @@ function _ssrRunSearch(query) {
       enWords = ss.enSyns.split(' ').filter(Boolean).map(w => w.replace(/_/g, ' '));
     }
 
-    html += `<div class="ssr-sr-item" onclick="_ssrSelectSynset(${JSON.stringify(ssId)})">
+    html += `<div class="ssr-sr-item" onclick="_ssrSelectSynset('${h(ssId)}')">
       <div style="display:flex;align-items:flex-start;gap:8px">
         <div style="flex:1;min-width:0">
           <div class="ssr-sr-id">${h(ssId)}</div>
@@ -3881,7 +3886,7 @@ function _ssrRunSearch(query) {
           ${gloss ? `<div class="ssr-sr-gloss">${h(gloss)}</div>` : ''}
         </div>
         <button class="btn btn-pri" style="flex-shrink:0;padding:4px 10px;font-size:11px"
-                onclick="event.stopPropagation();_ssrSelectSynset(${JSON.stringify(ssId)})">Select</button>
+                onclick="event.stopPropagation();_ssrSelectSynset('${h(ssId)}')">Select</button>
       </div>
     </div>`;
   }
