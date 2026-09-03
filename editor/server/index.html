@@ -2230,6 +2230,12 @@ function buildSynsetHTML(ss) {
     <div class="hd-btns">
       ${collabMode ? `<button class="btn btn-save" id="save-btn-s" disabled onclick="editorSave('synset')">Save</button>` : ''}
       <button class="btn btn-sec" onclick="showHistoryPopup(event,'${h(ss.id)}','synset')">&#128336; History</button>
+      <a class="btn btn-sec" style="display:inline-block;text-decoration:none;box-sizing:border-box"
+         href="https://wn.yovisto.com/wordnet/#/wordnet/search-wrapper" target="_blank" rel="noopener noreferrer"
+         title="Search the original WordNet structure on wn.yovisto.com (opens in a new tab)">&#128279; WordNet</a>
+      <a class="btn btn-sec" style="display:inline-block;text-decoration:none;box-sizing:border-box"
+         href="https://cygnet.maudslay.eu/#/search" target="_blank" rel="noopener noreferrer"
+         title="Search across wordnets on cygnet.maudslay.eu (opens in a new tab)">&#128279; CygNet</a>
       <button class="btn btn-red" onclick="deleteItem('${h(ss.id)}')">Delete</button>
     </div>
   </div>
