@@ -1672,6 +1672,7 @@ function renderEntryEditor() {
   if (state.selectedGroupIds) {
     empty.style.display = 'none'; content.style.display = 'block';
     content.innerHTML = buildOverviewHTML(state.selectedGroupIds);
+    _kickOffSenseSimilarity(state.selectedGroupIds); // async; fills cache and re-renders when done
     return;
   }
   const item = getEntry(state.selectedId);
@@ -2075,6 +2076,153 @@ function addSVType(btn)   { const l = btn.closest('.sv-section').querySelector('
 function addWF()          { document.getElementById('wf-empty')?.remove(); document.getElementById('wf-con').insertAdjacentHTML('beforeend', `<div class="irow wf-row"><input type="text" class="wf-form grow" placeholder="Written form…" style="min-width:100px"><select class="wf-num">${sel(GRAM_NUM_OPTS,'')}</select><select class="wf-comp">${sel(COMPARISON_OPTS,'')}</select><input type="text" class="wf-art" placeholder="article" style="width:60px"><select class="wf-tense">${sel(GRAM_TENSE_OPTS,'')}</select><button class="delbtn" onclick="this.closest('.wf-row').remove()">&#x2715;</button></div>`); document.querySelector('.wf-form:last-of-type')?.focus(); }
 function addRF()          { document.getElementById('rf-empty')?.remove(); document.getElementById('rf-con').insertAdjacentHTML('beforeend', `<div class="irow rf-row"><input type="text" class="rf-form grow" placeholder="Written form…"><select class="rf-type">${sel(VARIANT_TYPE_OPTS,'')}</select><button class="delbtn" onclick="this.closest('.rf-row').remove()">&#x2715;</button></div>`); document.querySelector('.rf-form:last-of-type')?.focus(); }
 
+// ── Sense similarity (Senses overview "Most similar sense" column) ─────
+//
+// Ranks each sense in a polysemous headword's Senses overview against its
+// siblings, combining two signals into one 0..1 score:
+//  - text: lexical overlap (Jaccard over tokens) between the sense's own
+//    (Dutch) definition and its synset's glosses in any language — usually
+//    the English Princeton WordNet gloss, since sense.definition is empty
+//    for most imported entries. There's no embedding model available in
+//    this offline, dependency-free page, so "semantic similarity" here
+//    means word overlap, not a learned representation — good enough to
+//    flag near-duplicate glosses, not to catch paraphrases.
+//  - graph: taxonomic closeness of the two senses' synsets, via bounded
+//    bidirectional BFS over has_hyperonym/has_hyponym edges (fetching
+//    ancestors on demand), converted to a 0..1 score that decays with
+//    hop distance.
+// Graph BFS requires network round-trips for ancestors beyond what's
+// already loaded, so the whole computation is async and cached per group
+// (_senseSimCache) — buildOverviewHTML renders synchronously from whatever
+// is cached (or "computing…" if nothing is yet), and _kickOffSenseSimilarity
+// (called by renderEntryEditor) fills the cache and re-renders once done.
+
+const SIM_STOPWORDS = new Set([
+  'a','an','the','of','to','in','on','for','and','or','is','are','be','as','by','with','that','this',
+  'it','its','at','from','which','who','whom','into','onto','than','then','also','not','no','any','some',
+  'one','all','other','such','used','use','using','having','has','have','had','was','were','been','being',
+  'if','so','but','can','may','will','would','could','should','you','your','their','his','her','him',
+  'de','het','een','en','of','in','op','voor','naar','met','als','door','dat','die','dit','deze','is',
+  'zijn','wordt','worden','was','waren','heeft','hebben','niet','geen','ook','maar','om','bij','uit',
+  'aan','van','tot','over','onder','iets','iemand','die','dan','er','te'
+]);
+
+function _simTokens(text) {
+  if (!text) return new Set();
+  return new Set(
+    text.toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !SIM_STOPWORDS.has(w))
+  );
+}
+
+function _jaccard(setA, setB) {
+  if (!setA.size || !setB.size) return 0;
+  let inter = 0;
+  for (const w of setA) if (setB.has(w)) inter++;
+  return inter / (setA.size + setB.size - inter);
+}
+
+// Bag of words behind a sense: its own Dutch definition plus every gloss of
+// its linked synset (any language — commonly just the English pwn gloss).
+function _senseSimTokens(sense, synset) {
+  const parts = [];
+  if (sense && sense.definition) parts.push(sense.definition);
+  if (synset && synset.definitions) for (const d of synset.definitions) if (d.gloss) parts.push(d.gloss);
+  return _simTokens(parts.join(' '));
+}
+
+const SIM_GRAPH_RELS = new Set(['has_hyperonym', 'has_xpos_hyperonym', 'has_hyponym', 'has_xpos_hyponym']);
+const SIM_GRAPH_MAX_HOPS = 3; // per side — combined distance up to 6 is considered before giving up
+
+// Bidirectional BFS between two synsets over taxonomic relations only,
+// fetching each newly-seen ancestor/descendant on demand. Expands whichever
+// frontier is currently smaller so unbalanced trees (e.g. one very deep
+// branch) don't blow up the number of fetches. Returns the hop distance, or
+// null if no path was found within the hop budget.
+async function _graphDistance(idA, idB) {
+  if (!idA || !idB) return null;
+  if (idA === idB) return 0;
+  let frontA = new Map([[idA, 0]]), frontB = new Map([[idB, 0]]);
+  const visA = new Map(frontA), visB = new Map(frontB);
+  for (let round = 0; round < SIM_GRAPH_MAX_HOPS * 2; round++) {
+    const expandA = frontA.size <= frontB.size;
+    const front = expandA ? frontA : frontB;
+    const vis = expandA ? visA : visB;
+    const otherVis = expandA ? visB : visA;
+    if (!front.size) break;
+    const next = new Map();
+    for (const [id] of front) {
+      await _ensureSynsetLoaded(id);
+      const ss = getSynset(id);
+      if (!ss || ss._indexOnly) continue;
+      for (const r of (ss.synsetRelations || [])) {
+        if (!SIM_GRAPH_RELS.has(r.relType) || !r.target || vis.has(r.target)) continue;
+        const d = (vis.get(id) || 0) + 1;
+        if (otherVis.has(r.target)) return d + otherVis.get(r.target);
+        vis.set(r.target, d);
+        next.set(r.target, d);
+      }
+    }
+    if (expandA) frontA = next; else frontB = next;
+    if (visA.size + visB.size > 600) break; // safety cap on pathological fan-out
+  }
+  return null;
+}
+
+let _senseSimCache   = null; // { groupKey, matrix: Map(entryId -> {otherEntryId, score, textSim, graphSim, graphDist}|null) }
+let _senseSimPending = null; // groupKey currently being computed, to avoid duplicate concurrent runs
+
+// Compute, for every sense (LexicalEntry) in this headword group, its most
+// similar sibling sense and cache the whole group's pairwise results. Kicked
+// off by renderEntryEditor whenever the overview is shown for a group that
+// isn't already cached; re-renders the overview once done.
+async function _kickOffSenseSimilarity(entryIds) {
+  const groupKey = entryIds.join('|');
+  if ((_senseSimCache && _senseSimCache.groupKey === groupKey) || _senseSimPending === groupKey) return;
+  _senseSimPending = groupKey;
+
+  const items = entryIds.map(id => getEntry(id)).filter(Boolean);
+  const senseInfo = items.map(e => {
+    const s = (e.senses && e.senses[0]) || null;
+    return { entryId: e.id, synsetId: (s && s.synset) || '', sense: s };
+  });
+  const bags = {};
+  for (const info of senseInfo) {
+    bags[info.entryId] = _senseSimTokens(info.sense, info.synsetId ? getSynset(info.synsetId) : null);
+  }
+
+  const n = senseInfo.length;
+  const pair = new Map(); // "i,j" (i<j) -> {score, textSim, graphSim, graphDist}
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const a = senseInfo[i], b = senseInfo[j];
+      const textSim = _jaccard(bags[a.entryId], bags[b.entryId]);
+      const graphDist = await _graphDistance(a.synsetId, b.synsetId);
+      const graphSim = graphDist == null ? 0 : Math.exp(-graphDist / 2.5);
+      pair.set(`${i},${j}`, { score: 0.5 * textSim + 0.5 * graphSim, textSim, graphSim, graphDist });
+    }
+  }
+
+  const matrix = new Map();
+  for (let i = 0; i < n; i++) {
+    let best = null;
+    for (let j = 0; j < n; j++) {
+      if (i === j) continue;
+      const r = pair.get(i < j ? `${i},${j}` : `${j},${i}`);
+      if (r && (r.textSim > 0 || r.graphDist != null) && (!best || r.score > best.score)) {
+        best = Object.assign({ otherEntryId: senseInfo[j].entryId }, r);
+      }
+    }
+    matrix.set(senseInfo[i].entryId, best); // null = no comparable sibling (no shared words, no graph path)
+  }
+
+  _senseSimCache = { groupKey, matrix };
+  _senseSimPending = null;
+  if (state.selectedGroupIds && state.selectedGroupIds.join('|') === groupKey) renderEntryEditor();
+}
+
 // ── Overview panel (grouped entry view) ──────────────────────────────
 
 function buildOverviewHTML(entryIds) {
@@ -2089,6 +2237,11 @@ function buildOverviewHTML(entryIds) {
   const groupSynsetIds = new Set();
   for (const e of items) for (const sn of (e.senses || [])) if (sn.synset) groupSynsetIds.add(sn.synset);
   const HYPERONYM_RELTYPES = new Set(['has_hyperonym', 'has_xpos_hyperonym']);
+
+  // "Most similar sense" column: cached async result (see _kickOffSenseSimilarity)
+  // keyed to this exact group, so a stale/differently-ordered group never shows.
+  const groupKey = entryIds.join('|');
+  const simMatrix = (_senseSimCache && _senseSimCache.groupKey === groupKey) ? _senseSimCache.matrix : null;
 
   // Build one row-data object per entry (raw sort values alongside rendered HTML cells),
   // then sort the collection generically by whichever column the user last clicked.
@@ -2128,6 +2281,26 @@ function buildOverviewHTML(entryIds) {
     // in this table) — distinct from the synset's own status shown in the Synset Status column.
     const senseStatusCell = buildStatusPill(e.status) || '—';
 
+    // Most similar sibling sense — combines gloss/definition word overlap with
+    // taxonomic graph distance (see _kickOffSenseSimilarity). null cache = not
+    // computed yet for this group; null matrix entry = no comparable sibling.
+    let simCell = '<span style="color:#aaa;font-style:italic">computing…</span>', simScore = -1;
+    if (simMatrix) {
+      const best = simMatrix.get(e.id);
+      if (!best) {
+        simCell = '—'; simScore = -1;
+      } else {
+        const other = items.find(x => x.id === best.otherEntryId);
+        const otherForm = other ? (other.isMWE ? other.mweForm : other.lemma) : best.otherEntryId;
+        const otherNr = other && other.senses && other.senses[0] ? other.senses[0].senseId : '';
+        const pct = Math.round(best.score * 100);
+        const tip = `word overlap ${Math.round(best.textSim * 100)}%` +
+          ` · graph ${best.graphDist == null ? 'no path found' : 'distance ' + best.graphDist}`;
+        simCell = `<span class="ov-synlink" title="${h(tip)}" onclick="event.stopPropagation();selectEntry('${h(best.otherEntryId)}')">${h(otherForm)}${otherNr ? '#' + h(otherNr) : ''} — ${pct}%</span>`;
+        simScore = best.score;
+      }
+    }
+
     return {
       entryId: e.id,
       form: e.isMWE ? e.mweForm : e.lemma,
@@ -2139,7 +2312,7 @@ function buildOverviewHTML(entryIds) {
       synset: (s && s.synset) || '',
       statusCell, status: ss ? (ss.status || '') : '',
       autoHypCell, autoHyp: hypernymTargets.join(', '),
-      glossText
+      glossText, simCell, simScore
     };
   });
 
@@ -2163,12 +2336,14 @@ function buildOverviewHTML(entryIds) {
       <td class="ov-id">${r.statusCell}</td>
       <td class="ov-id">${r.autoHypCell}</td>
       <td class="ov-def">${h(r.glossText) || '—'}</td>
+      <td class="ov-id">${r.simCell}</td>
     </tr>`).join('');
 
   const OV_COLS = [
     ['form', 'Form'], ['pos', 'POS'], ['senseNr', 'Sense Nr'], ['senseId', 'Sense ID'],
     ['senseStatus', 'Sense Status'], ['defText', 'Definition'], ['synset', 'Synset'],
-    ['status', 'Synset Status'], ['autoHyp', 'Auto-hyponymy'], ['glossText', 'Synset gloss']
+    ['status', 'Synset Status'], ['autoHyp', 'Auto-hyponymy'], ['glossText', 'Synset gloss'],
+    ['simScore', 'Most Similar Sense']
   ];
   const headHtml = OV_COLS.map(([k, label]) => {
     const arrow = key === k ? (dir === 1 ? ' ▲' : ' ▼') : '';

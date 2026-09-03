@@ -113,7 +113,14 @@ Every entry and synset editor shows a status row below the header: four buttons 
 
 Click any entry in the left pane to open it in the left editor. In collaborative mode, changes are auto-saved every 1.5 seconds after you stop typing. In standalone mode, changes are collected when you switch items.
 
-When multiple entries share the same lemma, clicking the lemma row shows a **sense overview table** for the whole group, with columns Form, POS, Sense Nr, Sense ID, Definition, Synset, Status (the linked synset's review status pill), Auto-hyponymy (links to any sibling sense's synset that this sense's synset is a hyponym of), and Synset gloss. Click any row to open that entry, or click **+ Add sense** in the card header to create a new entry for the same lemma.
+When multiple entries share the same lemma, clicking the lemma row shows a **sense overview table** for the whole group, with columns Form, POS, Sense Nr, Sense ID, Definition, Synset, Status (the linked synset's review status pill), Auto-hyponymy (links to any sibling sense's synset that this sense's synset is a hyponym of), Synset gloss, and **Most Similar Sense**. Click any row to open that entry, or click **+ Add sense** in the card header to create a new entry for the same lemma.
+
+**Most Similar Sense** ranks each sense against its siblings in the group and shows the closest match with a combined score (e.g. `incident #4 — 15%`, click to jump to that sense; hover for a breakdown). The score combines two signals in equal parts:
+
+- **Graph distance** — bidirectional search between the two senses' synsets over `has_hyperonym`/`has_hyponym` relations only (taxonomic distance), decaying with hop count.
+- **Word overlap of definitions/glosses** — shared, non-stopword tokens between each sense's own definition and its synset's glosses in any language (usually the English Princeton WordNet gloss, since the Dutch `definition` field is often empty). This is lexical overlap, not a learned/embedding-based semantic similarity — there's no such model available in this dependency-free, offline page — so it's tuned to catch near-duplicate glosses rather than paraphrases.
+
+Computing this requires fetching ancestor synsets not already loaded, so the column may briefly show "computing…" before filling in.
 
 ### Lemma & Identity
 
@@ -324,12 +331,23 @@ The tooltip repositions automatically to stay within the viewport.
 | Popup → **Expand** | Reveals the node's further relations |
 | Popup → **Collapse** | Hides the nodes added by expanding this node |
 | Popup → **Make center** | Navigates to that synset, making it the new centre of the graph |
-| **Reset** button (card header) | Collapses all expansions back to the default two-level view |
+| **Reset** button (card header) | Collapses all expansions back to the default two-level view, and exits hyperonym-chain view if active |
 | Drag the background | Pans the graph |
 
 Expanded nodes are highlighted with an orange ring. Clicking anywhere outside the popup dismisses it.
 
 > In collaborative mode, level-2 and deeper synsets are only shown if their full data has already been fetched from the server (i.e. you have opened them at least once).
+
+**Hyperonym chain view**
+
+The **Show hyperonym chain** button (card header) switches the graph from the default two-level neighbourhood to a full trace of `has_hyperonym` relations from the current synset, fetching each ancestor as needed:
+
+- It follows every hyperonym branch (a synset can have more than one) up to the top of the hierarchy — a synset with no further `has_hyperonym` — shown with a **green** node.
+- If a hyperonym ever points back to a synset already on the current path, that's a cycle (malformed data, since hyperonymy should be acyclic): the closing edge is drawn **red and dashed** with a `⟲ cycle` label, both endpoints get a red ring, and a warning banner appears above the graph.
+- A status banner above the graph reports the node count and whether a cycle was found; the search stops after 400 nodes to guard against pathological branching.
+- Node popups only offer **Make center** in this view (no Expand/Collapse, since the chain is already fully expanded).
+
+Click the button again (now labelled **Exit hyperonym chain**) to return to the normal explorable graph.
 
 ### Monolingual External Refs
 
@@ -339,6 +357,7 @@ Read-only display of external references (Princeton WordNet, etc.). Edit via raw
 
 - **Save** (collaborative mode) — explicitly saves the current synset and writes a change-log file.
 - **History** — shows a popup with the edit history (user + timestamp) for this synset.
+- **🔗 WordNet** / **🔗 CygNet** — open the original WordNet structure in a new tab, for cross-checking against [wn.yovisto.com](https://wn.yovisto.com/wordnet/#/wordnet/search-wrapper) or [cygnet.maudslay.eu](https://cygnet.maudslay.eu/#/search). Plain links to each tool's search page (neither supports deep-linking to a specific synset from a URL) — you search manually once there.
 - **Delete** — removes the synset after confirmation.
 
 ---
@@ -445,12 +464,13 @@ python3 server.py [xmlfile_or_dbfile] [port] [users.json]
 
 | Argument | Default |
 |---|---|
-| `xmlfile` | `data/odwn_orbn_gwg-LMF_1.3.xml` (auto-discovered) |
-| `dbfile` | Derived from XML path (e.g. `data/odwn.db`); also auto-discovered; can be any path |
+| `xmlfile` / `dbfile` | Auto-discovered from `data/odwn_orbn_gwg-LMF_*.db` / `.xml` / `.xml.gz` / `.xml.zip` (see below) |
 | `users.json` | `users.json` alongside `server.py` (created if absent) |
 | `port` | `8080` |
 
 If both an XML file and a `.db` file exist at the same path, the `.db` is used directly (no re-import). Pass the XML explicitly to force re-import.
+
+**Auto-discovery** scans `data/` for every `odwn_orbn_gwg-LMF_*.db`/`.xml`/`.xml.gz`/`.xml.zip` file and picks the `.db` with the most genuine content activity — the latest change-log edit timestamp, or the import timestamp for a database no one has edited yet — falling back to the newest `.xml*` file if no usable `.db` exists. This is deliberately *not* based on file name (e.g. version number) or raw file modification time: merely opening an entry writes a lock row into that `.db`, which would otherwise make an idle-but-recently-*viewed* database look "newer" than one that's actually being actively edited.
 
 The server loads data in a background thread so HTTP requests are served immediately. A progress message is shown while loading (`/api/status` reports `ready: false`).
 
