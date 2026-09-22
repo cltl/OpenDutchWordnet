@@ -693,13 +693,20 @@ function rebuildVSS() {
   // "Substring matches" further broadens matching to substrings within a
   // word; "Search definitions/examples" widens the match to gloss text and
   // Dutch example sentences too.
+  // Normalize the query the same way multi-word synonyms are normalized below,
+  // so "drop off" and "drop_off" are treated as the same search (phrasal verbs
+  // like English "drop_off" are stored with underscores).
+  const fNorm = f.replace(/_/g, ' ');
   function passesSearch(s) {
     if (!f) return true;
     if (s.id.toLowerCase().includes(f)) return true;
     const { en, nl } = _synTokens(s);
     const synMatch = af.substringSynonyms
-      ? w => w.toLowerCase().includes(f)
-      : w => w.replace(/_/g, ' ').toLowerCase().split(' ').includes(f);
+      ? w => w.replace(/_/g, ' ').toLowerCase().includes(fNorm)
+      : w => {
+          const wn = w.replace(/_/g, ' ').toLowerCase();
+          return wn === fNorm || wn.split(' ').includes(fNorm);
+        };
     if (en.some(synMatch) || nl.some(synMatch)) return true;
     if (af.searchDefsExamples) {
       const gloss = (s.definitions || []).map(d => d.gloss || '').join(' ');
@@ -3049,6 +3056,15 @@ async function _pushUpdate(op, itemType, data, explicit) {
       }
       return;
     }
+    if (resp.status === 401) {
+      // Session expired (or was never valid) — the edit was NOT saved. Surface this
+      // loudly and prompt re-login, rather than the generic "Save error" corner label,
+      // which is easy to miss and makes a lost edit look like the link just vanished.
+      setAutosaveStatus('Session expired', true);
+      showToast('Your session expired — log in again, then redo this save', true);
+      _showLoginOverlay();
+      return;
+    }
     if (resp.ok) {
       const res = await resp.json();
       if (res.seq) collabSeq = res.seq;
@@ -3792,7 +3808,9 @@ function openSSRSearch(btn) {
 function _ssrRunSearch(query) {
   const el = document.getElementById('ssm-sr-results');
   if (!el) return;
-  const q = query.trim().toLowerCase();
+  // Normalize underscores to spaces so a query typed either way ("drop off"
+  // or "drop_off") matches phrasal-verb-style synonyms stored with underscores.
+  const q = query.trim().toLowerCase().replace(/_/g, ' ');
   if (!q) {
     el.innerHTML = '<div style="color:#aaa;font-size:12px;padding:4px 0">Type a Dutch or English word to find synsets…</div>';
     return;
@@ -3806,7 +3824,7 @@ function _ssrRunSearch(query) {
   for (const e of state.entries) {
     if (e._indexOnly) continue;
     const lemma = (e.isMWE ? e.mweForm : e.lemma) || '';
-    const ll = lemma.toLowerCase();
+    const ll = lemma.replace(/_/g, ' ').toLowerCase();
     if (!ll.includes(q)) continue;
     const exact = ll === q;
     for (const s of (e.senses || [])) {
@@ -3818,7 +3836,7 @@ function _ssrRunSearch(query) {
   for (const ss of state.synsets) {
     if (!ss._nl_entries) continue;
     for (const e of ss._nl_entries) {
-      const ll = (e.lemma || '').toLowerCase();
+      const ll = (e.lemma || '').replace(/_/g, ' ').toLowerCase();
       if (!ll.includes(q)) continue;
       bump(ss.id, ll === q ? 20 : 4);
     }
