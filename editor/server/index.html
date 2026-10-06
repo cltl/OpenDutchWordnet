@@ -59,8 +59,21 @@
     /* Filter panel (one per side panel) */
 
     /* Split panes */
-    #left-pane  { display: flex; flex: 1; min-width: 0; border-right: 2px solid #d8dee8; overflow: hidden; }
+    #left-pane  { display: flex; flex: 1 1 0; min-width: 0; overflow: hidden; }
     #right-pane { display: flex; flex: 1; min-width: 0; overflow: hidden; }
+    /* Draggable splitters */
+    .split-h { flex: 0 0 6px; cursor: col-resize; background: #d8dee8; border-left: 2px solid #f0f2f5; border-right: 2px solid #f0f2f5; }
+    .split-v { flex: 0 0 6px; cursor: row-resize; background: #d8dee8; border-top: 2px solid #f0f2f5; border-bottom: 2px solid #f0f2f5; }
+    .split-h:hover, .split-v:hover, .split-h.dragging, .split-v.dragging { background: #4f8ef7; }
+    body.resizing-h, body.resizing-h * { cursor: col-resize !important; user-select: none !important; }
+    body.resizing-v, body.resizing-v * { cursor: row-resize !important; user-select: none !important; }
+    #s-col { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; }
+    #s-col > #ed-s { min-height: 0; }
+    #ed-s-graph { flex: 0 0 auto; min-height: 0; display: flex; flex-direction: column; padding: 8px 20px 12px; background: #f0f2f5; overflow: hidden; }
+    #ed-s-graph > .card { flex: 1; min-height: 0; display: flex; flex-direction: column; margin-bottom: 0; }
+    #ed-s-graph .sg-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    #sg-container { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    #sg-container > #sg-svg { flex: 1; min-height: 0; height: auto; }
     .pane-editor { flex: 1; overflow-y: auto; padding: 18px 20px; background: #f0f2f5; min-width: 0; }
     .pane-empty  { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #bbb; gap: 10px; }
     .pane-empty .ico { font-size: 52px; opacity: 0.25; }
@@ -309,6 +322,7 @@
       <div id="ed-e-content" class="pane-content"></div>
     </div>
   </div>
+  <div id="split-main" class="split-h" title="Drag to resize"></div>
   <div id="right-pane">
     <div id="panel-s" class="panel">
       <div class="panel-hd">Synsets</div>
@@ -322,6 +336,7 @@
         <button onclick="addSynset()">+ Add Synset</button>
       </div>
     </div>
+    <div id="s-col">
     <div id="ed-s" class="pane-editor">
       <div id="ed-s-empty" class="pane-empty">
         <div class="ico">&#128279;</div>
@@ -333,6 +348,9 @@
         <button onclick="claimLock('synset')">Claim when free</button>
       </div>
       <div id="ed-s-content" class="pane-content"></div>
+    </div>
+    <div id="split-graph" class="split-v" title="Drag to resize" style="display:none"></div>
+    <div id="ed-s-graph" style="display:none"></div>
     </div>
   </div>
 </div>
@@ -1699,9 +1717,18 @@ function renderSynsetEditor() {
   const content = document.getElementById('ed-s-content');
   if (!empty || !content) return;
   const item = getSynset(state.selectedSynsetId);
-  if (!item) { empty.style.display = 'flex'; content.style.display = 'none'; return; }
+  const graphPane = document.getElementById('ed-s-graph');
+  const graphSplit = document.getElementById('split-graph');
+  if (!item) {
+    empty.style.display = 'flex'; content.style.display = 'none';
+    graphPane.style.display = 'none'; graphSplit.style.display = 'none'; graphPane.innerHTML = '';
+    return;
+  }
   empty.style.display = 'none'; content.style.display = 'block';
   content.innerHTML = buildSynsetHTML(item);
+  graphPane.innerHTML = buildSynsetGraphCard(item);
+  graphPane.style.display = 'flex'; graphSplit.style.display = '';
+  _applyGraphPaneHeight();
   _graphExpanded = new Set();
   _graphView = { x: 0, y: 0, scale: 1 };
   _graphMode = 'explore';
@@ -2463,9 +2490,13 @@ function buildSynsetHTML(ss) {
   <div class="card">
     <div class="card-hd">Monolingual External Refs <span>${ss.monolingualExternalRefs.length} refs — edit via XML</span></div>
     ${ss.monolingualExternalRefs.map(m => `<div style="font-size:12px;color:#666;padding:2px 0">${h(m.externalSystem)}: ${h(m.externalReference)} <em style="color:#aaa">${h(m.relType)}</em></div>`).join('') || '<div class="empty-msg">None.</div>'}
-  </div>
+  </div>`;
+}
 
-  <div class="card">
+// The relation graph lives in its own pane (#ed-s-graph) below the synset info,
+// separated by a draggable splitter — see initSplitters.
+function buildSynsetGraphCard(ss) {
+  return `<div class="card">
     <div class="card-hd">Relation Graph
       <span>Click node or edge for options</span>
       <button class="addbtn" id="sg-chain-btn" onclick="toggleHyperonymChain('${h(ss.id)}')"
@@ -4412,7 +4443,7 @@ function renderSynsetGraph(ssId) {
       <span style="flex:1"></span>
       <span>Scroll/pinch to zoom &middot; drag to pan</span>
     </div>
-    <svg id="sg-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px" onclick="dismissNodePopup()">
+    <svg id="sg-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%" onclick="dismissNodePopup()">
       <defs>${defs}</defs>
       <g id="sg-pan" transform="translate(${_graphView.x},${_graphView.y}) scale(${_graphView.scale})">
         <rect x="0" y="0" width="${W}" height="${H}" fill="transparent" style="pointer-events:all"/>
@@ -4429,9 +4460,17 @@ function renderSynsetGraph(ssId) {
 // pixels) translate to the right amount of movement regardless of how wide the
 // container has actually rendered the (viewBox="0 0 780 480") SVG.
 function _svgViewBoxRatio(svg) {
-  const vb = svg.viewBox && svg.viewBox.baseVal;
-  const rect = svg.getBoundingClientRect();
-  return (vb && rect.width) ? (vb.width / rect.width) : 1;
+  const ctm = svg.getScreenCTM();
+  return (ctm && ctm.a) ? (1 / ctm.a) : 1;
+}
+
+// Client (screen) point → viewBox coords. Uses the screen CTM so it stays correct
+// when the SVG is letterboxed inside a pane whose aspect ratio differs from the viewBox.
+function _svgClientToViewBox(svg, clientX, clientY) {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: 0, y: 0 };
+  const pt = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+  return { x: pt.x, y: pt.y };
 }
 
 function _applyGraphTransform() {
@@ -4482,10 +4521,7 @@ function _attachGraphPanZoom(svgId) {
   window.addEventListener('mouseup', onUp);
   svg.addEventListener('wheel', e => {
     e.preventDefault();
-    const ratio = _svgViewBoxRatio(svg);
-    const rect = svg.getBoundingClientRect();
-    const atX = (e.clientX - rect.left) * ratio;
-    const atY = (e.clientY - rect.top) * ratio;
+    const { x: atX, y: atY } = _svgClientToViewBox(svg, e.clientX, e.clientY);
     const factor = Math.exp(-e.deltaY * 0.0015);
     _graphZoomAt(svg, factor, atX, atY);
   }, { passive: false });
@@ -4504,14 +4540,13 @@ function showNodePopup(event, nodeId, rootId) {
   const pos = _graphNodePositions.get(nodeId);
   if (!pos) return;
 
-  // Convert this node's local (pre-transform) coords through the current pan/zoom,
-  // then viewBox → viewport (fixed) coordinates.
-  const svgRect = svg.getBoundingClientRect();
-  const W = 780, H = 480;
-  const scaleX = svgRect.width / W, scaleY = svgRect.height / H;
-
-  const screenX = svgRect.left + (pos.x * _graphView.scale + _graphView.x) * scaleX;
-  const screenY = svgRect.top  + (pos.y * _graphView.scale + _graphView.y) * scaleY;
+  // Convert this node's local (pre-transform) coords through the current pan/zoom
+  // and the SVG's viewBox fit to viewport (fixed) coordinates.
+  const pan = document.getElementById('sg-pan');
+  const ctm = pan && pan.getScreenCTM();
+  if (!ctm) return;
+  const pt = new DOMPoint(pos.x, pos.y).matrixTransform(ctm);
+  const screenX = pt.x, screenY = pt.y;
 
   const isExp = _graphExpanded.has(nodeId);
 
@@ -4667,8 +4702,101 @@ async function toggleHyperonymChain(ssId) {
 }
 
 // =====================================================================
+// RESIZABLE SPLITTERS
+// =====================================================================
+// Sizes are stored as fractions (of #main width / #s-col height) so they survive
+// window resizes; persisted per browser in localStorage.
+
+const SPLIT_MIN_PX = 260;        // min width of entry / synset half
+const GRAPH_SPLIT_MIN_PX = 120;  // min height of synset info / relation graph
+
+function _loadSplit(key, def) {
+  try { const v = parseFloat(localStorage.getItem(key)); return (v > 0 && v < 1) ? v : def; }
+  catch (e) { return def; }
+}
+function _saveSplit(key, v) {
+  try { localStorage.setItem(key, String(v)); } catch (e) {}
+}
+
+let _mainSplitFrac  = _loadSplit('lmf_split_main', 0.5);
+let _graphSplitFrac = _loadSplit('lmf_split_graph', 0.45);
+
+function _clampPx(px, total, min) {
+  return Math.max(min, Math.min(total - min, px));
+}
+
+function _applyMainSplit() {
+  const main = document.getElementById('main');
+  const left = document.getElementById('left-pane');
+  const total = main.clientWidth - document.getElementById('split-main').offsetWidth;
+  if (total <= 0) return;
+  left.style.flex = `0 0 ${_clampPx(_mainSplitFrac * total, total, SPLIT_MIN_PX)}px`;
+}
+
+function _applyGraphPaneHeight() {
+  const col = document.getElementById('s-col');
+  const pane = document.getElementById('ed-s-graph');
+  const split = document.getElementById('split-graph');
+  if (!col || !pane || pane.style.display === 'none') return;
+  const total = col.clientHeight - split.offsetHeight;
+  if (total <= 0) return;
+  pane.style.height = _clampPx(_graphSplitFrac * total, total, GRAPH_SPLIT_MIN_PX) + 'px';
+}
+
+// Generic drag handler: onDrag(clientX, clientY) during the drag, onEnd() once on release.
+function _startSplitDrag(e, splitter, bodyClass, onDrag, onEnd) {
+  e.preventDefault();
+  dismissNodePopup();
+  hideNodeTooltip();
+  splitter.classList.add('dragging');
+  document.body.classList.add(bodyClass);
+  const move = ev => onDrag(ev.clientX, ev.clientY);
+  const up = () => {
+    window.removeEventListener('mousemove', move);
+    window.removeEventListener('mouseup', up);
+    splitter.classList.remove('dragging');
+    document.body.classList.remove(bodyClass);
+    onEnd();
+  };
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', up);
+}
+
+function initSplitters() {
+  const splitMain = document.getElementById('split-main');
+  splitMain.addEventListener('mousedown', e => _startSplitDrag(e, splitMain, 'resizing-h',
+    (x) => {
+      const rect = document.getElementById('main').getBoundingClientRect();
+      const total = rect.width - splitMain.offsetWidth;
+      _mainSplitFrac = _clampPx(x - rect.left - splitMain.offsetWidth / 2, total, SPLIT_MIN_PX) / total;
+      _applyMainSplit();
+    },
+    () => _saveSplit('lmf_split_main', _mainSplitFrac)));
+
+  const splitGraph = document.getElementById('split-graph');
+  splitGraph.addEventListener('mousedown', e => _startSplitDrag(e, splitGraph, 'resizing-v',
+    (x, y) => {
+      const rect = document.getElementById('s-col').getBoundingClientRect();
+      const total = rect.height - splitGraph.offsetHeight;
+      // Graph pane is below the splitter, so its height is the distance to the bottom.
+      _graphSplitFrac = _clampPx(rect.bottom - y - splitGraph.offsetHeight / 2, total, GRAPH_SPLIT_MIN_PX) / total;
+      _applyGraphPaneHeight();
+    },
+    () => _saveSplit('lmf_split_graph', _graphSplitFrac)));
+
+  // Double-click a splitter to reset it to its default position
+  splitMain.addEventListener('dblclick', () => { _mainSplitFrac = 0.5; _applyMainSplit(); _saveSplit('lmf_split_main', 0.5); });
+  splitGraph.addEventListener('dblclick', () => { _graphSplitFrac = 0.45; _applyGraphPaneHeight(); _saveSplit('lmf_split_graph', 0.45); });
+
+  window.addEventListener('resize', () => { _applyMainSplit(); _applyGraphPaneHeight(); });
+  _applyMainSplit();
+}
+
+// =====================================================================
 // INIT
 // =====================================================================
+
+initSplitters();
 
 renderAll();
 initCollab();
